@@ -162,11 +162,36 @@
 </style>
 </head>
 <body>
+<noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#ffd7d7;background:#1a0808;font-family:sans-serif;text-align:center;padding:20px">האתר שמארח את המשחק חוסם הרצת סקריפטים (iframe sandbox ללא allow-scripts) — המשחק לא יכול לרוץ כאן.</div></noscript>
+<div id="bootMsg" style="position:fixed;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;color:#8a94a8;background:#05070c;font-family:sans-serif;font-size:14px;z-index:1">
+  <div style="font-size:34px">🎱</div>טוען את המשחק…
+  <div style="font-size:11px;opacity:.7">אם ההודעה הזו נשארת — צלמו את המסך ושלחו</div>
+</div>
+<script>
+/* 🚑 מסך אבחון: במקום מסך שחור אילם — מציג כל שגיאה קטלנית */
+(function(){
+  function box(){
+    var d=document.getElementById('errBox');
+    if(!d){
+      d=document.createElement('div');d.id='errBox';
+      d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:999;background:#3a0c0c;color:#ffd7d7;font:11px/1.5 monospace;padding:8px 10px;border-radius:10px;direction:ltr;text-align:left;max-height:40vh;overflow:auto;white-space:pre-wrap';
+      (document.body||document.documentElement).appendChild(d);
+    }
+    return d;
+  }
+  window.addEventListener('error',function(e){
+    try{box().textContent+='⚠ '+(e.message||e.type)+(e.filename?'  @'+String(e.filename).split('/').pop()+':'+e.lineno:'')+'\n';}catch(x){}
+  });
+  window.addEventListener('unhandledrejection',function(e){
+    try{var r=e.reason;box().textContent+='⚠ promise: '+((r&&(r.message||r.toString()))||'?')+'\n';}catch(x){}
+  });
+})();
+</script>
 <div id="stage"><canvas id="game3d" style="position:absolute;inset:0;display:none"></canvas><canvas id="game"></canvas></div>
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze</div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v30</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -4079,17 +4104,77 @@ async function regPut(d){
     return r.ok;
   }catch(e){return false;}
 }
-async function pwHash(user,pw,salt){
+/* שני מנגנוני hash: SHA-256 כשהדפדפן מאפשר, ו-fallback כשלא (למשל iframe בסנדבוקס,
+   שם isSecureContext=false). התחברות מקבלת את שניהם — אחרת סיסמה שנרשמה בדפדפן רגיל
+   נראית "שגויה" כשנכנסים דרך אתר שמריץ את המשחק בתוך iframe, ולהפך. */
+function pwHashWeak(user,pw,salt){
   const txt=salt+'|'+user+'|'+pw;
-  if(window.crypto&&crypto.subtle&&window.isSecureContext){
-    const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt));
-    return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
-  }
   let h1=0x811c9dc5,h2=0x01000193|0,h3=0x9e3779b9|0,h4=0x85ebca6b|0;
   for(let i=0;i<txt.length;i++){const c=txt.charCodeAt(i);
     h1=Math.imul(h1^c,16777619);h2=Math.imul(h2^c,2654435761);
     h3=Math.imul(h3^c,1597334677);h4=Math.imul(h4^c,2246822519);}
   return[h1,h2,h3,h4].map(x=>(x>>>0).toString(16).padStart(8,'0')).join('');
+}
+/* SHA-256 טהור ב-JS — לסביבות שבהן crypto.subtle לא זמין. אומת מול crypto.subtle. */
+function sha256hex(msg){
+  const K=new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+  let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const bytes=(typeof TextEncoder!=='undefined')?new TextEncoder().encode(msg)
+    :Uint8Array.from(unescape(encodeURIComponent(msg)),c=>c.charCodeAt(0));
+  const l=bytes.length,bitLen=l*8;
+  const padded=new Uint8Array(((l+8>>6)+1)<<6);
+  padded.set(bytes);padded[l]=0x80;
+  const dv=new DataView(padded.buffer);
+  dv.setUint32(padded.length-4,bitLen>>>0);
+  dv.setUint32(padded.length-8,Math.floor(bitLen/4294967296));
+  const w=new Uint32Array(64);
+  const rot=(x,n)=>(x>>>n)|(x<<(32-n));
+  for(let off=0;off<padded.length;off+=64){
+    for(let i=0;i<16;i++)w[i]=dv.getUint32(off+i*4);
+    for(let i=16;i<64;i++){
+      const s0=rot(w[i-15],7)^rot(w[i-15],18)^(w[i-15]>>>3);
+      const s1=rot(w[i-2],17)^rot(w[i-2],19)^(w[i-2]>>>10);
+      w[i]=(w[i-16]+s0+w[i-7]+s1)|0;
+    }
+    let a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(let i=0;i<64;i++){
+      const S1=rot(e,6)^rot(e,11)^rot(e,25);
+      const ch=(e&f)^(~e&g);
+      const t1=(h+S1+ch+K[i]+w[i])|0;
+      const S0=rot(a,2)^rot(a,13)^rot(a,22);
+      const mj=(a&b)^(a&c)^(b&c);
+      const t2=(S0+mj)|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;
+    }
+    H=[(H[0]+a)|0,(H[1]+b)|0,(H[2]+c)|0,(H[3]+d)|0,(H[4]+e)|0,(H[5]+f)|0,(H[6]+g)|0,(H[7]+h)|0];
+  }
+  return H.map(x=>(x>>>0).toString(16).padStart(8,'0')).join('');
+}
+async function pwHashSha(user,pw,salt){
+  const txt=salt+'|'+user+'|'+pw;
+  try{
+    if(window.crypto&&crypto.subtle){
+      const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt));
+      return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  try{return sha256hex(txt);}catch(e){return null;}
+}
+async function pwHash(user,pw,salt){
+  return(await pwHashSha(user,pw,salt))||pwHashWeak(user,pw,salt);
+}
+async function pwMatch(user,pw,rec){
+  if(!rec)return false;
+  if(rec.h===pwHashWeak(user,pw,rec.s))return true;
+  const sha=await pwHashSha(user,pw,rec.s);
+  return !!sha&&rec.h===sha;
 }
 function getUsers(){const st=store();if(!st)return{};try{return JSON.parse(st.getItem(UKEY)||'{}')||{}}catch(e){return{}}}
 function putUsers(u){const st=store();if(st)try{st.setItem(UKEY,JSON.stringify(u))}catch(e){}}
@@ -4114,8 +4199,6 @@ async function doAuth(reg){
   const users=getUsers(),ex=users[u];
   if(reg){
     if(ex)return authMsg('שם משתמש זה תפוס');
-    if(!(window.crypto&&crypto.subtle&&window.isSecureContext))
-      return authMsg('הרשמה דורשת חיבור מאובטח (HTTPS)');
     authMsg('בודק זמינות בעולם… 🌍');
     const cloud=await regFetch();
     if(!cloud)return authMsg('הרשמה דורשת אינטרנט — בדקו חיבור ונסו שוב');
@@ -4145,7 +4228,16 @@ async function doAuth(reg){
       rec=cloud.users[u];
       if(!rec)return authMsg('משתמש לא קיים — לחצו "הרשמה"');
     }
-    if(rec.h!==await pwHash(u,p,rec.s))return authMsg('סיסמה שגויה');
+    if(!await pwMatch(u,p,rec)){
+      // אולי הרשומה המקומית ישנה — בדיקה מול העותק העדכני בענן לפני שמוותרים
+      let cloudRec=null;
+      if(ex){
+        const cloud=await regFetch();
+        cloudRec=cloud&&cloud.users[u];
+        if(cloudRec&&(cloudRec.h!==rec.h||cloudRec.s!==rec.s)&&await pwMatch(u,p,cloudRec))rec=cloudRec;
+        else return authMsg('סיסמה שגויה');
+      }else return authMsg('סיסמה שגויה');
+    }
     users[u]=rec;putUsers(users);
     await finishLogin(u,p);
     showToast('שלום, '+u+'! 👋');
@@ -4166,7 +4258,10 @@ async function checkGifts(){
   if(!d)return;
   let dirty=false;
   const local=getUsers();
-  for(const k in local)if(!d.users[k]){d.users[k]=local[k];dirty=true;}
+  // מיזוג משתמשים מקומיים רק כשהמסמך בענן אמיתי (תמיד מכיל לפחות משתמש אחד) —
+  // אחרת תשובה פגומה זמנית הייתה גורמת לדריסת כל הרישום העולמי
+  if(Object.keys(d.users).length)
+    for(const k in local)if(!d.users[k]){d.users[k]=local[k];dirty=true;}
   /* ☁️ סנכרון התקדמות: השמירה עם יותר התקדמות מנצחת (שוויון → החדשה בזמן) */
   const rec=d.users[curUser],cl=rec&&rec.sv;
   let loc=null;
@@ -4351,6 +4446,7 @@ function initAuth(){
   else{refreshUserChip();$('authOv').classList.remove('hidden');}
 }
 initAuth();
+{const bm=document.getElementById('bootMsg');if(bm)bm.remove();} // המשחק עלה בהצלחה
 if(!storageOK)setTimeout(()=>{
   showToast(curUser?'⚠️ הדפדפן חוסם שמירה מקומית — נשמר בענן ☁️'
                    :'⚠️ הדפדפן חוסם שמירה — התחברו עם משתמש כדי לשמור בענן ☁️');
