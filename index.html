@@ -226,7 +226,7 @@
 <div class="overlay hidden" id="authOv" style="z-index:60;background:rgba(8,10,18,.96)">
   <div class="big float">👤</div>
   <h1>מי משחק?</h1>
-  <p class="sub">לכל שחקן שמירה נפרדת במכשיר הזה:<br>התקדמות, מטבעות, תיבות, סקינים וגביעים.</p>
+  <p class="sub">לכל שחקן שמירה משלו: התקדמות, מטבעות, תיבות וסקינים.<br>☁️ מתחברים — וההתקדמות נשמרת בענן ועוברת איתך לכל מכשיר.</p>
   <input class="tin" id="authUser" maxlength="14" placeholder="שם משתמש" autocomplete="username" style="max-width:260px">
   <input class="tin" id="authPass" maxlength="24" type="password" placeholder="סיסמה" autocomplete="current-password" style="max-width:260px">
   <div id="authErr" style="color:#ff7a7a;font-weight:700;min-height:20px;font-size:13px"></div>
@@ -2944,24 +2944,47 @@ let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0;
 let coins=0,troLife=0,chests=0,troClaimed=0,dailyFail='',qCyc=0,qDate='',qProg=[0,0,0],qDone=[false,false,false],dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false;
+/* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
+   וההתקדמות של משתמשים מחוברים ממשיכה להישמר בענן */
+let memDB=null,storageOK=true;
 function store(){
   try{const s=window.localStorage;s.setItem('__t','1');s.removeItem('__t');return s;}
-  catch(e){return null;}
+  catch(e){
+    storageOK=false;
+    if(!memDB)memDB={};
+    return{getItem:k=>(k in memDB?memDB[k]:null),
+           setItem:(k,v)=>{memDB[k]=String(v);},
+           removeItem:k=>{delete memDB[k];}};
+  }
 }
-function save(){
-  const st=store();if(!st)return;
-  try{st.setItem(KEY,JSON.stringify({v:2,un:unlocked,tro:trophies,nm:myName,dl:dailyLast,
+let cloudDirty=false,cloudBusy=false;
+function saveBlob(){
+  // חיתוך הזנב הריק של 1000 השלבים — חוסך מקום בענן
+  let last=session.length-1;
+  while(last>0&&!session[last].done&&!session[last].stars&&!session[last].best)last--;
+  return {v:2,t:Date.now(),un:unlocked,tro:trophies,nm:myName,dl:dailyLast,
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
     co:coins,tl:troLife,ch:chests,tc:troClaimed,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
     ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,
     gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,
-    s:session.map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
-    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG}));}catch(e){}
+    s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
+    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG};
+}
+function save(){
+  const st=store();
+  if(st)try{st.setItem(KEY,JSON.stringify(saveBlob()));}catch(e){}
+  if(curUser)cloudDirty=true; // ☁️ יידחף לענן ברקע
 }
 function load(){
   const st=store();if(!st)return;
   try{
-    const d=JSON.parse(st.getItem(KEY)||st.getItem('mazeUltra100_v1')||'null');if(!d)return;
+    const d=JSON.parse(st.getItem(KEY)||st.getItem('mazeUltra100_v1')||'null');
+    if(d)applySave(d);
+  }catch(e){}
+  refreshTro();
+}
+function applySave(d){
+  try{
     unlocked=Math.min(LEVELS.length-1,d.un|0);
     trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';
     skinOwned=Array.isArray(d.ow)?d.ow.filter(n=>n>=0&&n<SKINS.length):[0];
@@ -2994,7 +3017,6 @@ function load(){
     if(typeof d.ng==='number')neutG=d.ng;
     $('soundBtn').textContent=muted?'🔇':'🔊';
   }catch(e){}
-  refreshTro();
 }
 function refreshTro(){
   $('troLine').textContent='🏆 '+trophies+'  ·  🪙 '+coins;
@@ -4079,7 +4101,8 @@ function applyUser(name){
   ghostDB=null;
   const st=store();if(st)try{st.setItem(CKEY,name||'__guest__')}catch(e){}
   load();refreshUserChip();
-  if(name&&!myName){myName=name.slice(0,12);save();}
+  // בלי save() כאן — שמירה מוקדמת הייתה גוברת בטעות על השמירה שבענן
+  if(name&&!myName)myName=name.slice(0,12);
 }
 function authMsg(m){$('authErr').textContent=m||'';}
 async function doAuth(reg){
@@ -4144,6 +4167,17 @@ async function checkGifts(){
   let dirty=false;
   const local=getUsers();
   for(const k in local)if(!d.users[k]){d.users[k]=local[k];dirty=true;}
+  /* ☁️ סנכרון התקדמות: השמירה עם יותר התקדמות מנצחת (שוויון → החדשה בזמן) */
+  const rec=d.users[curUser],cl=rec&&rec.sv;
+  let loc=null;
+  try{loc=JSON.parse(store().getItem(KEY)||'null');}catch(e){}
+  const cs=saveScore(cl),ls=saveScore(loc);
+  if(cl&&(cs>ls||(cs===ls&&(cl.t||0)>=((loc&&loc.t)||0)))){
+    applySave(cl);save();refreshTro();
+    showToast('☁️ ההתקדמות שלך נטענה מהענן');
+  }else if(rec){
+    cloudDirty=true; // המקומית מתקדמת יותר (או שאין בענן) — נדחוף אותה
+  }
   const g=d.gifts[curUser];
   if(g){delete d.gifts[curUser];dirty=true;}
   if(dirty&&!await regPut(d))return;
@@ -4153,6 +4187,40 @@ async function checkGifts(){
     showToast('🎁 קיבלת מתנה מהאדמין!');
   }
 }
+/* ☁️ ניקוד התקדמות — רק מדדים שאף פעם לא יורדים, כדי ששמירה מתקדמת תמיד תנצח */
+function saveScore(d){
+  if(!d)return -1;
+  let sc=0;
+  if(Array.isArray(d.s))for(const a of d.s)sc+=(a[0]?50:0)+(a[1]|0)*5;
+  sc+=(d.tl|0)*3+(d.tm|0)/60+(d.rb|0)/10+(d.fd|0)/20;
+  if(Array.isArray(d.ow))sc+=d.ow.length*10;
+  if(Array.isArray(d.ac))sc+=d.ac.length*10;
+  return sc;
+}
+/* ☁️ דחיפת השמירה לענן — ברקע, לכל היותר פעם ב-15 שניות */
+async function cloudPush(){
+  if(!curUser||cloudBusy)return;
+  cloudBusy=true;
+  try{
+    const d=await regFetch();
+    if(d&&d.users[curUser]){
+      const mine=saveBlob(),cl=d.users[curUser].sv;
+      if(cl&&saveScore(cl)>saveScore(mine)){
+        // בענן יש התקדמות גדולה יותר (מכשיר אחר) — לא דורסים, מושכים
+        applySave(cl);save();refreshTro();cloudDirty=false;
+        showToast('☁️ נטענה התקדמות חדשה מהענן');
+      }else{
+        d.users[curUser].sv=mine;
+        if(await regPut(d))cloudDirty=false;
+      }
+    }
+  }catch(e){}
+  cloudBusy=false;
+}
+setInterval(()=>{if(cloudDirty&&curUser)cloudPush();},15000);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&cloudDirty&&curUser)cloudPush(); // דחיפה אחרונה כשעוזבים
+});
 function applyGift(g,target){
   if(!target){
     if(g.tro)addTro(g.tro|0);
@@ -4283,6 +4351,10 @@ function initAuth(){
   else{refreshUserChip();$('authOv').classList.remove('hidden');}
 }
 initAuth();
+if(!storageOK)setTimeout(()=>{
+  showToast(curUser?'⚠️ הדפדפן חוסם שמירה מקומית — נשמר בענן ☁️'
+                   :'⚠️ הדפדפן חוסם שמירה — התחברו עם משתמש כדי לשמור בענן ☁️');
+},2200);
 resize();
 refreshTro();
 lastT=performance.now();
