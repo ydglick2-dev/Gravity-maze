@@ -1,0 +1,72 @@
+{
+  "name": "Gravity Maze",
+  "short_name": "Gravity Maze",
+  "description": "משחק מבוך הטיה — 1000 שלבים, 100 עולמות, 3 פסילות לשלב. הטה את הטלפון, אל תיפול.",
+  "dir": "rtl",
+  "lang": "he",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05070c",
+  "theme_color": "#0b0f16",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "./index.html",
+  "shortcuts": [
+    {
+      "name": "אתגר יומי",
+      "url": "./index.html?mode=daily",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "תחרות חיה",
+      "url": "./index.html?mode=race",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "ריצה אינסופית",
+      "url": "./index.html?mode=run",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
