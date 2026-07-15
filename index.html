@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v34</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v35</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2966,7 +2966,10 @@ function finishLevel(){
   running=false;paused=false;
   const got=starGot.filter(Boolean).length;
   const s=session[levelIdx];
+  const firstClear=!s.done; // 🏆 גביעים על סיום ראשון — מזין את מסלול הגביעים (תיבה כל 25)
+  const troGain=firstClear?(((levelIdx+1)%10===0)?3:1):0;
   s.done=true;s.stars=Math.max(s.stars,got);
+  if(troGain)addTro(troGain);
   if(duelLive){
     send({t:'lwin'});duelLive=false;running=false;paused=false;hushRoll();
     endDuel(true,tr('סיימת את השלב ראשון! ⚔','You finished the level first! ⚔'));
@@ -2990,7 +2993,7 @@ function finishLevel(){
   $('medalBig').textContent=last?'🏆':medal;
   $('doneTitle').textContent=last?tr('סוף הפרק הראשון!','End of Chapter One!'):tr('שלב ','Level ')+(levelIdx+1)+tr(' הושלם!',' complete!');
   $('starsBig').textContent='★'.repeat(got)+'☆'.repeat(Math.max(0,starGot.length-got));
-  let txt=tr('זמן: ','Time: ')+fmt(lvTime)+' '+medal+(lvDeaths?tr(' · נפילות: ',' · falls: ')+lvDeaths:tr(' · בלי נפילות!',' · no falls!'))+' · +'+_cg+'🪙';
+  let txt=tr('זמן: ','Time: ')+fmt(lvTime)+' '+medal+(lvDeaths?tr(' · נפילות: ',' · falls: ')+lvDeaths:tr(' · בלי נפילות!',' · no falls!'))+' · +'+_cg+'🪙'+(troGain?' · +'+troGain+'🏆':'');
   if(last){
     const tot=session.reduce((a,x)=>a+x.stars,0);
     txt+=tr(' — כבשת את כל 100 השלבים! ',' — you conquered all 100 levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
@@ -4712,7 +4715,7 @@ async function checkGifts(){
   try{loc=JSON.parse(store().getItem(KEY)||'null');}catch(e){}
   const cs=saveScore(cl),ls=saveScore(loc);
   if(cl&&(cs>ls||(cs===ls&&(cl.t||0)>=((loc&&loc.t)||0)))){
-    applySave(cl);save();refreshTro();
+    applySave(cl);claimTroRoad();save();refreshTro();
     showToast(tr('☁️ ההתקדמות שלך נטענה מהענן','☁️ Your progress was loaded from the cloud'));
   }else if(rec){
     cloudDirty=true; // המקומית מתקדמת יותר (או שאין בענן) — נדחוף אותה
@@ -4746,7 +4749,7 @@ async function cloudPush(){
       const mine=saveBlob(),cl=d.users[curUser].sv;
       if(cl&&saveScore(cl)>saveScore(mine)){
         // בענן יש התקדמות גדולה יותר (מכשיר אחר) — לא דורסים, מושכים
-        applySave(cl);save();refreshTro();cloudDirty=false;
+        applySave(cl);claimTroRoad();save();refreshTro();cloudDirty=false;
         showToast(tr('☁️ נטענה התקדמות חדשה מהענן','☁️ Newer cloud progress loaded'));
       }else{
         d.users[curUser].sv=mine;
@@ -4936,6 +4939,7 @@ function initAuth(){
   else{refreshUserChip();$('authOv').classList.remove('hidden');}
 }
 initAuth();
+if(((troLife/25)|0)>troClaimed){claimTroRoad();save();refreshTro();} // תשלום-עבר בעלייה
 {const bm=document.getElementById('bootMsg');if(bm)bm.remove();} // המשחק עלה בהצלחה
 if(!storageOK)setTimeout(()=>{
   showToast(curUser?tr('⚠️ הדפדפן חוסם שמירה מקומית — נשמר בענן ☁️','⚠️ Browser blocks local saves — saving to cloud ☁️')
