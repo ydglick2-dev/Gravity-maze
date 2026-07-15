@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v42</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v43</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -316,7 +316,7 @@
     <button class="btn sec" id="admGiveGems" data-en="💎 Gems">💎 יהלומים</button>
   </div>
   <div class="row">
-    <input class="tin" id="admLevel" type="number" min="1" max="100" value="50" style="max-width:100px">
+    <input class="tin" id="admLevel" type="number" min="1" max="1000" value="50" style="max-width:100px">
     <button class="btn sec" id="admGiveLevel" data-en="🔓 Unlock up to level">🔓 פתח עד שלב</button>
   </div>
   <div class="row">
@@ -332,12 +332,38 @@
     <button class="btn sec" id="admResetPw" data-en="🔑 Reset password">🔑 אפס סיסמה</button>
   </div>
   <button class="btn sec" id="admResetUser" data-en="🗑 Reset player (everything)">🗑 איפוס שחקן (הכל)</button>
+  <button class="btn sec" id="admEditor" data-en="🧩 Custom level designer">🧩 עורך שלבים מותאמים</button>
   <div class="row">
     <button class="btn sec" id="admStars" data-en="⭐ 3★ everything">⭐ 3★ בהכל</button>
     <button class="btn sec" id="admAll" data-en="💎 Everything">💎 הכל ביחד</button>
   </div>
   <div id="admMsg" style="color:#7ae08a;font-weight:700;min-height:20px;font-size:13px"></div>
   <button class="btn sec" id="admBack" data-en="Back">חזרה</button>
+</div>
+
+<div class="overlay hidden" id="editorOv" style="z-index:56;background:rgba(6,8,14,.97)">
+  <h1 data-en="🧩 Level Designer">🧩 עורך שלבים</h1>
+  <div class="row" style="gap:6px">
+    <button class="chip on" id="edWall">🧱</button>
+    <button class="chip" id="edHole">🕳️</button>
+    <button class="chip" id="edStar">⭐</button>
+    <button class="chip" id="edStart">🟢</button>
+    <button class="chip" id="edGoal">🎯</button>
+    <button class="chip" id="edUndo">↩</button>
+    <button class="chip" id="edClear">🗑</button>
+  </div>
+  <canvas id="edCv" width="300" height="480" style="border-radius:12px;background:#12100a;box-shadow:0 0 0 2px rgba(255,200,107,.4);touch-action:none"></canvas>
+  <div class="row">
+    <span style="color:#aeb8c8;font-size:13px" data-en="replaces level">מחליף את שלב</span>
+    <input class="tin" id="edLvNum" type="number" min="1" max="1000" value="1" style="max-width:86px">
+  </div>
+  <div class="row">
+    <button class="btn sec" id="edTest" data-en="🎮 Test">🎮 נסה</button>
+    <button class="btn" id="edSend" data-en="💾 Send to player">💾 שלח לשחקן</button>
+  </div>
+  <button class="btn sec" id="edRestore" data-en="♻️ Restore the original level">♻️ החזר לשלב הרגיל</button>
+  <div id="edMsg" style="min-height:18px;font-size:12.5px;color:#ffd257;max-width:300px"></div>
+  <button class="btn sec" id="edBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="selectOv">
@@ -914,7 +940,12 @@ function genLevel(i){
 const N_LEVELS=1000;
 const LEVELS=[];for(let i=0;i<100;i++)LEVELS.push(genLevel(i));
 LEVELS.length=N_LEVELS;
-function ensureLv(i){i=Math.max(0,Math.min(N_LEVELS-1,i|0));if(!LEVELS[i])LEVELS[i]=genLevel(i);return LEVELS[i];}
+function ensureLv(i){
+  i=Math.max(0,Math.min(N_LEVELS-1,i|0));
+  if(customLevels[i])return customLevels[i]; // 🧩 שלב מותאם מהאדמין גובר על הרגיל
+  if(!LEVELS[i])LEVELS[i]=genLevel(i);
+  return LEVELS[i];
+}
 
 /* ---- אתגר יומי: seed מהתאריך ---- */
 function genDaily(ds){
@@ -1508,7 +1539,7 @@ function loadLevel(i){
   updateHud();
   const z=(levelIdx/10)|0;
   $('bWorld').textContent=customLv?(customLv._daily?tr('האתגר של היום',"Today's Challenge"):tr(customLv._world||'מיוחד','Special')):(tr('עולם ','World ')+(z+1)+' · '+zoneName(z));
-  $('bName').textContent=customLv?(customLv._daily?tr('אתגר יומי','Daily Challenge'):customLv.name):(lv.boss?tr(lv.name,BOSS_EN[lv.name]||lv.name):tr('שלב ','Level ')+(levelIdx+1));
+  $('bName').textContent=customLv?(customLv._daily?tr('אתגר יומי','Daily Challenge'):customLv.name):(lv.boss?tr(lv.name,BOSS_EN[lv.name]||lv.name):(lv.custom?lv.name:tr('שלב ','Level ')+(levelIdx+1)));
   $('banner').classList.add('show');
   clearTimeout($('banner')._t);
   $('banner')._t=setTimeout(()=>$('banner').classList.remove('show'),1500);
@@ -3100,6 +3131,16 @@ function finishLevel(){
     save();$('doneOv').classList.remove('hidden');return;
   }
   running=false;paused=false;
+  if(customLv&&!customLv._daily){ // 🧩 שלב בדיקה מהעורך — בלי התקדמות/פרסים
+    recStop(false);
+    $('medalBig').textContent='🧩';
+    $('doneTitle').textContent=tr('השלב המותאם הושלם!','Custom level complete!');
+    $('starsBig').textContent='★'.repeat(starGot.filter(Boolean).length);
+    $('doneText').textContent=tr('זמן: ','Time: ')+fmt(lvTime);
+    $('nextBtn').textContent=tr('לתפריט','To Menu');
+    $('doneOv').classList.remove('hidden');
+    return;
+  }
   const got=starGot.filter(Boolean).length;
   const s=session[levelIdx];
   const firstClear=!s.done; // 🏆 גביעים על סיום ראשון — מזין את מסלול הגביעים (תיבה כל 25)
@@ -3280,7 +3321,7 @@ function logEv(ty,a,b2){
   save();
   return e;
 }
-let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
+let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false,raceFrom=1,raceTo=5,duelFrom=1,duelTo=5,duelCur=1,duelOppLv=1;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
@@ -3308,6 +3349,7 @@ function saveBlob(){
     la:lossAcc,gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
     lg:gameLog.slice(0,30),
+    cl:customLevels,
     sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG};
 }
 function save(){
@@ -3352,6 +3394,7 @@ function applySave(d){
     stBossClean=!!d.bc;achEarned=Array.isArray(d.ac)?d.ac:[];
     friends=Array.isArray(d.fr)?d.fr.filter(x=>typeof x==='string').slice(0,50):[];
     gameLog=Array.isArray(d.lg)?d.lg.slice(0,30):[];
+    customLevels=(d.cl&&typeof d.cl==='object'&&!Array.isArray(d.cl))?d.cl:{};
     (d.s||[]).forEach((a,i)=>{if(!session[i])return;
       session[i].done=!!a[0];session[i].stars=a[1]|0;session[i].best=(a[2]|0)/10;});
     if(d.sens)SENS=d.sens/100;
@@ -3622,7 +3665,7 @@ function failLevel(){
   hushRoll();
   // 💔 קנס הפסד: -1🏆 · כל 10 גביעים שיורדים כך — נסגר שלב אחד
   let penTxt='';
-  if(trophies>0){
+  if(trophies>0&&!(customLv&&!customLv._daily)){
     trophies=Math.max(0,trophies-1);lossAcc++;refreshTro();
     penTxt=' · -1🏆';
     if(lossAcc>=10){
@@ -3634,8 +3677,11 @@ function failLevel(){
     }
     save();
   }
-  const _fe=logEv('fl',customLv?0:levelIdx+1);
-  recStop(true,customLv?0:levelIdx+1,id=>{if(id){_fe[4]=id;save();}});
+  if(customLv&&!customLv._daily)recStop(false);
+  else{
+    const _fe=logEv('fl',customLv?0:levelIdx+1);
+    recStop(true,customLv?0:levelIdx+1,id=>{if(id){_fe[4]=id;save();}});
+  }
   const isDaily=customLv&&customLv._daily;
   if(isDaily){dailyFail=customLv._daily;save();}
   playDeathFX(ball.x,ball.y,THEMES[L().th]);
@@ -5044,7 +5090,7 @@ function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   dailyLast='';dailyFail='';runBest=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
-  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];
+  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];customLevels={};
   session.forEach(s=>{s.done=false;s.stars=0;s.best=0;});
   cloudForce=true; // שהאיפוס ינצח את שומר-הדריסה של הענן
   refreshTro();
@@ -5053,6 +5099,8 @@ function applyGift(g,target){
   if(!target){
     if(g.rst)resetState();
     if(g.dnl)unlocked=Math.min(unlocked,Math.max(0,(g.dnl|0)-1));
+    if(g.clv&&g.clv.lv)customLevels[Math.max(0,g.clv.i|0)]=g.clv.lv;
+    if('clr' in g)delete customLevels[Math.max(0,g.clr|0)];
     if(g.tro)addTro(g.tro|0);
     if(g.co)coins+=g.co|0;
     if(g.gm)gems+=g.gm|0;
@@ -5069,6 +5117,9 @@ function applyGift(g,target){
   let d=null;try{d=JSON.parse(st.getItem('mazeU_'+target)||'null');}catch(e){}
   if(!d)d={v:2,un:0,tro:0,nm:target,s:[]};
   if(g.dnl)d.un=Math.min(d.un|0,Math.max(0,(g.dnl|0)-1));
+  if(g.clv&&g.clv.lv){d.cl=(d.cl&&typeof d.cl==='object')?d.cl:{};d.cl[Math.max(0,g.clv.i|0)]=g.clv.lv;}
+  if('clr' in g&&d.cl)delete d.cl[Math.max(0,g.clr|0)];
+  d.t=Date.now(); // שהשמירה המקומית תנצח את הענן בתיקו
   if(g.tro){d.tro=(d.tro|0)+(g.tro|0);d.tl=(d.tl|0)+(g.tro|0);}
   if(g.co)d.co=(d.co|0)+(g.co|0);
   if(g.gm)d.gm=(d.gm|0)+(g.gm|0);
@@ -5091,7 +5142,7 @@ async function admGive(g,label){
   }
   const st=store();
   const isLocal=st&&st.getItem('mazeU_'+t)!==null;
-  const needCloud=!!(g.rst||g.dnl); // פעולות מפחיתות חייבות לעדכן גם את הענן,
+  const needCloud=!!(g.rst||g.dnl)||('clr' in g); // פעולות מפחיתות חייבות לעדכן גם את הענן,
   // אחרת שומר-הדריסה משחזר את השמירה הישנה מהענן בכניסה הבאה
   if(isLocal){
     const ok=applyGift(g,t);
@@ -5111,6 +5162,7 @@ async function admGive(g,label){
   if(g.dnl&&d.users[t].sv){ // הורדת שלבים גם בשמירה שבענן
     d.users[t].sv.un=Math.min(d.users[t].sv.un|0,Math.max(0,(g.dnl|0)-1));
   }
+  if('clr' in g&&d.users[t].sv&&d.users[t].sv.cl)delete d.users[t].sv.cl[Math.max(0,g.clr|0)];
   const q=d.gifts[t]||{};
   if(g.tro)q.tro=(q.tro|0)+(g.tro|0);
   if(g.co)q.co=(q.co|0)+(g.co|0);
@@ -5119,6 +5171,8 @@ async function admGive(g,label){
   if(g.un)q.un=1;if(g.sk)q.sk=1;if(g.st)q.st=1;
   if(g.unl)q.unl=Math.max(q.unl|0,g.unl|0);
   if(g.dnl)q.dnl=g.dnl|0;
+  if(g.clv)q.clv=g.clv;
+  if('clr' in g)q.clr=g.clr|0;
   if(g.rst){q.rst=1;if(d.users[t])delete d.users[t].sv;} // מוחק גם את השמירה בענן
   d.gifts[t]=q;
   $('admMsg').textContent=(await regPut(d))
@@ -5198,6 +5252,125 @@ $('setRec').onclick=()=>{
   if(!recOn)recStop(false);
   syncSettings();
 };
+/* 🧩 עורך שלבים: האדמין מעצב שלב ושולח אותו לשחקן מסוים */
+let edLv=null,edTool='wall',edDrag=null,edOps=[];
+function edReset(){
+  edLv={custom:true,name:tr('⭐ שלב מותאם','⭐ Custom level'),th:0,force:1.15,par:30,
+    start:[.5,.92],goal:[.5,.07],walls:[],holes:[],stars:[]};
+  edOps=[];
+}
+edReset();
+const edC=$('edCv').getContext('2d');
+function edDraw(){
+  const W2=300,H2=480,c=edC;
+  c.clearRect(0,0,W2,H2);
+  c.fillStyle='#141008';c.fillRect(0,0,W2,H2);
+  c.strokeStyle='rgba(255,200,107,.13)';c.lineWidth=1;
+  for(let x=30;x<W2;x+=30){c.beginPath();c.moveTo(x,0);c.lineTo(x,H2);c.stroke();}
+  for(let y=30;y<H2;y+=30){c.beginPath();c.moveTo(0,y);c.lineTo(W2,y);c.stroke();}
+  for(const w of edLv.walls){
+    c.fillStyle='rgba(40,46,60,.95)';
+    c.fillRect(w[0]*W2,w[1]*H2,w[2]*W2,w[3]*H2);
+    c.strokeStyle='#ffc86b';c.strokeRect(w[0]*W2,w[1]*H2,w[2]*W2,w[3]*H2);
+  }
+  if(edDrag){
+    c.strokeStyle='#7ae0ff';
+    c.strokeRect(Math.min(edDrag.x0,edDrag.x1)*W2,Math.min(edDrag.y0,edDrag.y1)*H2,
+      Math.abs(edDrag.x1-edDrag.x0)*W2,Math.abs(edDrag.y1-edDrag.y0)*H2);
+  }
+  for(const hh of edLv.holes){
+    c.beginPath();c.arc(hh[0]*W2,hh[1]*H2,.045*W2,0,7);
+    c.fillStyle='#000';c.fill();
+    c.strokeStyle='#ff9e4d';c.stroke();
+  }
+  c.font='16px serif';c.textAlign='center';c.textBaseline='middle';
+  for(const s of edLv.stars)c.fillText('⭐',s[0]*W2,s[1]*H2);
+  c.beginPath();c.arc(edLv.start[0]*W2,edLv.start[1]*H2,.033*W2,0,7);
+  c.fillStyle='#7ae08a';c.fill();
+  c.beginPath();c.arc(edLv.goal[0]*W2,edLv.goal[1]*H2,.056*W2,0,7);
+  c.strokeStyle='#ffe9b8';c.setLineDash([5,4]);c.lineWidth=2;c.stroke();
+  c.setLineDash([]);c.lineWidth=1;
+}
+function edPos(e){
+  const r=$('edCv').getBoundingClientRect();
+  return {x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),
+          y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};
+}
+$('edCv').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  const p=edPos(e);
+  if(edTool==='wall')edDrag={x0:p.x,y0:p.y,x1:p.x,y1:p.y};
+  else if(edTool==='hole'){edLv.holes.push([p.x,p.y]);edOps.push('hole');}
+  else if(edTool==='star'){
+    if(edLv.stars.length<3){edLv.stars.push([p.x,p.y]);edOps.push('star');}
+    else showToast(tr('עד 3 כוכבים','Max 3 stars'));
+  }
+  else if(edTool==='start')edLv.start=[p.x,p.y];
+  else if(edTool==='goal')edLv.goal=[p.x,p.y];
+  edDraw();
+});
+$('edCv').addEventListener('pointermove',e=>{
+  if(!edDrag)return;
+  const p=edPos(e);
+  edDrag.x1=p.x;edDrag.y1=p.y;
+  edDraw();
+});
+window.addEventListener('pointerup',()=>{
+  if(!edDrag)return;
+  const x0=Math.min(edDrag.x0,edDrag.x1),x1=Math.max(edDrag.x0,edDrag.x1);
+  const y0=Math.min(edDrag.y0,edDrag.y1),y1=Math.max(edDrag.y0,edDrag.y1);
+  if(x1-x0>.03&&y1-y0>.02){edLv.walls.push([x0,y0,x1-x0,y1-y0]);edOps.push('wall');}
+  edDrag=null;edDraw();
+});
+[['edWall','wall'],['edHole','hole'],['edStar','star'],['edStart','start'],['edGoal','goal']].forEach(pair=>{
+  $(pair[0]).onclick=()=>{
+    edTool=pair[1];
+    ['edWall','edHole','edStar','edStart','edGoal'].forEach(k=>$(k).className='chip'+(k===pair[0]?' on':''));
+  };
+});
+$('edUndo').onclick=()=>{
+  const op=edOps.pop();
+  if(op==='wall')edLv.walls.pop();
+  else if(op==='hole')edLv.holes.pop();
+  else if(op==='star')edLv.stars.pop();
+  edDraw();
+};
+$('edClear').onclick=()=>{edReset();edDraw();};
+$('edTest').onclick=()=>{
+  const lv=JSON.parse(JSON.stringify(edLv));
+  if(!validateFix(lv,mulberry(7))){$('edMsg').textContent=tr('⚠️ אין דרך מההתחלה ליעד — פתחו מעבר','⚠️ No path from start to goal');return;}
+  $('editorOv').classList.add('hidden');
+  startRun(lv);
+};
+$('edSend').onclick=async()=>{
+  const t=($('admTarget').value||'').trim();
+  if(!t){$('edMsg').textContent=tr('כתבו שם שחקן יעד בפאנל האדמין (השדה העליון)','Set a target username in the admin panel first');return;}
+  const lv=JSON.parse(JSON.stringify(edLv));
+  if(!lv.walls.length&&!lv.holes.length){$('edMsg').textContent=tr('השלב ריק 🙂 הוסיפו קירות/חורים','Level is empty 🙂 add walls/holes');return;}
+  if(!validateFix(lv,mulberry(7))){$('edMsg').textContent=tr('⚠️ אין דרך מההתחלה ליעד — פתחו מעבר','⚠️ No path from start to goal');return;}
+  const n=Math.max(1,Math.min(1000,$('edLvNum').value|0||1));
+  $('edMsg').textContent='…';
+  await admGive({clv:{i:n-1,lv}},tr('שלב מותאם במקום שלב ','Custom level replacing level ')+n);
+  $('edMsg').textContent=$('admMsg').textContent;
+};
+$('edRestore').onclick=async()=>{
+  const t=($('admTarget').value||'').trim();
+  if(!t){$('edMsg').textContent=tr('כתבו שם שחקן יעד בפאנל האדמין','Set a target username in the admin panel first');return;}
+  const n=Math.max(1,Math.min(1000,$('edLvNum').value|0||1));
+  $('edMsg').textContent='…';
+  await admGive({clr:n-1},tr('החזרת שלב ','Restoring level ')+n+tr(' לרגיל',' to default'));
+  $('edMsg').textContent=$('admMsg').textContent;
+};
+$('admEditor').onclick=()=>{
+  $('adminOv').classList.add('hidden');
+  $('editorOv').classList.remove('hidden');
+  $('edMsg').textContent='';
+  edDraw();
+};
+$('edBack').onclick=()=>{
+  $('editorOv').classList.add('hidden');
+  $('adminOv').classList.remove('hidden');
+};
 $('adminBtn').onclick=async()=>{
   if(!isAdmin)return;
   $('menuOv').classList.add('hidden');$('adminOv').classList.remove('hidden');
@@ -5251,7 +5424,7 @@ $('admResetPw').onclick=async()=>{
 };
 $('admUnlock').onclick=()=>admGive({un:1},'כל השלבים');
 $('admGiveLevel').onclick=()=>{
-  const n=Math.max(1,Math.min(100,$('admLevel').value|0));
+  const n=Math.max(1,Math.min(1000,$('admLevel').value|0)); // עד 1000, לא רק 100
   admGive({unl:n},'פתיחה עד שלב '+n);
 };
 $('admSkins').onclick=()=>admGive({sk:1},'כל הסקינים');
