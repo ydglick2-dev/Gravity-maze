@@ -202,11 +202,12 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v33</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v34</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
       <div class="pill" id="lbChest">🎁 0</div>
+      <div class="pill" id="lbGem">💎 0</div>
       <div class="pill" id="lbOnline" style="display:none">🟢 0</div>
     </div>
   </div>
@@ -224,6 +225,7 @@
   <div class="pill" id="hudInfo"></div>
 </div>
 <div id="raceBar"><span id="oppInfo"></span></div>
+<div id="spWrap" style="display:none;position:fixed;left:10px;right:10px;bottom:calc(128px + env(safe-area-inset-bottom));z-index:7;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.55)"></div>
 <button class="btn sec" id="updBtn" data-en="↻ New version available — Update">↻ גרסה חדשה זמינה — עדכן</button>
 <button class="ic" id="setBtn" style="position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:25;display:none">⚙️</button>
 <div class="overlay hidden" id="settingsOv" style="z-index:24">
@@ -232,6 +234,12 @@
   <button class="btn sec" id="setSound"></button>
   <button class="btn sec" id="setMusic"></button>
   <button class="btn sec" id="setPerf"></button>
+  <div class="row">
+    <input class="tin" id="spInput" placeholder="קישור מספוטיפיי" data-en-ph="Spotify link" style="max-width:190px">
+    <button class="btn sec" id="spSet" data-en="🎧 Play">🎧 נגן</button>
+  </div>
+  <div style="font-size:11.5px;color:#8a94a8;max-width:290px" data-en="Paste a Spotify track/playlist/album link — a mini player appears in the lobby (tap it to start)">הדביקו קישור לשיר / פלייליסט / אלבום מספוטיפיי — נגן קטן יופיע בלובי (הקישו עליו כדי לנגן)</div>
+  <button class="btn sec" id="spClear" style="display:none" data-en="✕ Remove Spotify player">✕ הסרת נגן ספוטיפיי</button>
   <button class="btn" id="setBack" data-en="✕ Close">✕ סגירה</button>
 </div>
 <div id="hint" style="display:none"></div>
@@ -355,6 +363,7 @@
   </div>
   <div id="dropRow"></div>
   <div class="row">
+    <button class="btn" id="buyG1" data-en="💎 Chest · 20💎">💎 תיבה · 20💎</button>
     <button class="btn sec" id="buyC1" data-en="🎁 Chest · 300🪙">🎁 תיבה · 300🪙</button>
     <button class="btn sec" id="buyC3">🎁×3 · 800🪙</button>
   </div>
@@ -366,6 +375,7 @@
   <button class="btn sec" id="chestBack" data-en="Back">חזרה</button>
 </div>
 
+<canvas id="crateCv" style="display:none;position:fixed;inset:0;z-index:60;background:#05070c"></canvas>
 <video id="chestVid" playsinline preload="auto" src="chest-open.mp4"
   style="display:none;position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:60;background:#000"></video>
 <div id="prizeStage" style="display:none;position:fixed;inset:0;z-index:61;background:rgba(4,6,10,.93);
@@ -1101,27 +1111,63 @@ function hushRoll(){if(rollGain)rollGain.gain.value=0;}
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&AC&&AC.state!=='running'){try{AC.resume();}catch(e){}}
 });
-/* ---- 🎵 מוזיקה פרוצדורלית פר-עולם ---- */
-let musicGain=null,musInt=null,musBeat=0,musicOn=true;
+/* ---- 🎵 מוזיקת רקע v2: תופים, בס, פדים וארפג'יו — פר-עולם, גם בלובי ---- */
+let musicGain=null,musInt=null,musicOn=true;
 const MROOT=[220,261.6,174.6,196,146.8,233.1,207.7,164.8,155.6,246.9];
-const MSCALE=[0,3,5,7,10];
+let musNext=0,musStep=0,hatBuf=null;
+const MSPB=60/112/4; // 16th ב-112BPM
+function mnote(f,t0,dur,type,vol,slide){
+  try{
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t0);
+    if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,slide),t0+dur);
+    g.gain.setValueAtTime(0,t0);
+    g.gain.linearRampToValueAtTime(vol,t0+.012);
+    g.gain.exponentialRampToValueAtTime(.001,t0+dur);
+    o.connect(g);g.connect(musicGain);o.start(t0);o.stop(t0+dur+.03);
+  }catch(e){}
+}
+function mhat(t0,vol){
+  try{
+    if(!hatBuf){
+      const n=AC.sampleRate*.06|0;
+      hatBuf=AC.createBuffer(1,n,AC.sampleRate);
+      const d=hatBuf.getChannelData(0);
+      for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
+    }
+    const s=AC.createBufferSource(),g=AC.createGain(),f=AC.createBiquadFilter();
+    s.buffer=hatBuf;f.type='highpass';f.frequency.value=6500;
+    g.gain.value=vol;
+    s.connect(f);f.connect(g);g.connect(musicGain);s.start(t0);
+  }catch(e){}
+}
+const MELO=[0,3,5,7,10,12,7,5],MBASS=[0,0,10,7];
+function schedStep(st,t0){
+  let th=0;
+  try{th=running?(runMode?Math.max(0,runThemeIdx):((customLv?customLv.th:L().th)||0)):0;}catch(e){}
+  const root=MROOT[th%10],bar=(st>>4)&3,s16=st&15;
+  if(s16===0||s16===8)mnote(150,t0,.14,'sine',.42,45); // בעיטה
+  if(s16%4===2)mhat(t0,.1);
+  if(s16===4||s16===12)mhat(t0,.22);
+  if(s16%4===0)mnote(root/2*Math.pow(2,MBASS[bar]/12),t0,.4,'triangle',.15);
+  if(s16===0&&(bar&1)===0)
+    [0,3,7].forEach(iv=>mnote(root*Math.pow(2,iv/12),t0,MSPB*30,'sine',.045)); // פד
+  const rr=mulberry(th*977+((st>>1)&1023)*31);
+  if((s16&1)===0&&rr()<.62){
+    const iv=MELO[((st>>1)+th)&7]+(rr()<.22?12:0);
+    mnote(root*Math.pow(2,iv/12),t0,.2,'triangle',.05);
+  }
+}
 function startMusic(){
   if(musInt)return;
   musInt=setInterval(()=>{
-    if(!AC||muted||!musicOn)return;
+    if(!AC||muted||!musicOn||document.hidden)return;
     if(AC.state!=='running'){try{AC.resume();}catch(e){}return;}
-    const active=(running&&!paused);
-    if(!active)return;
-    let th=0;
-    try{th=runMode?Math.max(0,runThemeIdx):((customLv?customLv.th:L().th)||0);}catch(e){}
-    const root=MROOT[th%10];musBeat++;
-    if(musBeat%8===1)toneM(root/2,2.6,'triangle',.08);
-    if(musBeat%16===9)toneM(root*Math.pow(2,7/12)/2,2.6,'sine',.045);
-    if(musBeat%2===0){
-      const st=MSCALE[(Math.random()*MSCALE.length)|0]+12*((Math.random()*2)|0);
-      toneM(root*Math.pow(2,st/12),.6,'sine',.04);
-    }
-  },250);
+    if(running&&paused)return; // בהשהיה שקט
+    const now=AC.currentTime;
+    if(musNext<now)musNext=now+.06;
+    while(musNext<now+.3){schedStep(musStep,musNext);musStep++;musNext+=MSPB;}
+  },110);
 }
 const sfx={
   thud:i=>{tone(110,.07,'sine',Math.min(.5,i/700));tone(60,.1,'triangle',Math.min(.4,i/900));},
@@ -2414,6 +2460,8 @@ function syncLobbyUI(){
   $('lobbyUI').style.display=(!running&&!anyOv)?'flex':'none';
   $('hud').style.display=running?'flex':'none';
   $('setBtn').style.display=running?'none':'block'; // ⚙️ זמין בלובי ובתפריטים, לא בזמן משחק
+  const sw=$('spWrap');
+  if(sw&&sw._on)sw.style.transform=running?'translateX(-250vw)':'none'; // מוסתר בזמן משחק, האודיו ממשיך
   if(running)$('game3d').style.display='none';
 }
 function buildLobbyBg(){
@@ -3070,7 +3118,7 @@ async function api(path,body){
 }
 let KEY='mazeUltra100_v2';
 let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0,friends=[];
-let coins=0,troLife=0,chests=0,troClaimed=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
+let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
@@ -3093,7 +3141,7 @@ function saveBlob(){
   while(last>0&&!session[last].done&&!session[last].stars&&!session[last].best)last--;
   return {v:2,t:Date.now(),un:unlocked,tro:trophies,nm:myName,dl:dailyLast,
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
-    co:coins,tl:troLife,ch:chests,tc:troClaimed,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
+    co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
     ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,
     gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
@@ -3121,9 +3169,9 @@ function applySave(d){
     skinSel=skinOwned.includes(d.sk|0)?(d.sk|0):0;
     runBest=d.rb|0;
     if(d.co===undefined){ // מיגרציה: כלכלה ישנה → מטבעות
-      coins=(d.tro|0)*8;troLife=d.tro|0;troClaimed=(troLife/25)|0;chests=1;
+      coins=(d.tro|0)*8;gems=0;troLife=d.tro|0;troClaimed=(troLife/25)|0;chests=1;
     }else{
-      coins=d.co|0;troLife=d.tl|0;chests=d.ch|0;troClaimed=d.tc|0;
+      coins=d.co|0;gems=d.gm|0;troLife=d.tl|0;chests=d.ch|0;troClaimed=d.tc|0;
       dailyFail=d.df||'';qCyc=d.qc|0;qDate=d.qd||'';
       if(Array.isArray(d.qq))qProg=d.qq.map(n=>n|0);
       if(Array.isArray(d.qz))qDone=d.qz.map(x=>!!x);
@@ -3149,14 +3197,24 @@ function applySave(d){
   }catch(e){}
 }
 function refreshTro(){
-  $('troLine').textContent='🏆 '+trophies+'  ·  🪙 '+coins;
+  $('troLine').textContent='🏆 '+trophies+' · 🪙 '+coins+' · 💎 '+gems;
   $('lbTro').textContent='🏆 '+trophies;
   $('lbCoin').textContent='🪙 '+coins;
   $('lbChest').textContent='🎁 '+chests;
+  $('lbGem').textContent='💎 '+gems;
 }
 function addTro(n){
   trophies+=n;troLife+=n;
+  claimTroRoad();
   refreshTro();
+}
+/* 🏆 מסלול הגביעים: תיבה כל 25 גביעי-חיים — הובטח במסך התיבות ומעכשיו באמת מחולק */
+function claimTroRoad(){
+  const owed=((troLife/25)|0)-troClaimed;
+  if(owed>0){
+    troClaimed+=owed;chests+=owed;
+    showToast(tr('🏆 מסלול הגביעים: +','🏆 Trophy road: +')+owed+' 🎁');
+  }
 }
 /* 🦸 סקיני-כוח: נפתחים אוטומטית לפי התקדמות */
 const POWSKINS=[
@@ -3275,9 +3333,11 @@ function rollQuests(){
   const rnd=mulberry(parseInt(ds,10)*13+7);
   const idxs=[];
   while(idxs.length<QN)idxs.push((rnd()*QPOOL.length)|0);
-  qDefs=idxs.map(i=>{
+  qDefs=idxs.map((i,k)=>{
     const p=QPOOL[i],mult=1+((rnd()*4)|0)*.5;
-    return {ty:p.ty,target:Math.max(1,Math.round(p.base*mult)),rew:p.rew,txt:p.txt};
+    // עשרת הראשונים משלמים 🪙 · עשרת האחרונים משלמים 💎 (המטבע של התיבות)
+    return {ty:p.ty,target:Math.max(1,Math.round(p.base*mult)),rew:p.rew,
+            gem:k>=10?Math.max(2,Math.round(p.rew/30)):0,txt:p.txt};
   });
   // שמירות ישנות עקבו רק אחרי 3 — משלימים את מערכי המעקב ל-20
   while(qProg.length<QN)qProg.push(0);
@@ -3290,8 +3350,9 @@ function questAdd(ty,amt){
     if(qDone[i]||q.ty!==ty)return;
     qProg[i]=Math.min(q.target,qProg[i]+amt);
     if(qProg[i]>=q.target){
-      qDone[i]=true;addCoins(q.rew);qCyc++;
-      showToast(tr('📜 קווסט הושלם! +','📜 Quest complete! +')+q.rew+'🪙');
+      qDone[i]=true;qCyc++;
+      if(q.gem){gems+=q.gem;refreshTro();showToast(tr('📜 קווסט הושלם! +','📜 Quest complete! +')+q.gem+'💎');}
+      else{addCoins(q.rew);showToast(tr('📜 קווסט הושלם! +','📜 Quest complete! +')+q.rew+'🪙');}
       tone(740,.1,'sine',.3);setTimeout(()=>tone(1108,.18,'sine',.3),110);
       if(qCyc>=6){ // 6 השלמות = תיבה (הובטח במסך התיבות אך מעולם לא חולק)
         qCyc-=6;chests++;refreshTro();
@@ -3302,7 +3363,14 @@ function questAdd(ty,amt){
   });
   if(changed)save();
 }
-function addDailyWin(){/* תיבות נקנות בחנות התיבות בלבד */}
+function addDailyWin(){ // 6 הניצחונות הראשונים ביום מזכים ב-💎
+  const ds=todayStr();
+  if(dwD!==ds){dwD=ds;dwN=0;}
+  if(dwN<6){
+    dwN++;gems+=2;refreshTro();
+    setTimeout(()=>showToast(tr('🏅 ניצחון יומי ','🏅 Daily win ')+dwN+'/6 · +2💎'),700);
+  }
+}
 function dwResetStr(){
   const now=new Date();
   const mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,0);
@@ -3314,9 +3382,9 @@ function dwResetStr(){
 setInterval(()=>{
   const n=(dwD===todayStr())?dwN:0,t=dwResetStr();
   if(!$('questOv').classList.contains('hidden'))
-    $('dwLine').textContent=tr('🎁 תיבות יומיות: ','🎁 Daily chests: ')+n+'/6'+tr(' · איפוס בעוד ',' · resets in ')+t;
+    $('dwLine').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+n+'/6'+tr(' · איפוס בעוד ',' · resets in ')+t;
   if(!$('chestOv').classList.contains('hidden'))
-    $('chestDw').textContent=tr('🏅 ניצחונות יומיים: ','🏅 Daily wins: ')+n+'/6'+tr(' · איפוס בעוד ',' · resets in ')+t;
+    $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+n+'/6'+tr(' · איפוס בעוד ',' · resets in ')+t;
 },1000)
 function buildQuests(){
   rollQuests();
@@ -3327,11 +3395,11 @@ function buildQuests(){
     const pct=Math.min(100,qProg[i]/q.target*100);
     row.innerHTML='<span>'+(qDone[i]?'✅':'📜')+'</span><div><b>'+q.txt(q.target)+'</b>'+
       '<div class="qBarWrap"><div class="qBar" style="width:'+pct+'%"></div></div>'+
-      '<small>'+qProg[i]+'/'+q.target+'</small></div><span class="skPrice">+'+q.rew+'🪙</span>';
+      '<small>'+qProg[i]+'/'+q.target+'</small></div><span class="skPrice">+'+(q.gem?q.gem+'💎':q.rew+'🪙')+'</span>';
     g.appendChild(row);
   });
   $('questCyc').textContent=tr('עוד ','')+(6-qCyc)+tr(' השלמות = 🎁 תיבה',' more completions = 🎁 chest');
-  $('dwLine').textContent=tr('🎁 תיבות יומיות: ','🎁 Daily chests: ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
+  $('dwLine').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
 }
 const ACH=[
  {id:'a1', name:'צעד ראשון',   desc:'סיים את שלב 1',            en:['First Step','Finish level 1'],tro:2,  chk:()=>session[0]&&session[0].done},
@@ -4048,6 +4116,150 @@ function rollChest(){
   }
   return drops;
 }
+/* ---- 🎁 אנימציית תיבה תלת-ממדית (crate.glb) + זוהר + סאונד ---- */
+let crateGltf=null,crateRen=null;
+function loadGLTFLoader(cb){
+  if(typeof THREE!=='undefined'&&THREE.GLTFLoader)return cb(true);
+  if(typeof THREE==='undefined')return cb(false);
+  const s=document.createElement('script');
+  s.src='GLTFLoader.js';
+  s.onload=()=>cb(!!THREE.GLTFLoader);s.onerror=()=>cb(false);
+  document.head.appendChild(s);
+}
+function crateSfx(kind){
+  if(kind==='land'){tone(75,.2,'sine',.5,40);tone(170,.08,'triangle',.3);}
+  else if(kind==='tick'){tone(420,.05,'square',.14);}
+  else if(kind==='open'){
+    tone(58,.55,'sine',.55,34);
+    [880,1108,1318,1760,2217].forEach((f,i)=>setTimeout(()=>tone(f,.5,'sine',.2),80+i*90));
+    setTimeout(()=>tone(2637,.9,'sine',.13),620);
+  }
+}
+function playCrate(done){
+  if(!threeAllowed()||typeof THREE==='undefined')return false;
+  const cv=$('crateCv');
+  try{
+    if(!crateRen)crateRen=new THREE.WebGLRenderer({canvas:cv,antialias:false});
+  }catch(e){return false;}
+  const ren=crateRen;
+  ren.setPixelRatio(Math.min(window.devicePixelRatio||1,PERF?1.25:1.75));
+  ren.setSize(W,H);
+  cv.style.display='block';
+  let dead=false,fin=false;
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x070a12);
+  scene.fog=new THREE.Fog(0x070a12,9,30);
+  scene.add(new THREE.HemisphereLight(0xcfe0ff,0x241608,.95));
+  const dl=new THREE.DirectionalLight(0xfff0d0,.9);dl.position.set(3,6,4);scene.add(dl);
+  const pl=new THREE.PointLight(0xffd257,0,14);pl.position.set(0,1.4,0);scene.add(pl);
+  const glowSp=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(255,214,90,.95)'),transparent:true,opacity:0,depthWrite:false}));
+  glowSp.position.set(0,.8,0);glowSp.scale.set(.1,.1,1);scene.add(glowSp);
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(7,40),
+    new THREE.MeshLambertMaterial({color:0x0c111e}));
+  floor.rotation.x=-Math.PI/2;scene.add(floor);
+  const cam=new THREE.PerspectiveCamera(46,W/H,.1,60);
+  const finish=()=>{
+    if(fin)return;fin=true;dead=true;
+    cv.style.display='none';cv.onpointerdown=null;
+    done();
+  };
+  cv.onpointerdown=finish; // הקשה = דילוג
+  const start=(gltf)=>{
+    if(dead)return;
+    let root=null,mixer=null,act=null,clipDur=1.7,baseY=0;
+    if(gltf){
+      root=gltf.scene;
+      const box=new THREE.Box3().setFromObject(root);
+      const c=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3());
+      const s=1.7/Math.max(sz.x,sz.y,sz.z||1);
+      root.scale.setScalar(s);
+      root.position.set(-c.x*s,-c.y*s+(sz.y*s)/2,-c.z*s);
+      baseY=root.position.y;
+      scene.add(root);
+      if(gltf.animations&&gltf.animations.length){
+        mixer=new THREE.AnimationMixer(root);
+        act=mixer.clipAction(gltf.animations[0]);
+        clipDur=gltf.animations[0].duration||1.7;
+        act.setLoop(THREE.LoopOnce);act.clampWhenFinished=true;
+        act.paused=true;act.play();
+      }
+      /* 🕳 חור שחור בפתח התיבה: לוח לא-מואר צמוד מתחת למכסה — נראה כחלל ריק */
+      let lidMinY=Infinity;
+      const tb=new THREE.Box3();
+      root.traverse(o=>{if(o.isMesh&&/^Lid/.test(o.name||'')){tb.setFromObject(o);lidMinY=Math.min(lidMinY,tb.min.y);}});
+      const full=new THREE.Box3().setFromObject(root);
+      if(!isFinite(lidMinY))lidMinY=full.max.y-.12;
+      const cx2=(full.min.x+full.max.x)/2,cz2=(full.min.z+full.max.z)/2;
+      const holeTex=cvTex(128,(g)=>{
+        g.filter='blur(5px)';
+        g.fillStyle='#000';
+        g.beginPath();
+        const q=14,r2=20;
+        g.moveTo(q+r2,q);g.arcTo(128-q,q,128-q,128-q,r2);g.arcTo(128-q,128-q,q,128-q,r2);
+        g.arcTo(q,128-q,q,q,r2);g.arcTo(q,q,128-q,q,r2);g.closePath();g.fill();
+      });
+      const hole=new THREE.Mesh(
+        new THREE.PlaneGeometry((full.max.x-full.min.x)*.92,(full.max.z-full.min.z)*.92),
+        new THREE.MeshBasicMaterial({map:holeTex,transparent:true,depthWrite:false}));
+      hole.rotation.x=-Math.PI/2;
+      hole.position.set(cx2,lidMinY+.012,cz2);
+      scene.add(hole);root.attach(hole); // נצמד לתיבה (כולל קפיצת הנחיתה)
+      glowSp.position.set(cx2,lidMinY+.25,cz2);
+      pl.position.set(cx2,lidMinY+.7,cz2);
+    }
+    crateSfx('land');
+    if(navigator.vibrate)navigator.vibrate(25);
+    const t0=performance.now();
+    let last=t0,opened=false,ticked=0;
+    const openAt=.95,dur=openAt+clipDur+1.15;
+    const frame=(now)=>{
+      if(dead)return;
+      requestAnimationFrame(frame);
+      const t=(now-t0)/1000,dt2=Math.min(.05,(now-last)/1000);last=now;
+      if(mixer&&opened)mixer.update(dt2);
+      if(root){
+        const drop=Math.max(0,.3-t*1.3);
+        root.position.y=baseY+drop*drop*9;
+        if(t<openAt){
+          root.rotation.y=Math.sin(t*24)*.05*(1-t/openAt);
+          if(t>ticked+.3){ticked=t;crateSfx('tick');}
+        }else root.rotation.y*=.9;
+      }
+      if(t>=openAt&&!opened){
+        opened=true;
+        if(act)act.paused=false;
+        crateSfx('open');
+        if(navigator.vibrate)navigator.vibrate([20,40,80]);
+      }
+      if(opened){ // ✨ אפקט הזוהר של הפתיחה
+        const q=Math.min(1,(t-openAt)/Math.max(.6,clipDur));
+        pl.intensity=q<.5?q*7:Math.max(0,3.5-q*2.4);
+        const gs=.3+q*9;
+        glowSp.scale.set(gs,gs,1);
+        glowSp.material.opacity=q<.25?q*3.2:Math.max(0,.85-(q-.25)*1.05);
+      }
+      const a=t*.22;
+      cam.position.set(Math.sin(a)*4.6,2.4,Math.cos(a)*4.6);
+      cam.lookAt(0,.75,0);
+      cam.aspect=W/H;cam.updateProjectionMatrix();
+      ren.render(scene,cam);
+      if(t>=dur)finish();
+    };
+    requestAnimationFrame(frame);
+  };
+  loadGLTFLoader(ok=>{
+    if(dead)return;
+    if(!ok)return start(null);
+    if(crateGltf)return start(crateGltf);
+    try{
+      new THREE.GLTFLoader().load('crate.glb',
+        g=>{if(!dead){crateGltf=g;start(g);}},
+        undefined,
+        ()=>{if(!dead)start(null);});
+    }catch(e){start(null);}
+  });
+  return true;
+}
 let chestBusy=false;
 function openChest(){
   if(chestBusy)return;
@@ -4063,6 +4275,7 @@ function openChest(){
     vid.style.display='none';vid.ontimeupdate=null;vid.onended=null;vid.onerror=null;
     megaReveal(drops);
   };
+  if(playCrate(go))return;
   if(vid&&vid.src){
     vid.style.display='block';
     try{vid.currentTime=0;}catch(e){}
@@ -4081,8 +4294,8 @@ function megaReveal(drops){
     i++;
     if(i>=drops.length){
       st.style.display='none';st.onclick=null;
-      $('chestCount').textContent='🎁 '+chests;
-      $('chestBar').style.width='0%';
+      $('chestCount').textContent='🎁 '+chests+' · 💎 '+gems;
+      $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
       const row=$('dropRow');row.innerHTML='';
       drops.forEach(d=>{
         const card=document.createElement('div');
@@ -4110,21 +4323,29 @@ function megaReveal(drops){
   next();
 }
 $('chestBtn').onclick=()=>{
-  $('chestCount').textContent='🎁 '+chests;
+  claimTroRoad();save();refreshTro();
+  $('chestCount').textContent='🎁 '+chests+' · 💎 '+gems;
   $('dropRow').innerHTML='';
-  $('chestBar').style.width='0%';
+  $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
   $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
-  $('chestDw').textContent=tr('🏅 ניצחונות יומיים: ','🏅 Daily wins: ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
+  $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChests(n,cost){
   if(coins<cost){showToast(tr('חסרים ','Missing ')+(cost-coins)+tr('🪙 — השלימו קווסטים!','🪙 — complete quests!'));return;}
   coins-=cost;chests+=n;
-  $('chestCount').textContent='🎁 '+chests;
+  $('chestCount').textContent='🎁 '+chests+' · 💎 '+gems;
   showToast('🎁 +'+n+tr(' תיבות!',' chests!'));
   tone(880,.12,'sine',.3);
   save();refreshTro();
 }
+$('buyG1').onclick=()=>{
+  if(gems<20){showToast(tr('חסרים ','Missing ')+(20-gems)+tr('💎 — השלימו קווסטים ונצחו שלבים!','💎 — complete quests and win levels!'));return;}
+  gems-=20;chests++;
+  $('chestCount').textContent='🎁 '+chests+' · 💎 '+gems;
+  showToast('🎁 +1!');tone(880,.12,'sine',.3);
+  save();refreshTro();
+};
 $('buyC1').onclick=()=>buyChests(1,300);
 $('buyC3').onclick=()=>buyChests(3,800);
 $('chestOpen').onclick=openChest;
@@ -4599,7 +4820,28 @@ function applyLang(){
 }
 applyLang();
 /* ⚙️ מסך הגדרות */
+/* 🎧 נגן ספוטיפיי מוטמע (קישור מהמשתמש) */
+let spUrl='';try{spUrl=localStorage.getItem('mazeSpotify')||'';}catch(e){}
+function spEmbed(u){
+  let m=String(u).match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(track|playlist|album|artist|episode|show)\/([A-Za-z0-9]+)/);
+  if(!m)m=String(u).match(/spotify:(track|playlist|album|artist|episode|show):([A-Za-z0-9]+)/);
+  return m?('https://open.spotify.com/embed/'+m[1]+'/'+m[2]+'?theme=0'):null;
+}
+function applySpotify(){
+  const w=$('spWrap'),emb=spUrl&&spEmbed(spUrl);
+  w.innerHTML='';w._on=false;
+  if(emb){
+    const f=document.createElement('iframe');
+    f.src=emb;
+    f.allow='encrypted-media; autoplay; clipboard-write; fullscreen; picture-in-picture';
+    f.style.cssText='width:100%;height:80px;border:0;display:block;background:#121212';
+    w.appendChild(f);w._on=true;
+    w.style.display='block';
+  }else w.style.display='none';
+  $('spClear').style.display=emb?'':'none';
+}
 function syncSettings(){
+  $('spInput').value=spUrl;
   $('setLang').textContent=uiLang==='en'?'🌐 עברית':'🌐 English';
   $('setSound').textContent=(muted?'🔇 ':'🔊 ')+tr('צלילים: ','Sound: ')+(muted?tr('כבוי','off'):tr('פעיל','on'));
   $('setMusic').textContent='🎵 '+tr('מוזיקה: ','Music: ')+(musicOn?tr('פעיל','on'):tr('כבוי','off'));
@@ -4617,6 +4859,21 @@ $('setLang').onclick=()=>{
   location.reload();
 };
 $('setSound').onclick=()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';save();syncSettings();};
+$('spSet').onclick=()=>{
+  const u=($('spInput').value||'').trim();
+  if(!u||!spEmbed(u)){showToast(tr('קישור ספוטיפיי לא תקין','Invalid Spotify link'));return;}
+  spUrl=u;
+  try{localStorage.setItem('mazeSpotify',spUrl);}catch(e){}
+  if(musicOn){musicOn=false;syncToggles();save();} // לא לנגן כפול עם המוזיקה המובנית
+  applySpotify();syncSettings();
+  showToast(tr('🎧 הנגן נוסף ללובי — הקישו עליו כדי לנגן','🎧 Player added to the lobby — tap it to play'));
+};
+$('spClear').onclick=()=>{
+  spUrl='';
+  try{localStorage.removeItem('mazeSpotify');}catch(e){}
+  applySpotify();syncSettings();
+};
+applySpotify();
 $('setMusic').onclick=()=>{musicOn=!musicOn;syncToggles();save();syncSettings();};
 $('setPerf').onclick=()=>{cyclePerf();syncSettings();};
 $('adminBtn').onclick=()=>{
