@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v35</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v36</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -295,6 +295,7 @@
 
 <div class="overlay hidden" id="adminOv" style="z-index:55;background:rgba(8,10,18,.95)">
   <h1 data-en="🛠 Admin">🛠 אדמין</h1>
+  <div id="admNet" style="font-size:12.5px;font-weight:800;color:#aeb8c8">🌍 …</div>
   <p class="sub" data-en="Empty name = you · player on this device — instant. Remote player — receives on next login ☁️">שם ריק = אתה · שחקן במכשיר הזה — מיידי<br>שחקן רחוק — יקבל בכניסה הבאה שלו ☁️</p>
   <input class="tin" id="admTarget" maxlength="14" placeholder="שם משתמש יעד (ריק = אני)" data-en-ph="Target username (empty = me)" style="max-width:260px">
   <div class="row">
@@ -308,6 +309,10 @@
   <div class="row">
     <input class="tin" id="admChests" type="number" min="1" value="3" style="max-width:100px">
     <button class="btn sec" id="admGiveChests" data-en="🎁 Chests">🎁 תיבות</button>
+  </div>
+  <div class="row">
+    <input class="tin" id="admGems" type="number" min="1" value="60" style="max-width:100px">
+    <button class="btn sec" id="admGiveGems" data-en="💎 Gems">💎 יהלומים</button>
   </div>
   <div class="row">
     <input class="tin" id="admLevel" type="number" min="1" max="100" value="50" style="max-width:100px">
@@ -4767,6 +4772,7 @@ function applyGift(g,target){
   if(!target){
     if(g.tro)addTro(g.tro|0);
     if(g.co)coins+=g.co|0;
+    if(g.gm)gems+=g.gm|0;
     if(g.ch)chests+=g.ch|0;
     if(g.un)unlocked=LEVELS.length-1;
     if(g.unl)unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,(g.unl|0)-1));
@@ -4780,6 +4786,7 @@ function applyGift(g,target){
   if(!d)d={v:2,un:0,tro:0,nm:target,s:[]};
   if(g.tro){d.tro=(d.tro|0)+(g.tro|0);d.tl=(d.tl|0)+(g.tro|0);}
   if(g.co)d.co=(d.co|0)+(g.co|0);
+  if(g.gm)d.gm=(d.gm|0)+(g.gm|0);
   if(g.ch)d.ch=(d.ch|0)+(g.ch|0);
   if(g.un)d.un=LEVELS.length-1;
   if(g.unl)d.un=Math.max(d.un|0,Math.min(LEVELS.length-1,(g.unl|0)-1));
@@ -4807,6 +4814,7 @@ async function admGive(g,label){
   const q=d.gifts[t]||{};
   if(g.tro)q.tro=(q.tro|0)+(g.tro|0);
   if(g.co)q.co=(q.co|0)+(g.co|0);
+  if(g.gm)q.gm=(q.gm|0)+(g.gm|0);
   if(g.ch)q.ch=(q.ch|0)+(g.ch|0);
   if(g.un)q.un=1;if(g.sk)q.sk=1;if(g.st)q.st=1;
   if(g.unl)q.unl=Math.max(q.unl|0,g.unl|0);
@@ -4879,15 +4887,23 @@ $('spClear').onclick=()=>{
 applySpotify();
 $('setMusic').onclick=()=>{musicOn=!musicOn;syncToggles();save();syncSettings();};
 $('setPerf').onclick=()=>{cyclePerf();syncSettings();};
-$('adminBtn').onclick=()=>{
+$('adminBtn').onclick=async()=>{
   if(!isAdmin)return;
   $('menuOv').classList.add('hidden');$('adminOv').classList.remove('hidden');
   $('admMsg').textContent='';$('admTarget').value='';
+  // 🌍 אבחון חיבור לענן — כדי שיהיה ברור מיד אם שירות הרישום נפל
+  $('admNet').textContent=tr('🌍 בודק חיבור לענן…','🌍 Checking cloud…');
+  const d=await regFetch();
+  $('admNet').textContent=d
+    ?tr('🌍 ענן מחובר · ','🌍 Cloud online · ')+Object.keys(d.users).length+tr(' שחקנים רשומים',' registered players')
+    :tr('⚠️ אין חיבור לענן (textdb.dev) — מתנות רחוקות לא יעבדו','⚠️ Cloud unreachable (textdb.dev) — remote gifts will not work');
+  $('admNet').style.color=d?'#7ae08a':'#ff9e9e';
 };
 $('admBack').onclick=()=>{$('adminOv').classList.add('hidden');$('menuOv').classList.remove('hidden');};
 $('admGiveTro').onclick=()=>admGive({tro:Math.max(1,$('admTro').value|0)},'גביעים');
 $('admGiveCoins').onclick=()=>admGive({co:Math.max(1,$('admCoins').value|0)},'מטבעות');
 $('admGiveChests').onclick=()=>admGive({ch:Math.max(1,$('admChests').value|0)},'תיבות');
+$('admGiveGems').onclick=()=>admGive({gm:Math.max(1,$('admGems').value|0)},'יהלומים');
 $('admUnlock').onclick=()=>admGive({un:1},'כל השלבים');
 $('admGiveLevel').onclick=()=>{
   const n=Math.max(1,Math.min(100,$('admLevel').value|0));
@@ -4895,7 +4911,7 @@ $('admGiveLevel').onclick=()=>{
 };
 $('admSkins').onclick=()=>admGive({sk:1},'כל הסקינים');
 $('admStars').onclick=()=>admGive({st:1},'3★ בהכל');
-$('admAll').onclick=()=>admGive({tro:Math.max(1,$('admTro').value|0),co:Math.max(1,$('admCoins').value|0),ch:Math.max(1,$('admChests').value|0),un:1,sk:1,st:1},'החבילה המלאה');
+$('admAll').onclick=()=>admGive({tro:Math.max(1,$('admTro').value|0),co:Math.max(1,$('admCoins').value|0),ch:Math.max(1,$('admChests').value|0),gm:Math.max(1,$('admGems').value|0),un:1,sk:1,st:1},'החבילה המלאה');
 $('authLogin').onclick=()=>doAuth(false);
 $('authReg').onclick=()=>doAuth(true);
 $('authGuest').onclick=()=>{isAdmin=false;$('adminBtn').style.display='none';applyUser(null);$('authOv').classList.add('hidden');};
