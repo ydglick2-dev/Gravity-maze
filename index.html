@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v36</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v37</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -323,6 +323,15 @@
     <button class="btn sec" id="admSkins" data-en="🎨 All skins">🎨 כל הסקינים</button>
   </div>
   <div class="row">
+    <input class="tin" id="admLevelDown" type="number" min="1" max="1000" value="10" style="max-width:100px">
+    <button class="btn sec" id="admLockLevel" data-en="🔻 Lock after level">🔻 נעל אחרי שלב</button>
+  </div>
+  <div class="row">
+    <input class="tin" id="admNewPw" maxlength="24" placeholder="סיסמה חדשה" data-en-ph="New password" style="max-width:130px">
+    <button class="btn sec" id="admResetPw" data-en="🔑 Reset password">🔑 אפס סיסמה</button>
+  </div>
+  <button class="btn sec" id="admResetUser" data-en="🗑 Reset player (everything)">🗑 איפוס שחקן (הכל)</button>
+  <div class="row">
     <button class="btn sec" id="admStars" data-en="⭐ 3★ everything">⭐ 3★ בהכל</button>
     <button class="btn sec" id="admAll" data-en="💎 Everything">💎 הכל ביחד</button>
   </div>
@@ -369,8 +378,7 @@
   <div id="dropRow"></div>
   <div class="row">
     <button class="btn" id="buyG1" data-en="💎 Chest · 20💎">💎 תיבה · 20💎</button>
-    <button class="btn sec" id="buyC1" data-en="🎁 Chest · 300🪙">🎁 תיבה · 300🪙</button>
-    <button class="btn sec" id="buyC3">🎁×3 · 800🪙</button>
+    <button class="btn sec" id="buyG3" data-en="💎×3 · 50💎">💎×3 · 50💎</button>
   </div>
   <button class="btn" id="chestOpen" data-en="Open Chest">פתח תיבה</button>
   <div style="font-size:12.5px;color:#aeb8c8" data-en="Trophy road · a chest every 25🏆">מסלול גביעים · תיבה כל 25🏆</div>
@@ -3126,7 +3134,7 @@ async function api(path,body){
 }
 let KEY='mazeUltra100_v2';
 let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0,friends=[];
-let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
+let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
@@ -3142,7 +3150,7 @@ function store(){
            removeItem:k=>{delete memDB[k];}};
   }
 }
-let cloudDirty=false,cloudBusy=false;
+let cloudDirty=false,cloudBusy=false,cloudForce=false;
 function saveBlob(){
   // חיתוך הזנב הריק של 1000 השלבים — חוסך מקום בענן
   let last=session.length-1;
@@ -3151,7 +3159,7 @@ function saveBlob(){
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
     co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
     ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,
-    gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
+    la:lossAcc,gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
     sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG};
 }
@@ -3192,6 +3200,7 @@ function applySave(d){
       dSel=dOw.includes(d.ds2|0)?(d.ds2|0):0;
     }
     ghostOn=d.gh!==0;musicOn=d.mu2!==0;
+    lossAcc=d.la|0;
     stFalls=d.fd|0;stTime=d.tm|0;stDailies=d.dd|0;stRaceWins=d.rw|0;
     stBossClean=!!d.bc;achEarned=Array.isArray(d.ac)?d.ac:[];
     friends=Array.isArray(d.fr)?d.fr.filter(x=>typeof x==='string').slice(0,50):[];
@@ -3458,6 +3467,20 @@ function failLevel(){
     return;
   }
   hushRoll();
+  // 💔 קנס הפסד: -1🏆 · כל 10 גביעים שיורדים כך — נסגר שלב אחד
+  let penTxt='';
+  if(trophies>0){
+    trophies=Math.max(0,trophies-1);lossAcc++;refreshTro();
+    penTxt=' · -1🏆';
+    if(lossAcc>=10){
+      lossAcc-=10;
+      if(unlocked>0){
+        unlocked=Math.max(0,unlocked-1);
+        penTxt+=tr(' · 📉 ירדת שלב!',' · 📉 level down!');
+      }
+    }
+    save();
+  }
   const isDaily=customLv&&customLv._daily;
   if(isDaily){dailyFail=customLv._daily;save();}
   playDeathFX(ball.x,ball.y,THEMES[L().th]);
@@ -3467,7 +3490,7 @@ function failLevel(){
       customLv=null;syncLobbyUI();
       showResult('🔒',tr('האתגר ננעל להיום','Locked for today'),tr('שלוש נפילות — האתגר היומי נעול עד מחר. מחר מחכה אתגר חדש!','Three falls — the daily challenge is locked until tomorrow. A new one awaits!'));
     }else{
-      $('failText').textContent=tr('שלב ','Level ')+(levelIdx+1)+tr(' — שלוש נפילות. קורה גם לטובים ביותר.',' — three falls. Happens to the best.');
+      $('failText').textContent=tr('שלב ','Level ')+(levelIdx+1)+tr(' — שלוש נפילות. קורה גם לטובים ביותר.',' — three falls. Happens to the best.')+penTxt;
       $('failOv').classList.remove('hidden');
     }
   });
@@ -3831,6 +3854,11 @@ function endDuel(win,detail){
   runMode=false;runLive=false;running=false;hushRoll();
   $('raceBar').style.display='none';
   if(win){addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();}
+  else{ // 🏳 הפסד בתחרות עולה 10 גביעים
+    const b4=trophies;
+    trophies=Math.max(0,trophies-10);
+    if(b4>trophies){detail+=' · -'+(b4-trophies)+'🏆';refreshTro();}
+  }
   checkAch();save();refreshTro();
   showResult(win?'🏆':'🥈',win?tr('ניצחת! +10🏆','You won! +10🏆'):tr('הפסדת הפעם','Lost this time'),
     detail+(win?tr(' · סה"כ ',' · total ')+trophies+'🏆':''));
@@ -4126,6 +4154,14 @@ function rollChest(){
 }
 /* ---- 🎁 אנימציית תיבה תלת-ממדית (crate.glb) + זוהר + סאונד ---- */
 let crateGltf=null,crateRen=null;
+function ensureThree(cb){ // סצנת התיבה קלה — נטענת גם במכשירים "חלשים"
+  if(typeof THREE!=='undefined')return cb(true);
+  const s=document.createElement('script');
+  s.src='three.min.js';
+  s.onload=()=>cb(typeof THREE!=='undefined');
+  s.onerror=()=>cb(false);
+  document.head.appendChild(s);
+}
 function loadGLTFLoader(cb){
   if(typeof THREE!=='undefined'&&THREE.GLTFLoader)return cb(true);
   if(typeof THREE==='undefined')return cb(false);
@@ -4144,7 +4180,7 @@ function crateSfx(kind){
   }
 }
 function playCrate(done){
-  if(!threeAllowed()||typeof THREE==='undefined')return false;
+  if(typeof THREE==='undefined')return false;
   const cv=$('crateCv');
   try{
     if(!crateRen)crateRen=new THREE.WebGLRenderer({canvas:cv,antialias:false});
@@ -4283,16 +4319,20 @@ function openChest(){
     vid.style.display='none';vid.ontimeupdate=null;vid.onended=null;vid.onerror=null;
     megaReveal(drops);
   };
-  if(playCrate(go))return;
-  if(vid&&vid.src){
-    vid.style.display='block';
-    try{vid.currentTime=0;}catch(e){}
-    vid.ontimeupdate=()=>{if(vid.currentTime>=7)go();};
-    vid.onended=go;vid.onerror=go;
-    const pr=vid.play();
-    if(pr&&pr.catch)pr.catch(go);
-    setTimeout(go,7800);
-  }else go();
+  const videoFallback=()=>{
+    if(vid&&vid.src){
+      vid.style.display='block';
+      try{vid.currentTime=0;}catch(e){}
+      vid.ontimeupdate=()=>{if(vid.currentTime>=7)go();};
+      vid.onended=go;vid.onerror=go;
+      const pr=vid.play();
+      if(pr&&pr.catch)pr.catch(go);
+      setTimeout(go,7800);
+    }else go();
+  };
+  ensureThree(ok=>{
+    if(!ok||!playCrate(go))videoFallback();
+  });
 }
 function megaReveal(drops){
   const st=$('prizeStage');
@@ -4339,23 +4379,16 @@ $('chestBtn').onclick=()=>{
   $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
-function buyChests(n,cost){
-  if(coins<cost){showToast(tr('חסרים ','Missing ')+(cost-coins)+tr('🪙 — השלימו קווסטים!','🪙 — complete quests!'));return;}
-  coins-=cost;chests+=n;
+function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
+  if(gems<cost){showToast(tr('חסרים ','Missing ')+(cost-gems)+tr('💎 — השלימו קווסטים ונצחו שלבים!','💎 — complete quests and win levels!'));return;}
+  gems-=cost;chests+=n;
   $('chestCount').textContent='🎁 '+chests+' · 💎 '+gems;
-  showToast('🎁 +'+n+tr(' תיבות!',' chests!'));
+  showToast('🎁 +'+n+'!');
   tone(880,.12,'sine',.3);
   save();refreshTro();
 }
-$('buyG1').onclick=()=>{
-  if(gems<20){showToast(tr('חסרים ','Missing ')+(20-gems)+tr('💎 — השלימו קווסטים ונצחו שלבים!','💎 — complete quests and win levels!'));return;}
-  gems-=20;chests++;
-  $('chestCount').textContent='🎁 '+chests+' · 💎 '+gems;
-  showToast('🎁 +1!');tone(880,.12,'sine',.3);
-  save();refreshTro();
-};
-$('buyC1').onclick=()=>buyChests(1,300);
-$('buyC3').onclick=()=>buyChests(3,800);
+$('buyG1').onclick=()=>buyChestsGem(1,20);
+$('buyG3').onclick=()=>buyChestsGem(3,50);
 $('chestOpen').onclick=openChest;
 $('chestBack').onclick=()=>{$('chestOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('boardBtn').onclick=async()=>{
@@ -4752,13 +4785,13 @@ async function cloudPush(){
     const d=await regFetch();
     if(d&&d.users[curUser]){
       const mine=saveBlob(),cl=d.users[curUser].sv;
-      if(cl&&saveScore(cl)>saveScore(mine)){
+      if(!cloudForce&&cl&&saveScore(cl)>saveScore(mine)){
         // בענן יש התקדמות גדולה יותר (מכשיר אחר) — לא דורסים, מושכים
         applySave(cl);claimTroRoad();save();refreshTro();cloudDirty=false;
         showToast(tr('☁️ נטענה התקדמות חדשה מהענן','☁️ Newer cloud progress loaded'));
       }else{
         d.users[curUser].sv=mine;
-        if(await regPut(d))cloudDirty=false;
+        if(await regPut(d)){cloudDirty=false;cloudForce=false;}
       }
     }
   }catch(e){}
@@ -4768,8 +4801,20 @@ setInterval(()=>{if(cloudDirty&&curUser)cloudPush();},15000);
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden&&cloudDirty&&curUser)cloudPush(); // דחיפה אחרונה כשעוזבים
 });
+function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
+  unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;
+  dailyLast='';dailyFail='';runBest=0;
+  skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
+  qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
+  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];
+  session.forEach(s=>{s.done=false;s.stars=0;s.best=0;});
+  cloudForce=true; // שהאיפוס ינצח את שומר-הדריסה של הענן
+  refreshTro();
+}
 function applyGift(g,target){
   if(!target){
+    if(g.rst)resetState();
+    if(g.dnl)unlocked=Math.min(unlocked,Math.max(0,(g.dnl|0)-1));
     if(g.tro)addTro(g.tro|0);
     if(g.co)coins+=g.co|0;
     if(g.gm)gems+=g.gm|0;
@@ -4782,8 +4827,10 @@ function applyGift(g,target){
     return true;
   }
   const st=store();if(!st)return false;
+  if(g.rst){try{st.setItem('mazeU_'+target,JSON.stringify({v:2,nm:target,s:[]}));return true;}catch(e){return false;}}
   let d=null;try{d=JSON.parse(st.getItem('mazeU_'+target)||'null');}catch(e){}
   if(!d)d={v:2,un:0,tro:0,nm:target,s:[]};
+  if(g.dnl)d.un=Math.min(d.un|0,Math.max(0,(g.dnl|0)-1));
   if(g.tro){d.tro=(d.tro|0)+(g.tro|0);d.tl=(d.tl|0)+(g.tro|0);}
   if(g.co)d.co=(d.co|0)+(g.co|0);
   if(g.gm)d.gm=(d.gm|0)+(g.gm|0);
@@ -4818,6 +4865,8 @@ async function admGive(g,label){
   if(g.ch)q.ch=(q.ch|0)+(g.ch|0);
   if(g.un)q.un=1;if(g.sk)q.sk=1;if(g.st)q.st=1;
   if(g.unl)q.unl=Math.max(q.unl|0,g.unl|0);
+  if(g.dnl)q.dnl=g.dnl|0;
+  if(g.rst){q.rst=1;if(d.users[t])delete d.users[t].sv;} // מוחק גם את השמירה בענן
   d.gifts[t]=q;
   $('admMsg').textContent=(await regPut(d))?('✓ '+label+' — ממתין ל־'+t+' בענן ☁️'):'שגיאת רשת — נסו שוב';
 }
@@ -4904,6 +4953,33 @@ $('admGiveTro').onclick=()=>admGive({tro:Math.max(1,$('admTro').value|0)},'גב�
 $('admGiveCoins').onclick=()=>admGive({co:Math.max(1,$('admCoins').value|0)},'מטבעות');
 $('admGiveChests').onclick=()=>admGive({ch:Math.max(1,$('admChests').value|0)},'תיבות');
 $('admGiveGems').onclick=()=>admGive({gm:Math.max(1,$('admGems').value|0)},'יהלומים');
+$('admLockLevel').onclick=()=>{
+  const n=Math.max(1,Math.min(1000,$('admLevelDown').value|0));
+  admGive({dnl:n},tr('נעילה אחרי שלב ','Lock after level ')+n);
+};
+$('admResetUser').onclick=()=>{
+  const t=($('admTarget').value||'').trim()||curUser;
+  if(!confirm(tr('לאפס את כל ההתקדמות של ','Reset ALL progress of ')+(t||'')+'?'))return;
+  admGive({rst:1},tr('איפוס מלא','Full reset'));
+};
+$('admResetPw').onclick=async()=>{
+  const t=($('admTarget').value||'').trim();
+  const np=$('admNewPw').value||'';
+  if(!t)return $('admMsg').textContent=tr('כתבו שם משתמש יעד','Enter a target username');
+  if(np.length<4)return $('admMsg').textContent=tr('סיסמה חדשה: לפחות 4 תווים','New password: at least 4 chars');
+  $('admMsg').textContent='…';
+  const d=await regFetch();
+  if(!d)return $('admMsg').textContent=tr('איפוס סיסמה דורש אינטרנט','Password reset needs internet');
+  if(!d.users[t])return $('admMsg').textContent='"'+t+'" '+tr('לא רשום בעולם','is not registered');
+  const salt=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+  const rec={s:salt,h:await pwHash(t,np,salt),c:d.users[t].c||Date.now()};
+  if(d.users[t].sv)rec.sv=d.users[t].sv;
+  d.users[t]=rec;
+  if(!await regPut(d))return $('admMsg').textContent=tr('שגיאת רשת — נסו שוב','Network error — try again');
+  const lu=getUsers();
+  if(lu[t]){lu[t]=rec;putUsers(lu);}
+  $('admMsg').textContent='🔑 '+t+tr(' — הסיסמה החדשה: ',' — new password: ')+np;
+};
 $('admUnlock').onclick=()=>admGive({un:1},'כל השלבים');
 $('admGiveLevel').onclick=()=>{
   const n=Math.max(1,Math.min(100,$('admLevel').value|0));
