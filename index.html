@@ -8,6 +8,7 @@
 <title>Gravity Maze</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b0f16">
+<meta name="color-scheme" content="dark">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,8 +16,16 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
       user-select:none; -webkit-user-select:none; }
+  :root { color-scheme:dark; }
   html,body { height:100%; overflow:hidden; touch-action:none; overscroll-behavior:none;
-      background:#05070c; font-family:-apple-system,"Segoe UI",Arial,sans-serif; }
+      background:#05070c; font-family:-apple-system,"Segoe UI",Arial,sans-serif;
+      -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  /* 📱 מובייל: בלי טשטוש-רקע — יקר מאוד ב-WebView של אנדרואיד ונחשב מחדש כל פריים */
+  @media (pointer:coarse){
+    .overlay { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; background:rgba(4,6,12,.94) !important; }
+    .pill, .ic, #raceBar, .btn.sec { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+    .pill, .ic { background:rgba(8,12,20,.85) !important; }
+  }
   #stage { position:fixed; inset:0; perspective:1000px; }
   #game { position:absolute; inset:0; will-change:transform; }
 
@@ -193,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v32</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v33</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -555,6 +564,7 @@ function loadThree(){
   document.head.appendChild(s);
 }
 const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MOBILE=matchMedia('(pointer:coarse)').matches; // טרנספורם CSS פר-פריים יקר מדי במובייל
 const TAU=Math.PI*2;
 
 /* ============ THEMES · 10 עולמות ============ */
@@ -880,7 +890,7 @@ let board={x:0,y:0,w:0,h:0}, ball={x:0,y:0,vx:0,vy:0,r:10,rot:0,squash:0,sqa:0};
 let falling=0,fallPt=null,winPause=0,running=false,paused=false;
 let tiltX=0,tiltY=0,dTiltX=0,dTiltY=0;
 let rawB=28,rawG=0,neutB=28,neutG=0,SENS=1;
-let gotOrientation=false,touchMode=false,touchOrigin=null;
+let gotOrientation=false,touchMode=false,touchOrigin=null,touchLast=null;
 let lvTime=0,lvDeaths=0,starGot=[],keyGot=[],swState=[],portalCd=0,shake=0;
 let flashW=0,flashR=0,comboN=0,comboT=0;
 let bgCanvas=null,panelCanvas=null,cachedTh=-1;
@@ -1145,6 +1155,10 @@ function drawGlow(x,y,size,color,alpha){
 /* ============ SIZING & CACHED LAYERS ============ */
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,PERF?(TIER==='low'?1.25:1.5):2);
+  { // תקציב פיקסלים: קנבס ענק = קרטוע באנדרואיד
+    const mpx=PERF?1.6e6:2.4e6,px=window.innerWidth*window.innerHeight*DPR*DPR;
+    if(px>mpx)DPR=Math.max(1,Math.sqrt(mpx/(window.innerWidth*window.innerHeight)));
+  }
   W=window.innerWidth;H=window.innerHeight;
   canvas.width=W*DPR;canvas.height=H*DPR;
   canvas.style.width=W+'px';canvas.style.height=H+'px';
@@ -1157,7 +1171,7 @@ function resize(){
   buildLayers(th0);
   initAmbient(th0);
   buildLobbyBg();
-  if(T3){T3.ren.setSize(W,H);T3.ren.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  if(T3){T3.ren.setSize(W,H);T3.ren.setPixelRatio(Math.min(window.devicePixelRatio||1,PERF?1.25:1.75));
     T3.cam.aspect=W/H;T3.cam.updateProjectionMatrix();}
 }
 window.addEventListener('resize',resize);
@@ -1213,7 +1227,7 @@ function rr(c,x,y,w,h,rad){
 }
 function initAmbient(th){
   ambient.length=0;
-  for(let i=0;i<38;i++)ambient.push({
+  for(let i=0;i<(PERF?16:38);i++)ambient.push({
     x:Math.random()*W,y:Math.random()*H,
     s:.6+Math.random()*1.8,sp:8+Math.random()*26,
     ph:Math.random()*TAU,a:.15+Math.random()*.3});
@@ -1349,9 +1363,9 @@ function onOrient(e){
   if(o===90){const t=gx;gx=gy;gy=-t;}
   else if(o===-90||o===270){const t=gx;gx=-gy;gy=t;}
   rawG=gx;rawB=gy;
-  const MAX=26;
-  tiltX=Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS));
-  tiltY=Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS));
+  const MAX=26,dz=v=>Math.abs(v)<.035?0:v;
+  tiltX=dz(Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS)));
+  tiltY=dz(Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS)));
 }
 let sensorBound=false,sensorHinted=false;
 async function enableSensors(){
@@ -1370,7 +1384,7 @@ async function enableSensors(){
   setTimeout(()=>{
     if(!gotOrientation){
       touchMode=true;
-      $('hint').textContent=tr('אין גישה לחיישן כאן — גרור אצבע כדי להטות. להטיה אמיתית פתח דרך אתר (HTTPS) בכרום','No tilt sensor here — drag a finger to steer. For real tilt open via HTTPS in Chrome');
+      $('hint').textContent=tr('🕹 אין גישה לחיישן באתר הזה — גררו אצבע על המסך (ג\'ויסטיק). להטיה אמיתית פתחו את המשחק ישירות בכרום','🕹 No tilt sensor on this site — drag a finger (joystick). For real tilt open the game directly in Chrome');
     }else{
       $('hint').textContent=tr('הטה את הטלפון בעדינות · ⏸ ← 🎯 כיול אם הכיוון עקום','Tilt gently · ⏸ → 🎯 calibrate if it drifts');
       setTimeout(()=>{$('hint').style.display='none';},4500);
@@ -1402,14 +1416,16 @@ const effX=()=>Math.max(-1,Math.min(1,tiltX+kbX*.9));
 const effY=()=>Math.max(-1,Math.min(1,tiltY+kbY*.9));
 canvas.addEventListener('touchstart',e=>{
   touchOrigin={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  touchLast={x:touchOrigin.x,y:touchOrigin.y};
 },{passive:true});
 canvas.addEventListener('touchmove',e=>{
   if(!touchOrigin||!touchMode)return;
-  tiltX=Math.max(-1,Math.min(1,(e.touches[0].clientX-touchOrigin.x)/90*SENS));
-  tiltY=Math.max(-1,Math.min(1,(e.touches[0].clientY-touchOrigin.y)/90*SENS));
+  touchLast={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  tiltX=Math.max(-1,Math.min(1,(e.touches[0].clientX-touchOrigin.x)/70*SENS));
+  tiltY=Math.max(-1,Math.min(1,(e.touches[0].clientY-touchOrigin.y)/70*SENS));
 },{passive:true});
 canvas.addEventListener('touchend',()=>{
-  touchOrigin=null;if(touchMode){tiltX=0;tiltY=0;}
+  touchOrigin=null;touchLast=null;if(touchMode){tiltX=0;tiltY=0;}
 },{passive:true});
 
 /* ============ PARTICLES ============ */
@@ -1698,6 +1714,26 @@ function physics(dt,t){
 }
 
 /* ============ DRAW ============ */
+/* 🕹 ג'ויסטיק וירטואלי — מוצג רק במצב מגע (כשאין גישה לחיישן ההטיה) */
+function drawJoystick(){
+  if(!(touchMode&&touchOrigin&&touchLast))return;
+  const maxR=56;
+  let dx=touchLast.x-touchOrigin.x,dy=touchLast.y-touchOrigin.y;
+  const d=Math.hypot(dx,dy);
+  if(d>maxR){dx*=maxR/d;dy*=maxR/d;}
+  ctx.save();
+  ctx.globalAlpha=.3;
+  ctx.beginPath();ctx.arc(touchOrigin.x,touchOrigin.y,maxR,0,TAU);
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+  ctx.globalAlpha=.15;
+  ctx.beginPath();ctx.arc(touchOrigin.x,touchOrigin.y,maxR,0,TAU);
+  ctx.fillStyle='#fff';ctx.fill();
+  ctx.globalAlpha=.6;
+  ctx.beginPath();ctx.arc(touchOrigin.x+dx,touchOrigin.y+dy,20,0,TAU);
+  ctx.fillStyle='rgba(255,255,255,.35)';ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.restore();
+}
 function drawWall(r,T){
   ctx.save();
   rr(ctx,r.x,r.y,r.w,r.h,4);ctx.clip();
@@ -1744,10 +1780,14 @@ function draw(t){
   // ice
   for(const z of(L().ice||[])){
     const r=R(z);
-    const ig=ctx.createLinearGradient(r.x,r.y,r.x+r.w,r.y+r.h);
-    ig.addColorStop(0,'rgba(150,220,255,.16)');ig.addColorStop(.5,'rgba(120,190,235,.09)');
-    ig.addColorStop(1,'rgba(170,230,255,.16)');
-    ctx.fillStyle=ig;ctx.fillRect(r.x,r.y,r.w,r.h);
+    if(PERF)ctx.fillStyle='rgba(150,220,255,.12)';
+    else{
+      const ig=ctx.createLinearGradient(r.x,r.y,r.x+r.w,r.y+r.h);
+      ig.addColorStop(0,'rgba(150,220,255,.16)');ig.addColorStop(.5,'rgba(120,190,235,.09)');
+      ig.addColorStop(1,'rgba(170,230,255,.16)');
+      ctx.fillStyle=ig;
+    }
+    ctx.fillRect(r.x,r.y,r.w,r.h);
     ctx.globalAlpha=.2;ctx.strokeStyle='#cfefff';ctx.lineWidth=1;
     for(let i=0;i<4;i++){
       const sx=r.x+r.w*(i+.5)/4;
@@ -1973,6 +2013,7 @@ function draw(t){
   }
   ctx.restore(); // clip
   ctx.restore(); // shake
+  drawJoystick();
 
   if(flashW>0){ctx.fillStyle='rgba(255,250,235,'+flashW*.55+')';ctx.fillRect(0,0,W,H);}
   if(flashR>0){
@@ -2438,7 +2479,7 @@ function lobbyFrame(dt,t){
     canvas.style.transform='';
     lobbyOverlay(t);
   }else{
-    if(!REDUCED&&!PERF)canvas.style.transform='rotateY('+(dTiltX*3)+'deg)';
+    if(!REDUCED&&!PERF&&!MOBILE)canvas.style.transform='rotateY('+(dTiltX*3)+'deg)';
     lobbyDraw(t);
   }
 }
@@ -2490,7 +2531,7 @@ function init3D(){
   if(typeof THREE==='undefined')return null;
   const cv=$('game3d');
   const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true});
-  ren.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
+  ren.setPixelRatio(Math.min(window.devicePixelRatio||1,PERF?1.25:1.75));
   ren.setSize(W,H);
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0x070d1e);
@@ -2803,6 +2844,14 @@ function loop(ts){
   const dtRaw=Math.min(.033,dtReal);
   lastT=ts;
   if(paused)return;
+  // 🔍 גלאי קרטוע: במצב אוטו, אם ה-FPS צונח — עוברים למצב ביצועים אוטומטית
+  if(perfPref==='a'&&!PERF&&dtReal>0&&dtReal<.1){
+    __ft+=dtReal;__fn++;
+    if(__fn>=240){
+      if(__ft/__fn>.024){setPerf(true);showToast(tr('⚡ זוהה קרטוע — הופעל מצב ביצועים','⚡ Lag detected — performance mode on'));}
+      __ft=0;__fn=0;
+    }
+  }
   timeScale+=(1-timeScale)*Math.min(1,dtRaw*5);
   const dt=dtRaw*timeScale;
   const t=ts/1000;
@@ -2831,7 +2880,7 @@ function loop(ts){
     }
     if(!REDUCED){
       dTiltX+=(effX()-dTiltX)*.12;dTiltY+=(effY()-dTiltY)*.12;
-      if(!PERF)canvas.style.transform='rotateX('+(-dTiltY*5)+'deg) rotateY('+(dTiltX*5)+'deg) scale(1.04)';
+      if(!PERF&&!MOBILE)canvas.style.transform='rotateX('+(-dTiltY*5)+'deg) rotateY('+(dTiltX*5)+'deg) scale(1.04)';
     }
     draw(t);
     drawCine();
@@ -3816,7 +3865,7 @@ function runFrame(dt,t){
   }
   if(!REDUCED){
     dTiltX+=(effX()-dTiltX)*.12;dTiltY+=(0-dTiltY)*.12;
-    if(!PERF)canvas.style.transform='rotateY('+(dTiltX*5)+'deg) scale(1.04)';
+    if(!PERF&&!MOBILE)canvas.style.transform='rotateY('+(dTiltX*5)+'deg) scale(1.04)';
   }
   runDraw(t,T);
   drawCine();
@@ -3894,16 +3943,17 @@ function runDraw(t,T){
   ctx.globalAlpha=1;ball.y=oldY;
   // מד מרחק
   ctx.font='900 26px -apple-system,Arial';ctx.textAlign='center';ctx.textBaseline='top';
-  ctx.fillStyle='rgba(255,255,255,.85)';
-  ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=6;
+  ctx.lineWidth=5;ctx.strokeStyle='rgba(0,0,0,.75)';ctx.lineJoin='round';
+  ctx.strokeText(Math.floor(runDist)+' '+tr('מ׳','m'),board.x+board.w/2,board.y+10);
+  ctx.fillStyle='rgba(255,255,255,.9)';
   ctx.fillText(Math.floor(runDist)+' '+tr('מ׳','m'),board.x+board.w/2,board.y+10);
-  ctx.shadowBlur=0;
   if(runDead&&!cineMode){
     ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(board.x,board.y,board.w,board.h);
     ctx.fillStyle='#ffd257';ctx.font='900 22px -apple-system,Arial';
     ctx.fillText(tr('💔 נפסלת · צופה ביריב…','💔 Eliminated · watching opponent…'),board.x+board.w/2,board.y+board.h*.4);
   }
   ctx.restore();ctx.restore();
+  drawJoystick();
   if(flashR>0){
     const rg2=ctx.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.75);
     rg2.addColorStop(0,'rgba(0,0,0,0)');rg2.addColorStop(1,'rgba(255,40,40,'+flashR*.5+')');
