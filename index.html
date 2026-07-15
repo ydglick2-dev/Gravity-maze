@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v45</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v46</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -341,6 +341,10 @@
     <input class="tin" id="admBanH" type="number" min="1" value="24" style="max-width:86px">
     <button class="btn sec" id="admBan" data-en="🚫 Ban (hours)">🚫 באן (שעות)</button>
     <button class="btn sec" id="admUnban" data-en="✅ Unban">✅ הסר באן</button>
+  </div>
+  <div class="row">
+    <input class="tin" id="admBanReason" maxlength="60" placeholder="סיבת הבאן (יוצג לשחקן)" data-en-ph="Ban reason (shown to player)" style="max-width:200px">
+    <button class="chip on" id="admBanFrom">👤 ממני</button>
   </div>
   <div class="row">
     <button class="btn sec" id="admStars" data-en="⭐ 3★ everything">⭐ 3★ בהכל</button>
@@ -4813,7 +4817,9 @@ async function buildTables(){
 /* 🚫 אכיפת באן תוך כדי משחק/לובי */
 function enforceBan(b){
   if(!(b&&b.until>Date.now()))return false;
-  showToast(tr('🚫 נחסמת מהמשחק עד ','🚫 Banned until ')+new Date(b.until).toLocaleString());
+  showToast(tr('🚫 נחסמת מהמשחק עד ','🚫 Banned until ')+new Date(b.until).toLocaleString()
+    +(b.r?tr(' · סיבה: ',' · reason: ')+b.r:'')
+    +(b.f?tr(' · על ידי ',' · by ')+b.f:''));
   const st=store();
   if(st)try{st.setItem(CKEY,'__ask__');}catch(e){}
   setTimeout(()=>location.reload(),2600);
@@ -5130,7 +5136,9 @@ async function doAuth(reg){
       const cb=await regFetch();
       const bn=cb&&cb.bans&&cb.bans[u];
       if(bn&&bn.until>Date.now())
-        return authMsg(tr('🚫 החשבון חסום עד ','🚫 Account banned until ')+new Date(bn.until).toLocaleString());
+        return authMsg(tr('🚫 החשבון חסום עד ','🚫 Account banned until ')+new Date(bn.until).toLocaleString()
+          +(bn.r?tr(' · סיבה: ',' · reason: ')+bn.r:'')
+          +(bn.f?tr(' · על ידי ',' · by ')+bn.f:''));
     }
     users[u]=rec;putUsers(users);
     await finishLogin(u,p);
@@ -5530,6 +5538,11 @@ $('admWatch').onclick=()=>{
   $('watchOv').classList.remove('hidden');
   buildWatch();
 };
+let admBanSys=false; // ממי הבאן: 👤 האדמין או 🤖 "המערכת"
+$('admBanFrom').onclick=()=>{
+  admBanSys=!admBanSys;
+  $('admBanFrom').textContent=admBanSys?tr('🤖 מהמערכת','🤖 From System'):tr('👤 ממני','👤 From me');
+};
 $('admBan').onclick=async()=>{
   const t=($('admTarget').value||'').trim();
   if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
@@ -5537,9 +5550,13 @@ $('admBan').onclick=async()=>{
   const d=await regFetch();
   if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
   if(!d.users[t])return $('admMsg').textContent='"'+t+'" '+tr('לא רשום בעולם','is not registered');
-  d.bans[t]={until:Date.now()+hrs*3600e3,ts:Date.now()};
+  d.bans[t]={
+    until:Date.now()+hrs*3600e3,ts:Date.now(),
+    r:($('admBanReason').value||'').trim().slice(0,60),
+    f:admBanSys?tr('המערכת','the System'):(curUser||tr('האדמין','the Admin'))
+  };
   $('admMsg').textContent=(await regPut(d))
-    ?('🚫 '+t+tr(' נחסם ל-',' banned for ')+hrs+tr(' שעות',' hours'))
+    ?('🚫 '+t+tr(' נחסם ל-',' banned for ')+hrs+tr(' שעות',' hours')+(d.bans[t].r?' · "'+d.bans[t].r+'"':''))
     :tr('שגיאת רשת','Network error');
 };
 $('admUnban').onclick=async()=>{
