@@ -205,7 +205,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v47</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v48</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -3362,7 +3362,7 @@ function logEv(ty,a,b2){
 }
 let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
-let raceSel=500,raceMode='run',duelLive=false,raceFrom=1,raceTo=5,duelFrom=1,duelTo=5,duelCur=1,duelOppLv=1;
+let raceSel=500,raceMode='run',duelLive=false,raceFrom=1,raceTo=5,duelFrom=1,duelTo=5,duelCur=1,duelOppLv=1,summonAuto=false;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
    וההתקדמות של משתמשים מחוברים ממשיכה להישמר בענן */
 let memDB=null,storageOK=true;
@@ -3768,7 +3768,7 @@ function makeCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';
 function havePeerLib(){return typeof Peer!=='undefined';}
 function lvStatus(m){$('lvStatus').textContent=m;}
 function cleanupLive(){
-  duelLive=false;
+  duelLive=false;summonAuto=false;
   if(finWaitT){clearTimeout(finWaitT);finWaitT=null;}
   if(joinWatch){clearTimeout(joinWatch);joinWatch=null;}
   if(hostDial){clearInterval(hostDial);hostDial=null;}
@@ -3808,6 +3808,14 @@ function onMsg(raw){
     oppName=(m.name||'יריב').slice(0,12);
     $('lvOpp').textContent='🔴 '+oppName+tr(' מחובר!',' connected!');
     if(liveRole==='host'){$('lvHostGo').style.display='flex';buildChips();lvStatus(tr('בחר מרחק ולחץ התחל','Pick a distance and press start'));}
+    if(liveRole==='host'&&summonAuto){ // 🚀 זימון: יוצאים ישר לדו-קרב, בלי לחיצה נוספת
+      summonAuto=false;
+      raceMode='lvl';
+      buildChips();
+      send({t:'cfg',x:raceSel,m:'lvl',f:raceFrom,n:raceTo});
+      lvStatus(tr('🚀 '+oppName+' הצטרף — הדו-קרב מתחיל!','🚀 '+oppName+' joined — duel starting!'));
+      setTimeout(()=>{if(conn&&conn.open&&raceMode==='lvl')$('lvStart').onclick();},1000);
+    }
   }
   else if(m.t==='cfg'){raceSel=m.x|0;raceMode=m.m==='lvl'?'lvl':'run';
     if(m.f)raceFrom=Math.max(1,m.f|0);
@@ -4846,7 +4854,7 @@ function enforceBan(b){
 let summonCode='';
 function showSummon(s){
   summonCode=s.code||'';
-  $('summonTxt').textContent=(s.from||tr('האדמין','Admin'))+' '+tr('מזמין אותך למרוץ חי עכשיו! קוד החדר: ','invites you to a live race now! Room code: ')+summonCode;
+  $('summonTxt').textContent=(s.from||tr('האדמין','Admin'))+' '+tr('מזמין אותך לדו-קרב עכשיו! לחיצה אחת ואתם בפנים ⚔','challenges you to a duel now! One tap and you are in ⚔');
   $('summonOv').classList.remove('hidden');
   sfx.win();
   if(navigator.vibrate)navigator.vibrate([40,60,40]);
@@ -5549,7 +5557,9 @@ $('admSummon').onclick=async()=>{
   const d=await regFetch();
   if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
   if(!d.users[t])return $('admMsg').textContent='"'+t+'" '+tr('לא רשום בעולם','is not registered');
-  // פותחים חדר מרוץ, וכשיש קוד — רושמים זימון בענן
+  // פותחים חדר מרוץ, וכשיש קוד — רושמים זימון בענן; ברגע שהמוזמן מתחבר המרוץ מתחיל לבד
+  summonAuto=true;
+  raceMode='lvl';
   $('adminOv').classList.add('hidden');
   $('raceOv').classList.remove('hidden');
   $('raceName').value=myName||curUser||'';
