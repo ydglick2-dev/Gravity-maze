@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v41</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v42</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5085,17 +5085,32 @@ async function admGive(g,label){
   $('admMsg').textContent='…';
   if(t===curUser){
     applyGift(g,null);save();refreshTro();
+    if(g.rst)cloudPush(); // דחיפת האיפוס לענן מיד (cloudForce כבר דלוק)
     $('admMsg').textContent='✓ '+label+' — הוחל עליך';
     return;
   }
   const st=store();
-  if(st&&st.getItem('mazeU_'+t)!==null){
-    $('admMsg').textContent=applyGift(g,t)?('✓ '+label+' — הוחל על '+t+' (במכשיר הזה)'):'שגיאה מקומית';
-    return;
+  const isLocal=st&&st.getItem('mazeU_'+t)!==null;
+  const needCloud=!!(g.rst||g.dnl); // פעולות מפחיתות חייבות לעדכן גם את הענן,
+  // אחרת שומר-הדריסה משחזר את השמירה הישנה מהענן בכניסה הבאה
+  if(isLocal){
+    const ok=applyGift(g,t);
+    if(!needCloud){
+      $('admMsg').textContent=ok?('✓ '+label+' — הוחל על '+t+' (במכשיר הזה)'):'שגיאה מקומית';
+      return;
+    }
   }
   const d=await regFetch();
-  if(!d)return $('admMsg').textContent='מתנה לשחקן רחוק דורשת אינטרנט';
-  if(!d.users[t])return $('admMsg').textContent='"'+t+'" לא רשום בעולם';
+  if(!d)return $('admMsg').textContent=isLocal
+    ?('✓ '+label+' — הוחל מקומית, אבל אין אינטרנט לעדכון הענן ⚠️')
+    :'מתנה לשחקן רחוק דורשת אינטרנט';
+  if(!d.users[t]){
+    if(isLocal){$('admMsg').textContent='✓ '+label+' — הוחל על '+t+' (במכשיר הזה)';return;}
+    return $('admMsg').textContent='"'+t+'" לא רשום בעולם';
+  }
+  if(g.dnl&&d.users[t].sv){ // הורדת שלבים גם בשמירה שבענן
+    d.users[t].sv.un=Math.min(d.users[t].sv.un|0,Math.max(0,(g.dnl|0)-1));
+  }
   const q=d.gifts[t]||{};
   if(g.tro)q.tro=(q.tro|0)+(g.tro|0);
   if(g.co)q.co=(q.co|0)+(g.co|0);
@@ -5106,7 +5121,9 @@ async function admGive(g,label){
   if(g.dnl)q.dnl=g.dnl|0;
   if(g.rst){q.rst=1;if(d.users[t])delete d.users[t].sv;} // מוחק גם את השמירה בענן
   d.gifts[t]=q;
-  $('admMsg').textContent=(await regPut(d))?('✓ '+label+' — ממתין ל־'+t+' בענן ☁️'):'שגיאת רשת — נסו שוב';
+  $('admMsg').textContent=(await regPut(d))
+    ?('✓ '+label+(isLocal?' — הוחל + עודכן בענן ☁️':' — ממתין ל־'+t+' בענן ☁️'))
+    :'שגיאת רשת — נסו שוב';
 }
 /* 🌐 תרגום מלא: כל אלמנט עם data-en מוחלף באנגלית; חזרה לעברית = רענון (העברית ב-HTML) */
 function applyLang(){
@@ -5202,9 +5219,16 @@ $('admLockLevel').onclick=()=>{
   const n=Math.max(1,Math.min(1000,$('admLevelDown').value|0));
   admGive({dnl:n},tr('נעילה אחרי שלב ','Lock after level ')+n);
 };
+let admRstArm=0; // confirm() חסום ב-iframe בסנדבוקס — אישור בלחיצה כפולה
 $('admResetUser').onclick=()=>{
   const t=($('admTarget').value||'').trim()||curUser;
-  if(!confirm(tr('לאפס את כל ההתקדמות של ','Reset ALL progress of ')+(t||'')+'?'))return;
+  if(!t)return $('admMsg').textContent=tr('אין יעד','No target');
+  if(Date.now()-admRstArm>4000){
+    admRstArm=Date.now();
+    $('admMsg').textContent=tr('⚠️ לאפס את כל ההתקדמות של "','⚠️ Reset ALL progress of "')+t+tr('"? לחצו שוב לאישור','"? Tap again to confirm');
+    return;
+  }
+  admRstArm=0;
   admGive({rst:1},tr('איפוס מלא','Full reset'));
 };
 $('admResetPw').onclick=async()=>{
@@ -5237,9 +5261,13 @@ $('authLogin').onclick=()=>doAuth(false);
 $('authReg').onclick=()=>doAuth(true);
 $('authGuest').onclick=()=>{isAdmin=false;$('adminBtn').style.display='none';applyUser(null);$('authOv').classList.add('hidden');};
 $('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth(false);});
+let chipArm=0; // בלי confirm() — לחיצה כפולה
 $('userChip').onclick=()=>{
-  const q=curUser?(tr('להתנתק מ־','Log out of ')+curUser+'?'):tr('לעבור למסך כניסה?','Go to the login screen?');
-  if(!confirm(q))return;
+  if(Date.now()-chipArm>4000){
+    chipArm=Date.now();
+    showToast(curUser?tr('לחצו שוב כדי להתנתק מ־','Tap again to log out of ')+curUser:tr('לחצו שוב למעבר למסך הכניסה','Tap again for the login screen'));
+    return;
+  }
   save();gSaveDB();
   const st=store();if(st)try{st.setItem(CKEY,'__ask__')}catch(e){}
   location.reload();
