@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v44</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v45</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -334,11 +334,35 @@
   <button class="btn sec" id="admResetUser" data-en="🗑 Reset player (everything)">🗑 איפוס שחקן (הכל)</button>
   <button class="btn sec" id="admEditor" data-en="🧩 Custom level designer">🧩 עורך שלבים מותאמים</button>
   <div class="row">
+    <button class="btn sec" id="admSummon" data-en="🚀 Summon to race">🚀 זמן למרוץ</button>
+    <button class="btn sec" id="admWatch" data-en="👀 Playing now">👀 משחקים עכשיו</button>
+  </div>
+  <div class="row">
+    <input class="tin" id="admBanH" type="number" min="1" value="24" style="max-width:86px">
+    <button class="btn sec" id="admBan" data-en="🚫 Ban (hours)">🚫 באן (שעות)</button>
+    <button class="btn sec" id="admUnban" data-en="✅ Unban">✅ הסר באן</button>
+  </div>
+  <div class="row">
     <button class="btn sec" id="admStars" data-en="⭐ 3★ everything">⭐ 3★ בהכל</button>
     <button class="btn sec" id="admAll" data-en="💎 Everything">💎 הכל ביחד</button>
   </div>
   <div id="admMsg" style="color:#7ae08a;font-weight:700;min-height:20px;font-size:13px"></div>
   <button class="btn sec" id="admBack" data-en="Back">חזרה</button>
+</div>
+
+<div class="overlay hidden" id="summonOv" style="z-index:58">
+  <div class="big">🚀</div>
+  <h1 data-en="Race Invite!">זימון למרוץ!</h1>
+  <p class="sub" id="summonTxt"></p>
+  <button class="btn" id="summonGo" data-en="🏁 Join now">🏁 הצטרף עכשיו</button>
+  <button class="btn sec" id="summonNo" data-en="Not now">לא עכשיו</button>
+</div>
+
+<div class="overlay hidden" id="watchOv" style="z-index:57;background:rgba(8,10,18,.96)">
+  <h1 data-en="👀 Playing Now">👀 משחקים עכשיו</h1>
+  <div id="watchList" style="display:flex;flex-direction:column;gap:8px;width:min(340px,90vw);max-height:50vh;overflow-y:auto;padding:4px"></div>
+  <button class="btn sec" id="watchRefresh" data-en="↻ Refresh">↻ רענון</button>
+  <button class="btn sec" id="watchBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="editorOv" style="z-index:56;background:rgba(6,8,14,.97)">
@@ -1539,7 +1563,7 @@ function loadLevel(i){
   updateHud();
   const z=(levelIdx/10)|0;
   $('bWorld').textContent=customLv?(customLv._daily?tr('האתגר של היום',"Today's Challenge"):tr(customLv._world||'מיוחד','Special')):(tr('עולם ','World ')+(z+1)+' · '+zoneName(z));
-  $('bName').textContent=customLv?(customLv._daily?tr('אתגר יומי','Daily Challenge'):customLv.name):(lv.boss?tr(lv.name,BOSS_EN[lv.name]||lv.name):(lv.custom?lv.name:tr('שלב ','Level ')+(levelIdx+1)));
+  $('bName').textContent=customLv?(customLv._daily?tr('אתגר יומי','Daily Challenge'):customLv.name):(lv.boss&&!lv.custom?tr(lv.name,BOSS_EN[lv.name]||lv.name):tr('שלב ','Level ')+(levelIdx+1)); // שלב מותאם נראה כמו שלב רגיל 🤫
   $('banner').classList.add('show');
   clearTimeout($('banner')._t);
   $('banner')._t=setTimeout(()=>$('banner').classList.remove('show'),1500);
@@ -2556,7 +2580,7 @@ function drawBall(T){
 /* ============ ⚽ לובי תלת-ממד: מגרש כדורגל ============ */
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -4786,6 +4810,100 @@ async function buildTables(){
     g.appendChild(row);
   });
 }
+/* 🚫 אכיפת באן תוך כדי משחק/לובי */
+function enforceBan(b){
+  if(!(b&&b.until>Date.now()))return false;
+  showToast(tr('🚫 נחסמת מהמשחק עד ','🚫 Banned until ')+new Date(b.until).toLocaleString());
+  const st=store();
+  if(st)try{st.setItem(CKEY,'__ask__');}catch(e){}
+  setTimeout(()=>location.reload(),2600);
+  return true;
+}
+/* 🚀 זימון למרוץ מהאדמין */
+let summonCode='';
+function showSummon(s){
+  summonCode=s.code||'';
+  $('summonTxt').textContent=(s.from||tr('האדמין','Admin'))+' '+tr('מזמין אותך למרוץ חי עכשיו! קוד החדר: ','invites you to a live race now! Room code: ')+summonCode;
+  $('summonOv').classList.remove('hidden');
+  sfx.win();
+  if(navigator.vibrate)navigator.vibrate([40,60,40]);
+}
+$('summonGo').onclick=()=>{
+  $('summonOv').classList.add('hidden');
+  OVS.forEach(id=>{if(id!=='raceOv')$(id).classList.add('hidden');});
+  loadPeer(()=>{
+    resetLobby();
+    $('raceOv').classList.remove('hidden');
+    $('raceName').value=myName||curUser||'';
+    $('lvChoose').style.display='none';
+    $('lvJoinPanel').style.display='flex';
+    $('lvCodeIn').value=summonCode;
+    $('lvConnect').onclick();
+  });
+};
+$('summonNo').onclick=()=>$('summonOv').classList.add('hidden');
+/* 🟢 נוכחות: דיווח "משחק עכשיו" כל ~75ש בזמן משחק */
+setInterval(async()=>{
+  if(!curUser||!running||document.hidden)return;
+  try{
+    const d=await regFetch();
+    if(!d)return;
+    d.live[curUser]={lv:runMode?0:levelIdx+1,md:runMode?'run':(duelLive?'race':'maze'),t:Date.now()};
+    regPut(d);
+  }catch(e){}
+},75000);
+/* 🔔 בלובי: בדיקת זימונים ובאנים כל 40ש */
+setInterval(async()=>{
+  if(!curUser||running||document.hidden)return;
+  try{
+    const d=await regFetch();
+    if(!d)return;
+    regCache=d;regCacheAt=Date.now();
+    if(enforceBan(d.bans&&d.bans[curUser]))return;
+    const s=d.summon&&d.summon[curUser];
+    if(s&&s.code&&Date.now()-(s.ts||0)<180e3){
+      delete d.summon[curUser];
+      regPut(d);
+      showSummon(s);
+    }
+  }catch(e){}
+},40000);
+/* 👀 לוח "משחקים עכשיו" לאדמין */
+async function buildWatch(){
+  const g=$('watchList');
+  g.innerHTML='<div style="color:#aeb8c8">'+tr('טוען…','Loading…')+'</div>';
+  const d=await regFetch();
+  if(!d){g.innerHTML='<div style="color:#aeb8c8">'+tr('דרוש אינטרנט','Internet required')+'</div>';return;}
+  regCache=d;regCacheAt=Date.now();
+  const now=Date.now();
+  const rows=Object.keys(d.live||{}).map(n=>({n,e:d.live[n]||{}})).filter(r=>now-(r.e.t||0)<180e3);
+  g.innerHTML='';
+  if(!rows.length){
+    g.innerHTML='<div style="color:#aeb8c8">'+tr('אף אחד לא משחק ממש עכשיו','Nobody is playing right now')+'</div>';
+    return;
+  }
+  rows.sort((a,b)=>(b.e.t||0)-(a.e.t||0));
+  rows.forEach(r=>{
+    const row=document.createElement('div');
+    row.className='achRow got';
+    const md2=r.e.md==='run'?'🏃':(r.e.md==='race'?'🏁':'🎯');
+    const ago=Math.max(0,((now-(r.e.t||0))/60000)|0);
+    const inner=document.createElement('div');
+    inner.style.flex='1';inner.style.cursor='pointer';
+    inner.innerHTML='<b>🟢 '+esc(r.n)+' ▸</b><br><small>'+md2+' '+
+      (r.e.lv?tr('שלב ','level ')+r.e.lv:tr('ריצה אינסופית','endless run'))+' · '+
+      (ago<1?tr('ממש עכשיו','right now'):tr('לפני ~','~')+ago+tr(' ד׳','m ago'))+'</small>';
+    inner.onclick=()=>{
+      const rec=d.users[r.n];
+      $('watchOv').classList.add('hidden');
+      showProfile(r.n,rec&&rec.sv,false);
+    };
+    row.appendChild(inner);
+    g.appendChild(row);
+  });
+}
+$('watchRefresh').onclick=buildWatch;
+$('watchBack').onclick=()=>{$('watchOv').classList.add('hidden');$('adminOv').classList.remove('hidden');};
 $('tablesBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('tablesOv').classList.remove('hidden');buildTables();};
 $('tbBack').onclick=()=>{$('tablesOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('tbWorld').onclick=()=>{tbScope='world';buildTables();};
@@ -4863,6 +4981,7 @@ async function regFetch(){
     let d;try{d=JSON.parse(tx);}catch(e){return{users:{},gifts:{}};}
     if(!d||typeof d!=='object')return{users:{},gifts:{}};
     if(!d.users)d.users={};if(!d.gifts)d.gifts={};
+    if(!d.summon)d.summon={};if(!d.bans)d.bans={};if(!d.live)d.live={};
     return d;
   }catch(e){return null;}
 }
@@ -5007,6 +5126,12 @@ async function doAuth(reg){
         else return authMsg(tr('סיסמה שגויה','Wrong password'));
       }else return authMsg(tr('סיסמה שגויה','Wrong password'));
     }
+    { // 🚫 בדיקת באן לפני כניסה
+      const cb=await regFetch();
+      const bn=cb&&cb.bans&&cb.bans[u];
+      if(bn&&bn.until>Date.now())
+        return authMsg(tr('🚫 החשבון חסום עד ','🚫 Account banned until ')+new Date(bn.until).toLocaleString());
+    }
     users[u]=rec;putUsers(users);
     await finishLogin(u,p);
     showToast(tr('שלום, ','Hello, ')+u+'! 👋');
@@ -5041,6 +5166,12 @@ async function checkGifts(){
     showToast(tr('☁️ ההתקדמות שלך נטענה מהענן','☁️ Your progress was loaded from the cloud'));
   }else if(rec){
     cloudDirty=true; // המקומית מתקדמת יותר (או שאין בענן) — נדחוף אותה
+  }
+  if(enforceBan(d.bans&&d.bans[curUser]))return;
+  const sm=d.summon&&d.summon[curUser];
+  if(sm&&sm.code&&Date.now()-(sm.ts||0)<180e3){
+    delete d.summon[curUser];dirty=true;
+    setTimeout(()=>showSummon(sm),1200);
   }
   const g=d.gifts[curUser];
   if(g){delete d.gifts[curUser];dirty=true;}
@@ -5371,6 +5502,53 @@ $('edRestore').onclick=async()=>{
   $('edMsg').textContent='…';
   await admGive({clr:n-1},tr('החזרת שלב ','Restoring level ')+n+tr(' לרגיל',' to default'));
   $('edMsg').textContent=$('admMsg').textContent;
+};
+$('admSummon').onclick=async()=>{
+  const t=($('admTarget').value||'').trim();
+  if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
+  const d=await regFetch();
+  if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
+  if(!d.users[t])return $('admMsg').textContent='"'+t+'" '+tr('לא רשום בעולם','is not registered');
+  // פותחים חדר מרוץ, וכשיש קוד — רושמים זימון בענן
+  $('adminOv').classList.add('hidden');
+  $('raceOv').classList.remove('hidden');
+  $('raceName').value=myName||curUser||'';
+  loadPeer(()=>{$('lvCreate').onclick();});
+  let tries=0;
+  const wait=setInterval(async()=>{
+    if(!roomCode){if(++tries>20)clearInterval(wait);return;}
+    clearInterval(wait);
+    const d2=await regFetch();
+    if(!d2)return lvStatus(tr('שגיאת רשת בשליחת הזימון','Network error sending summon'));
+    d2.summon[t]={code:roomCode,ts:Date.now(),from:curUser||'אדמין'};
+    await regPut(d2);
+    lvStatus(tr('🚀 זימון נשלח ל-','🚀 Summon sent to ')+t+tr(' — יקבל אותו תוך פחות מדקה','' )+' ⏳');
+  },700);
+};
+$('admWatch').onclick=()=>{
+  $('adminOv').classList.add('hidden');
+  $('watchOv').classList.remove('hidden');
+  buildWatch();
+};
+$('admBan').onclick=async()=>{
+  const t=($('admTarget').value||'').trim();
+  if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
+  const hrs=Math.max(1,$('admBanH').value|0||24);
+  const d=await regFetch();
+  if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
+  if(!d.users[t])return $('admMsg').textContent='"'+t+'" '+tr('לא רשום בעולם','is not registered');
+  d.bans[t]={until:Date.now()+hrs*3600e3,ts:Date.now()};
+  $('admMsg').textContent=(await regPut(d))
+    ?('🚫 '+t+tr(' נחסם ל-',' banned for ')+hrs+tr(' שעות',' hours'))
+    :tr('שגיאת רשת','Network error');
+};
+$('admUnban').onclick=async()=>{
+  const t=($('admTarget').value||'').trim();
+  if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
+  const d=await regFetch();
+  if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
+  delete d.bans[t];
+  $('admMsg').textContent=(await regPut(d))?('✅ '+t+tr(' שוחרר מהבאן',' unbanned')):tr('שגיאת רשת','Network error');
 };
 $('admEditor').onclick=()=>{
   $('adminOv').classList.add('hidden');
