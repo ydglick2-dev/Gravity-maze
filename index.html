@@ -22,7 +22,9 @@
 
   .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:16px; background:rgba(4,6,12,.82); backdrop-filter:blur(14px);
-    color:#e8ecf4; text-align:center; padding:22px; z-index:20; transition:opacity .35s; }
+    color:#e8ecf4; text-align:center; padding:22px; z-index:20; transition:opacity .35s;
+    overflow-y:auto; } /* תוכן ארוך נגלל — הכפתורים תמיד נגישים */
+  .overlay > * { flex-shrink:0; }
   .overlay.hidden { opacity:0; pointer-events:none; }
   h1 { font-size:36px; font-weight:900; letter-spacing:1px;
        background:linear-gradient(180deg,#ffe9b8,#ffb84d);
@@ -191,7 +193,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v30</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v31</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -354,10 +356,10 @@
 
 <div class="overlay hidden" id="questOv">
   <h1>📜 קווסטים יומיים</h1>
-  <div id="questList" style="display:flex;flex-direction:column;gap:8px;width:min(330px,88vw)"></div>
+  <div id="questList" style="display:flex;flex-direction:column;gap:8px;width:min(330px,88vw);max-height:46vh;overflow-y:auto;padding:4px"></div>
   <div id="dwLine" class="pill"></div>
   <div id="questCyc" class="pill"></div>
-  <button class="btn sec" id="questBack">חזרה</button>
+  <button class="btn sec" id="questBack">🏠 חזרה לתפריט</button>
 </div>
 
 <div class="overlay hidden" id="achOv">
@@ -428,6 +430,7 @@
     <button class="btn" id="failRetry">נסה שוב</button>
     <button class="btn sec" id="failSelect">בחירת שלב</button>
   </div>
+  <button class="btn sec" id="failMenu">🏠 חזרה לתפריט</button>
 </div>
 
 <div class="overlay hidden" id="doneOv">
@@ -3167,8 +3170,13 @@ function rollQuests(){
   if(qDate===ds&&qDefs.length===3)return;
   if(qDate!==ds){qProg=[0,0,0];qDone=[false,false,false];qDate=ds;}
   const rnd=mulberry(parseInt(ds,10)*13+7);
+  // בדיוק 3 קווסטים ייחודיים ביום — qProg/qDone בנויים ל-3 (הלולאה הישנה יצרה 20)
   const idxs=[];
-  while(idxs.length<20){idxs.push((rnd()*QPOOL.length)|0);}
+  let guard=0;
+  while(idxs.length<3&&guard++<200){
+    const k=(rnd()*QPOOL.length)|0;
+    if(!idxs.includes(k))idxs.push(k);
+  }
   qDefs=idxs.map(i=>{
     const p=QPOOL[i],mult=1+((rnd()*4)|0)*.5;
     return {ty:p.ty,target:Math.max(1,Math.round(p.base*mult)),rew:p.rew,txt:p.txt};
@@ -3285,6 +3293,12 @@ function failLevel(){
 }
 $('failRetry').onclick=()=>{$('failOv').classList.add('hidden');startRun(customLv||levelIdx);};
 $('failSelect').onclick=()=>{$('failOv').classList.add('hidden');customLv=null;buildGrid();$('selectOv').classList.remove('hidden');};
+$('failMenu').onclick=()=>{
+  $('failOv').classList.add('hidden');
+  running=false;paused=false;customLv=null;
+  refreshTro();
+  $('menuOv').classList.remove('hidden');
+};
 
 /* ---- 🏃 מנוע ראנר (סאבוויי-סטייל) + דו-קרב חי ---- */
 const RUN_OPTS=[300,500,750,1000];
@@ -4371,8 +4385,9 @@ const I18N_EN={playBtn:'▶ Play',selectBtn:'🗺 Levels',skinBtn:'🎨 Skins',r
  boardBtn:'🌍 Leaderboard',adminBtn:'🛠 Admin',resumeBtn:'Resume',restartBtn:'Restart',
  calibBtn:'🎯 Calibrate (hold flat)',toSelectBtn:'Level Select',pauseMenuBtn:'🏠 Main Menu',
  nextBtn:'Continue',replayBtn:'Again',doneMenu:'🏠 Menu',doneLobby:'⚽ Lobby',failRetry:'Try Again',
+ failMenu:'🏠 Main Menu',failSelect:'Level Select',
  authLogin:'Log In',authReg:'✨ Sign Up',authGuest:'🎮 Play as Guest',
- admBack:'Back',achBack:'Back',skinBack:'Back',questBack:'Back',boardBack:'Back',playBtn2:'▶ Play'};
+ admBack:'Back',achBack:'Back',skinBack:'Back',questBack:'🏠 Main Menu',boardBack:'Back',playBtn2:'▶ Play'};
 let uiLang='he';try{uiLang=localStorage.getItem('mazeLang')||'he';}catch(e){}
 function applyLang(){
   if(uiLang==='en'){
