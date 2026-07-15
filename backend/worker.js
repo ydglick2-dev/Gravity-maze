@@ -13,6 +13,13 @@ const CORS = {
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type'
 };
+/* מקלדות (בעיקר אייפון) מוסיפות תווי כיווניות בלתי-נראים לשמות — ואז "אותו שם"
+   לא נמצא. מנקים כל שם שנכנס, בשני הצדדים. */
+const cleanName = v => String(v || '')
+  .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, '')
+  .replace(/\s+/g, ' ').trim();
+/* הענן הישן — שחקנים עם גרסה ישנה של המשחק עדיין נרשמים ושומרים שם */
+const TDB = 'https://textdb.dev/api/data/mzk-glk-reg-7g2k9-v1';
 const J = (o, s = 200) => new Response(JSON.stringify(o), {
   status: s, headers: { 'Content-Type': 'application/json', ...CORS }
 });
@@ -31,6 +38,31 @@ export class Registry {
     this.doc = null;
     this.socks = new Map(); // user -> Set<WebSocket>
     this._liveT = 0;
+    this._syncT = 0;
+  }
+
+  /* 🌉 גשר ל-textdb: כל ~2 דקות מושכים משם שחקנים חדשים ושמירות מתקדמות יותר,
+     כדי שגם מי שנרשם/משחק בגרסה ישנה של המשחק "ייקלט" אצל האדמין. */
+  async tdbSync() {
+    if (Date.now() - this._syncT < 120000) return;
+    this._syncT = Date.now();
+    try {
+      const r = await fetch(TDB + '?t=' + Date.now(), { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) return;
+      const tx = await r.text();
+      if (!tx || !tx.trim()) return;
+      const src = JSON.parse(tx);
+      const d = this.doc;
+      let changed = false;
+      for (const k0 in (src.users || {})) {
+        const k = cleanName(k0);
+        if (!k) continue;
+        if (!d.users[k]) { d.users[k] = src.users[k0]; changed = true; continue; }
+        const sv2 = src.users[k0] && src.users[k0].sv;
+        if (sv2 && this.score(sv2) > this.score(d.users[k].sv)) { d.users[k].sv = sv2; changed = true; }
+      }
+      if (changed) await this.saveDoc();
+    } catch (e) { }
   }
 
   async load() {
@@ -81,7 +113,7 @@ export class Registry {
     /* 🔌 WebSocket: דחיפה מיידית של דואר נכנס לשחקן */
     if (p === '/ws') {
       if (req.headers.get('Upgrade') !== 'websocket') return J({ err: 'ws' }, 400);
-      const u = url.searchParams.get('u') || '';
+      const u = cleanName(url.searchParams.get('u') || '');
       const pair = new WebSocketPair();
       const client = pair[0], server = pair[1];
       server.accept();
@@ -96,10 +128,12 @@ export class Registry {
     let b = {};
     if (req.method === 'POST') { try { b = await req.json(); } catch (e) { } }
 
-    if ((p === '/' || p === '/api/ping') && req.method === 'GET')
+    if ((p === '/' || p === '/api/ping') && req.method === 'GET') {
+      await this.tdbSync();
       return J({ ok: 1, name: 'gravity-maze-backend', users: Object.keys(d.users).length });
+    }
 
-    if (p === '/api/doc' && req.method === 'GET') return J(d);
+    if (p === '/api/doc' && req.method === 'GET') { await this.tdbSync(); return J(d); }
 
     // תאימות לאחור: כתיבת מסמך מלא (משמש למעט מסלולים ישנים כמו matchmaking)
     if (p === '/api/doc' && req.method === 'POST') {
@@ -123,7 +157,7 @@ export class Registry {
     }
 
     if (p === '/api/register' && req.method === 'POST') {
-      const u = String(b.u || '').slice(0, 14);
+      const u = cleanName(b.u).slice(0, 14);
       if (!u || !b.rec || !b.rec.s || !b.rec.h) return J({ err: 'bad' }, 400);
       if (d.users[u]) return J({ err: 'taken' }, 409);
       d.users[u] = { s: b.rec.s, h: b.rec.h, c: Date.now() };
@@ -132,7 +166,7 @@ export class Registry {
     }
 
     if (p === '/api/pw' && req.method === 'POST') {
-      const u = String(b.u || '');
+      const u = cleanName(b.u);
       if (!d.users[u]) return J({ err: 'nouser' }, 404);
       if (!b.rec || !b.rec.s || !b.rec.h) return J({ err: 'bad' }, 400);
       d.users[u].s = b.rec.s;
@@ -143,7 +177,7 @@ export class Registry {
 
     // שמירה: השרת מכריע — הגרסה עם יותר התקדמות מנצחת (force עוקף, לאיפוסים)
     if (p === '/api/save' && req.method === 'POST') {
-      const u = String(b.u || '');
+      const u = cleanName(b.u);
       if (!d.users[u]) return J({ err: 'nouser' }, 404);
       const cur = d.users[u].sv;
       if (!b.force && cur && this.score(cur) > this.score(b.sv))
@@ -155,7 +189,7 @@ export class Registry {
 
     // מתנה/עונש: מיזוג אטומי לתור + דחיפה מיידית ב-WS
     if (p === '/api/gift' && req.method === 'POST') {
-      const t = String(b.t || '');
+      const t = cleanName(b.t);
       if (!d.users[t]) return J({ err: 'nouser' }, 404);
       const g = b.g || {};
       const q = d.gifts[t] || {};
@@ -183,7 +217,8 @@ export class Registry {
 
     // משיכת הדואר: אטומי — אין סיכוי לאבד מתנה
     if (p === '/api/claim' && req.method === 'POST') {
-      const u = String(b.u || '');
+      await this.tdbSync();
+      const u = cleanName(b.u);
       const out = { gift: d.gifts[u] || null, summon: d.summon[u] || null, ban: d.bans[u] || null };
       if (out.gift || out.summon) {
         delete d.gifts[u];
@@ -194,7 +229,7 @@ export class Registry {
     }
 
     if (p === '/api/ban' && req.method === 'POST') {
-      const t = String(b.t || '');
+      const t = cleanName(b.t);
       if (b.b) d.bans[t] = b.b; else delete d.bans[t];
       await this.saveDoc();
       this.notify(t, { t: 'inbox' });
@@ -202,7 +237,7 @@ export class Registry {
     }
 
     if (p === '/api/summon' && req.method === 'POST') {
-      const t = String(b.t || '');
+      const t = cleanName(b.t);
       d.summon[t] = b.s;
       await this.saveDoc();
       this.notify(t, { t: 'inbox' });
@@ -210,7 +245,7 @@ export class Registry {
     }
 
     if (p === '/api/live' && req.method === 'POST') {
-      const u = String(b.u || '');
+      const u = cleanName(b.u);
       d.live[u] = b.e;
       if (Date.now() - this._liveT > 60000) { this._liveT = Date.now(); await this.saveDoc(); }
       return J({ ok: 1 });

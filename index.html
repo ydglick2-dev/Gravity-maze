@@ -205,7 +205,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v50</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v51</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -3895,7 +3895,7 @@ function hostPeer(){
 }
 $('lvQuick').onclick=async()=>{
   if(!havePeerLib()){lvStatus(tr('תחרות חיה דורשת אינטרנט','Live race needs internet'));return;}
-  myName=$('raceName').value.trim();save();
+  myName=cleanName($('raceName').value);save();
   lvStatus(tr('🔎 מחפש יריב בעולם…','🔎 Searching for an opponent…'));
   const d=await regFetch();
   if(!d){lvStatus(tr('חיפוש יריב דורש אינטרנט','Matchmaking needs internet'));return;}
@@ -3923,7 +3923,7 @@ $('lvQuick').onclick=async()=>{
 $('lvCreate').onclick=async()=>{
   if(!havePeerLib()){lvStatus(tr('תחרות חיה דורשת אינטרנט בפתיחה הראשונה','Live race needs internet on first open'));return;}
   initAudio();await enableSensors();
-  myName=$('raceName').value.trim();save();
+  myName=cleanName($('raceName').value);save();
   cleanupLive();liveRole='host';hostTries=0;roomCode=makeCode();
   $('lvCode').textContent=roomCode;
   $('lvChoose').style.display='none';$('lvHostPanel').style.display='flex';
@@ -3970,7 +3970,7 @@ $('lvConnect').onclick=async()=>{
   initAudio();await enableSensors(); // מחוות משתמש — קריטי להרשאת חיישן ב-iOS
   const code=($('lvCodeIn').value||'').trim().toUpperCase();
   if(code.length<4){lvStatus(tr('קוד קצר מדי','Code too short'));return;}
-  myName=$('raceName').value.trim();save();
+  myName=cleanName($('raceName').value);save();
   guestJoin(code);
 };
 function buildChips(){
@@ -4746,7 +4746,7 @@ async function buildFriends(){
   if(!d)$('frMsg').textContent=tr('אין אינטרנט — הנתונים לא נטענו','No internet — stats not loaded');
 }
 $('frAdd').onclick=async()=>{
-  const n=($('frName').value||'').trim();
+  const n=cleanName($('frName').value);
   if(n.length<2)return $('frMsg').textContent=tr('שם קצר מדי','Name too short');
   if(curUser&&n===curUser)return $('frMsg').textContent=tr('זה אתה 🙂',"That's you 🙂");
   if(friends.includes(n))return $('frMsg').textContent=tr('כבר ברשימה','Already in the list');
@@ -5061,8 +5061,15 @@ let curUser=null,isAdmin=false;
 /* ============ 🚀 שרת בקנד ייעודי (אופציונלי אך מומלץ) ============
    כשמחובר: דחיפת WebSocket מיידית, כתיבות אטומיות, הכרעת שמירות בשרת.
    הכתובת מתגלה אוטומטית אצל כל השחקנים דרך d.backend ב-textdb. */
-let BACKEND='';
-try{BACKEND=(localStorage.getItem('mazeBackend')||'').replace(/\/+$/,'');}catch(e){}
+/* שמות: מסירים תווים בלתי-נראים (מקלדת אייפון מוסיפה סימני כיווניות סמויים —
+   ואז "אותו שם" לא נמצא בחיפוש). מנקים בכל מקום שבו שם נכנס למערכת. */
+function cleanName(v){return String(v||'').replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g,'').replace(/\s+/g,' ').trim();}
+const BACKEND_DEFAULT='https://gravity-maze-backend.gravity-maze.workers.dev'; // השרת הרשמי — צרוב, עובד גם בלי textdb
+let BACKEND=BACKEND_DEFAULT;
+try{const _bs=localStorage.getItem('mazeBackend');
+  if(_bs==='off')BACKEND='';
+  else if(_bs)BACKEND=_bs.replace(/\/+$/,'');
+}catch(e){}
 const beOn=()=>/^https?:\/\//.test(BACKEND);
 async function be(path,body){
   try{
@@ -5213,7 +5220,7 @@ function applyUser(name){
 }
 function authMsg(m){$('authErr').textContent=m||'';}
 async function doAuth(reg){
-  const u=($('authUser').value||'').trim(),p=$('authPass').value||'';
+  const u=cleanName($('authUser').value),p=$('authPass').value||'';
   if(u.length<2)return authMsg(tr('שם משתמש: לפחות 2 תווים','Username: at least 2 characters'));
   if(/[|"\\]/.test(u))return authMsg(tr('בלי התווים | " \\ בשם','No | " \\ characters in the name'));
   if(u==='__guest__'||u==='__ask__')return authMsg(tr('שם שמור — בחרו שם אחר','Reserved name — pick another'));
@@ -5406,7 +5413,7 @@ function applyGift(g,target){
   try{st.setItem('mazeU_'+target,JSON.stringify(d));return true;}catch(e){return false;}
 }
 async function admGive(g,label){
-  const t=($('admTarget').value||'').trim()||curUser;
+  const t=cleanName($('admTarget').value)||curUser;
   if(!t)return $('admMsg').textContent='אין יעד';
   $('admMsg').textContent='…';
   if(t===curUser){
@@ -5640,7 +5647,7 @@ $('edTest').onclick=()=>{
   startRun(lv);
 };
 $('edSend').onclick=async()=>{
-  const t=($('admTarget').value||'').trim();
+  const t=cleanName($('admTarget').value);
   if(!t){$('edMsg').textContent=tr('כתבו שם שחקן יעד בפאנל האדמין (השדה העליון)','Set a target username in the admin panel first');return;}
   const lv=JSON.parse(JSON.stringify(edLv));
   if(!lv.walls.length&&!lv.holes.length){$('edMsg').textContent=tr('השלב ריק 🙂 הוסיפו קירות/חורים','Level is empty 🙂 add walls/holes');return;}
@@ -5656,7 +5663,7 @@ $('edSend').onclick=async()=>{
   $('edMsg').textContent=$('admMsg').textContent;
 };
 $('edRestore').onclick=async()=>{
-  const t=($('admTarget').value||'').trim();
+  const t=cleanName($('admTarget').value);
   if(!t){$('edMsg').textContent=tr('כתבו שם שחקן יעד בפאנל האדמין','Set a target username in the admin panel first');return;}
   const n=Math.max(1,Math.min(1000,$('edLvNum').value|0||1));
   $('edMsg').textContent='…';
@@ -5667,7 +5674,7 @@ $('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה �
   const url=($('admBackend').value||'').trim().replace(/\/+$/,'');
   if(!url){ // שדה ריק = ניתוק מהשרת
     BACKEND='';
-    try{localStorage.removeItem('mazeBackend');}catch(e){}
+    try{localStorage.setItem('mazeBackend','off');}catch(e){}
     const d0=await tdbFetch();
     if(d0){delete d0.backend;await tdbPut(d0);}
     $('admMsg').textContent=tr('השרת נותק — חוזרים ל-textdb','Backend disconnected — back to textdb');
@@ -5698,7 +5705,7 @@ $('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה �
   $('admMsg').textContent='🚀 '+tr('השרת חובר! יובאו ','Backend connected! Imported ')+imported+tr(' שחקנים · כל השחקנים יעברו אליו אוטומטית',' players · everyone migrates automatically');
 };
 $('admSummon').onclick=async()=>{
-  const t=($('admTarget').value||'').trim();
+  const t=cleanName($('admTarget').value);
   if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
   const d=await regFetch();
   if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
@@ -5736,7 +5743,7 @@ $('admBanFrom').onclick=()=>{
   $('admBanFrom').textContent=admBanSys?tr('🤖 מהמערכת','🤖 From System'):tr('👤 ממני','👤 From me');
 };
 $('admBan').onclick=async()=>{
-  const t=($('admTarget').value||'').trim();
+  const t=cleanName($('admTarget').value);
   if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
   const hrs=Math.max(1,$('admBanH').value|0||24);
   const d=await regFetch();
@@ -5755,7 +5762,7 @@ $('admBan').onclick=async()=>{
     :tr('שגיאת רשת','Network error');
 };
 $('admUnban').onclick=async()=>{
-  const t=($('admTarget').value||'').trim();
+  const t=cleanName($('admTarget').value);
   if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
   const d=await regFetch();
   if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
@@ -5801,7 +5808,7 @@ $('admLockLevel').onclick=()=>{
 };
 let admRstArm=0; // confirm() חסום ב-iframe בסנדבוקס — אישור בלחיצה כפולה
 $('admResetUser').onclick=()=>{
-  const t=($('admTarget').value||'').trim()||curUser;
+  const t=cleanName($('admTarget').value)||curUser;
   if(!t)return $('admMsg').textContent=tr('אין יעד','No target');
   if(Date.now()-admRstArm>4000){
     admRstArm=Date.now();
@@ -5812,7 +5819,7 @@ $('admResetUser').onclick=()=>{
   admGive({rst:1},tr('איפוס מלא','Full reset'));
 };
 $('admResetPw').onclick=async()=>{
-  const t=($('admTarget').value||'').trim();
+  const t=cleanName($('admTarget').value);
   const np=$('admNewPw').value||'';
   if(!t)return $('admMsg').textContent=tr('כתבו שם משתמש יעד','Enter a target username');
   if(np.length<4)return $('admMsg').textContent=tr('סיסמה חדשה: לפחות 4 תווים','New password: at least 4 chars');

@@ -13,6 +13,9 @@ try { WebSocketServer = require('ws').WebSocketServer; } catch (e) {
   console.log('להתקנה עם WebSocket: npm i ws (רץ בינתיים בלי דחיפה מיידית)');
 }
 
+const cleanName = v => String(v || '')
+  .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, '')
+  .replace(/\s+/g, ' ').trim();
 const PORT = +(process.argv[2] || 8787);
 const FILE = path.join(__dirname, 'dev-data.json');
 let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
@@ -78,21 +81,21 @@ const server = http.createServer((req, res) => {
       persist(); return J({ ok: 1, imported: n });
     }
     if (p === '/api/register' && req.method === 'POST') {
-      const u = String(b.u || '').slice(0, 14);
+      const u = cleanName(b.u).slice(0, 14);
       if (!u || !b.rec || !b.rec.s || !b.rec.h) return J({ err: 'bad' }, 400);
       if (doc.users[u]) return J({ err: 'taken' }, 409);
       doc.users[u] = { s: b.rec.s, h: b.rec.h, c: Date.now() };
       persist(); return J({ ok: 1 });
     }
     if (p === '/api/pw' && req.method === 'POST') {
-      const u = String(b.u || '');
+      const u = cleanName(b.u);
       if (!doc.users[u]) return J({ err: 'nouser' }, 404);
       if (!b.rec || !b.rec.s || !b.rec.h) return J({ err: 'bad' }, 400);
       doc.users[u].s = b.rec.s; doc.users[u].h = b.rec.h;
       persist(); return J({ ok: 1 });
     }
     if (p === '/api/save' && req.method === 'POST') {
-      const u = String(b.u || '');
+      const u = cleanName(b.u);
       if (!doc.users[u]) return J({ err: 'nouser' }, 404);
       const cur = doc.users[u].sv;
       if (!b.force && cur && score(cur) > score(b.sv)) return J({ ok: 1, kept: 'server', sv: cur });
@@ -100,7 +103,7 @@ const server = http.createServer((req, res) => {
       persist(); return J({ ok: 1, kept: 'client' });
     }
     if (p === '/api/gift' && req.method === 'POST') {
-      const t = String(b.t || '');
+      const t = cleanName(b.t);
       if (!doc.users[t]) return J({ err: 'nouser' }, 404);
       const g = b.g || {}; const q = doc.gifts[t] || {};
       if (g.tro) q.tro = (q.tro | 0) + (g.tro | 0);
@@ -121,23 +124,23 @@ const server = http.createServer((req, res) => {
       persist(); notify(t); return J({ ok: 1 });
     }
     if (p === '/api/claim' && req.method === 'POST') {
-      const u = String(b.u || '');
+      const u = cleanName(b.u);
       const out = { gift: doc.gifts[u] || null, summon: doc.summon[u] || null, ban: doc.bans[u] || null };
       if (out.gift || out.summon) { delete doc.gifts[u]; delete doc.summon[u]; persist(); }
       return J(out);
     }
     if (p === '/api/ban' && req.method === 'POST') {
-      const t = String(b.t || '');
+      const t = cleanName(b.t);
       if (b.b) doc.bans[t] = b.b; else delete doc.bans[t];
       persist(); notify(t); return J({ ok: 1 });
     }
     if (p === '/api/summon' && req.method === 'POST') {
-      const t = String(b.t || '');
+      const t = cleanName(b.t);
       doc.summon[t] = b.s;
       persist(); notify(t); return J({ ok: 1 });
     }
     if (p === '/api/live' && req.method === 'POST') {
-      doc.live[String(b.u || '')] = b.e;
+      doc.live[cleanName(b.u)] = b.e;
       return J({ ok: 1 });
     }
     if (p === '/api/mm' && req.method === 'POST') { doc.mm = b.mm || null; persist(); return J({ ok: 1 }); }
@@ -148,7 +151,7 @@ const server = http.createServer((req, res) => {
 if (WebSocketServer) {
   const wss = new WebSocketServer({ server, path: '/ws' });
   wss.on('connection', (ws, req) => {
-    const u = new URL(req.url, 'http://x').searchParams.get('u') || '';
+    const u = cleanName(new URL(req.url, 'http://x').searchParams.get('u') || '');
     if (!socks.has(u)) socks.set(u, new Set());
     socks.get(u).add(ws);
     ws.on('close', () => { const s = socks.get(u); if (s) s.delete(ws); });
