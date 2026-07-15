@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v43</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v44</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5336,9 +5336,15 @@ $('edUndo').onclick=()=>{
   edDraw();
 };
 $('edClear').onclick=()=>{edReset();edDraw();};
+let edForce=0; // מותר לעצב שלבים בלתי-עבירים 😈 — עם אישור בלחיצה כפולה
 $('edTest').onclick=()=>{
   const lv=JSON.parse(JSON.stringify(edLv));
-  if(!validateFix(lv,mulberry(7))){$('edMsg').textContent=tr('⚠️ אין דרך מההתחלה ליעד — פתחו מעבר','⚠️ No path from start to goal');return;}
+  if(!validateFix(lv,mulberry(7))&&Date.now()-edForce>4000){
+    edForce=Date.now();
+    $('edMsg').textContent=tr('⚠️ אין דרך ליעד — שלב בלתי-עביר 😈 לחצו שוב כדי לנסות בכל זאת','⚠️ Goal unreachable 😈 tap again to test anyway');
+    return;
+  }
+  edForce=0;
   $('editorOv').classList.add('hidden');
   startRun(lv);
 };
@@ -5347,7 +5353,12 @@ $('edSend').onclick=async()=>{
   if(!t){$('edMsg').textContent=tr('כתבו שם שחקן יעד בפאנל האדמין (השדה העליון)','Set a target username in the admin panel first');return;}
   const lv=JSON.parse(JSON.stringify(edLv));
   if(!lv.walls.length&&!lv.holes.length){$('edMsg').textContent=tr('השלב ריק 🙂 הוסיפו קירות/חורים','Level is empty 🙂 add walls/holes');return;}
-  if(!validateFix(lv,mulberry(7))){$('edMsg').textContent=tr('⚠️ אין דרך מההתחלה ליעד — פתחו מעבר','⚠️ No path from start to goal');return;}
+  if(!validateFix(lv,mulberry(7))&&Date.now()-edForce>4000){
+    edForce=Date.now();
+    $('edMsg').textContent=tr('⚠️ אין דרך ליעד — שלב בלתי-עביר 😈 לחצו שוב כדי לשלוח בכל זאת','⚠️ Goal unreachable 😈 tap again to send anyway');
+    return;
+  }
+  edForce=0;
   const n=Math.max(1,Math.min(1000,$('edLvNum').value|0||1));
   $('edMsg').textContent='…';
   await admGive({clv:{i:n-1,lv}},tr('שלב מותאם במקום שלב ','Custom level replacing level ')+n);
