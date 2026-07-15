@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v37</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v38</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2984,8 +2984,16 @@ function finishLevel(){
   s.done=true;s.stars=Math.max(s.stars,got);
   if(troGain)addTro(troGain);
   if(duelLive){
-    send({t:'lwin'});duelLive=false;running=false;paused=false;hushRoll();
-    endDuel(true,tr('סיימת את השלב ראשון! ⚔','You finished the level first! ⚔'));
+    if(duelCur>=duelTarget){
+      send({t:'lwin'});duelLive=false;running=false;paused=false;hushRoll();
+      endDuel(true,tr('סיימת ראשון את כל ','You finished all ')+duelTarget+tr(' השלבים! ⚔',' levels first! ⚔'));
+    }else{
+      duelCur++;
+      send({t:'lprog',l:duelCur});
+      showToast(tr('✅ שלב הושלם! עכשיו שלב ','✅ Level done! Now level ')+duelCur+'/'+duelTarget);
+      startRun(duelCur-1);
+      duelHud();
+    }
     return;
   }
   unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,levelIdx+1));
@@ -3136,7 +3144,7 @@ let KEY='mazeUltra100_v2';
 let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0,friends=[];
 let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
-let raceSel=500,raceMode='run',duelLive=false;
+let raceSel=500,raceMode='run',duelLive=false,lvlSel=5,duelTarget=5,duelCur=1,duelOppLv=1;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
    וההתקדמות של משתמשים מחוברים ממשיכה להישמר בענן */
 let memDB=null,storageOK=true;
@@ -3461,9 +3469,14 @@ function buildAch(){
 }
 function failLevel(){
   winStreak=0;
-  if(duelLive){
-    send({t:'lfail'});duelLive=false;running=false;paused=false;hushRoll();
-    endDuel(false,tr('נפסלת 3 פעמים — היריב ניצח ⚔','Three falls — opponent wins ⚔'));
+  if(duelLive){ // במרוץ שלבים נפילה×3 רק מאתחלת את השלב הנוכחי
+    hushRoll();
+    playDeathFX(ball.x,ball.y,THEMES[L().th]);
+    startCine('lose',()=>{
+      showToast(tr('💔 שלוש נפילות — השלב אותחל, המשיכו!','💔 Three falls — level reset, keep going!'));
+      startRun(levelIdx);
+      duelHud();
+    },1.1);
     return;
   }
   hushRoll();
@@ -3566,18 +3579,28 @@ function onMsg(raw){
     $('lvOpp').textContent='🔴 '+oppName+tr(' מחובר!',' connected!');
     if(liveRole==='host'){$('lvHostGo').style.display='flex';buildChips();lvStatus(tr('בחר מרחק ולחץ התחל','Pick a distance and press start'));}
   }
-  else if(m.t==='cfg'){raceSel=m.x|0;raceMode=m.m==='lvl'?'lvl':'run';buildChips();
-    if(liveRole==='guest')lvStatus(raceMode==='lvl'?tr('⚔ דו-קרב שלב · ממתין להתחלה…','⚔ Level duel · waiting for start…'):tr('מרוץ עד ','Race to ')+raceSel+tr(' מטר · ממתין להתחלה…',' m · waiting for start…'));}
+  else if(m.t==='cfg'){raceSel=m.x|0;raceMode=m.m==='lvl'?'lvl':'run';if(m.n)lvlSel=Math.max(1,m.n|0);buildChips();
+    if(liveRole==='guest')lvStatus(raceMode==='lvl'?tr('🏁 מרוץ שלבים 1-','🏁 Level race 1-')+lvlSel+tr(' · ממתין להתחלה…',' · waiting for start…'):tr('מרוץ עד ','Race to ')+raceSel+tr(' מטר · ממתין להתחלה…',' m · waiting for start…'));}
   else if(m.t==='lh'){showToast(tr('❤ ליריב נשארו ','❤ Opponent has ')+m.h+tr(' פסילות',' lives left'));}
+  else if(m.t==='lprog'&&duelLive){
+    duelOppLv=Math.max(1,m.l|0);duelHud();
+    if(duelOppLv>duelCur)showToast('🔴 '+oppName+' '+tr('כבר בשלב ','is on level ')+duelOppLv+'!');
+  }
   else if(m.t==='lwin'&&duelLive){duelEnd(false);}
   else if(m.t==='lfail'&&duelLive){duelEnd(true);}
-  else if(m.t==='start'){if(m.m==='lvl')duelStart(m.seed|0);else beginCountdown(m.x|0,m.seed|0);}
+  else if(m.t==='start'){if(m.m==='lvl')duelStart(m.n|0||lvlSel);else beginCountdown(m.x|0,m.seed|0);}
   else if(m.t==='pos'){oppM=+m.m||0;oppD=Math.min(3,m.d|0);}
   else if(m.t==='elim'){oppElim=+m.m||0;showToast('🔴 '+oppName+tr(' נפסל ב-',' eliminated at ')+Math.floor(oppElim)+tr('מ׳!','m!'));resolveRun(false);}
   else if(m.t==='fin'){oppFin=+m.tm||0;oppM=+m.m||oppM;showToast('🔴 '+oppName+tr(' הגיע ליעד!',' reached the goal!'));resolveRun(false);}
   else if(m.t==='quit'){onDrop();}
 }
 function onDrop(){
+  if(duelLive){ // היריב פרש באמצע מרוץ שלבים
+    duelLive=false;
+    endDuel(true,tr('היריב התנתק באמצע ⚔','Opponent disconnected ⚔'));
+    setTimeout(cleanupLive,400);
+    return;
+  }
   if(runLive&&runMode&&iFin===null&&oppFin===null&&oppElim===null){
     runMode=false;running=false;hushRoll();$('raceBar').style.display='none';
     addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();checkAch();save();refreshTro();
@@ -3714,24 +3737,32 @@ function buildChips(){
     b.onclick=()=>{raceMode='run';raceSel=x;buildChips();send({t:'cfg',x,m:'run'});};
     c.appendChild(b);
   });
-  const d=document.createElement('button');
-  d.className='chip'+(raceMode==='lvl'?' on':'');
-  d.textContent=tr('⚔ דו-קרב שלב','⚔ Level Duel');
-  d.onclick=()=>{raceMode='lvl';buildChips();send({t:'cfg',x:raceSel,m:'lvl'});};
-  c.appendChild(d);
+  [3,5,10].forEach(n=>{ // 🏁 מרוץ שלבים: המארח בוחר עד איזה שלב, שניהם מתחילים משלב 1
+    const b=document.createElement('button');
+    b.className='chip'+(raceMode==='lvl'&&lvlSel===n?' on':'');
+    b.textContent='🏁 '+n+tr(' שלבים',' levels');
+    b.onclick=()=>{raceMode='lvl';lvlSel=n;buildChips();send({t:'cfg',x:raceSel,m:'lvl',n});};
+    c.appendChild(b);
+  });
 }
 $('lvStart').onclick=()=>{
   const seed=(Math.random()*16777216)|0;
-  send({t:'start',x:raceSel,seed,m:raceMode});
-  if(raceMode==='lvl')duelStart(seed);
+  send({t:'start',x:raceSel,seed,m:raceMode,n:lvlSel});
+  if(raceMode==='lvl')duelStart(lvlSel);
   else beginCountdown(raceSel,seed);
 };
-function duelStart(seed){
-  const li=40+(seed%60)*7%960; // שלב זהה משני הצדדים, טווח 40-999
+function duelStart(n){
   duelLive=true;customLv=null;
+  duelTarget=Math.max(1,n|0||5);duelCur=1;duelOppLv=1;
   $('raceOv').classList.add('hidden');
-  showToast(tr('⚔ דו-קרב: מי מסיים ראשון את שלב ','⚔ Duel: first to finish level ')+(li+1)+'!');
-  startRun(li);
+  showToast(tr('🏁 מרוץ שלבים: הראשון שמסיים ','🏁 Level race: first to finish ')+duelTarget+tr(' שלבים מנצח!',' levels wins!'));
+  startRun(0); // שניהם מתחילים משלב 1
+  duelHud();
+}
+function duelHud(){
+  if(!duelLive)return;
+  $('raceBar').style.display='flex';
+  $('oppInfo').textContent='🔴 '+oppName+' '+duelOppLv+'/'+duelTarget+' · '+tr('אתה ','you ')+duelCur+'/'+duelTarget;
 }
 function duelEnd(win){
   if(!duelLive)return;
