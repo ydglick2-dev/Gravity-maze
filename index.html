@@ -205,7 +205,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v48</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v49</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -4882,23 +4882,48 @@ setInterval(async()=>{
     d.live[curUser]={lv:runMode?0:levelIdx+1,md:runMode?'run':(duelLive?'race':'maze'),t:Date.now()};
     regPut(d);
   }catch(e){}
-},75000);
-/* 🔔 בלובי: בדיקת זימונים ובאנים כל 40ש */
-setInterval(async()=>{
-  if(!curUser||running||document.hidden)return;
+},30000);
+/* 📬 דואר נכנס כמעט-מיידי: מתנות, איפוסים, באנים וזימונים מוחלים תוך ~10 שניות,
+   בלובי וגם באמצע משחק — בלי לחכות לכניסה מחדש */
+async function processInbox(d){
+  if(!curUser||!d)return false;
+  if(enforceBan(d.bans&&d.bans[curUser]))return true;
+  let dirty=false;
+  const sm=d.summon&&d.summon[curUser];
+  if(sm&&sm.code&&Date.now()-(sm.ts||0)<180e3){
+    delete d.summon[curUser];dirty=true;
+    setTimeout(()=>showSummon(sm),400);
+  }
+  const g=d.gifts&&d.gifts[curUser];
+  if(g){delete d.gifts[curUser];dirty=true;}
+  if(dirty&&!await regPut(d))return false;
+  if(g){
+    const hadRst=!!g.rst;
+    applyGift(g,null);
+    save();refreshTro();
+    showToast(tr('🎁 קיבלת עדכון מהאדמין!','🎁 Admin update received!'));
+    tone(880,.1,'sine',.3);setTimeout(()=>tone(1318,.18,'sine',.3),110);
+    if(hadRst&&running){ // איפוס באמצע משחק — יציאה נקייה ללובי
+      running=false;paused=false;runMode=false;duelLive=false;hushRoll();recStop(false);
+      $('raceBar').style.display='none';
+      OVS.forEach(id=>$(id).classList.add('hidden'));
+      syncLobbyUI();
+    }
+  }
+  return false;
+}
+let inboxBusy=false;
+async function pollInbox(){
+  if(!curUser||document.hidden||inboxBusy)return;
+  inboxBusy=true;
   try{
     const d=await regFetch();
-    if(!d)return;
-    regCache=d;regCacheAt=Date.now();
-    if(enforceBan(d.bans&&d.bans[curUser]))return;
-    const s=d.summon&&d.summon[curUser];
-    if(s&&s.code&&Date.now()-(s.ts||0)<180e3){
-      delete d.summon[curUser];
-      regPut(d);
-      showSummon(s);
-    }
+    if(d){regCache=d;regCacheAt=Date.now();await processInbox(d);}
   }catch(e){}
-},40000);
+  inboxBusy=false;
+}
+setInterval(pollInbox,10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(pollInbox,600);});
 /* 👀 לוח "משחקים עכשיו" לאדמין */
 async function buildWatch(){
   const g=$('watchList');
@@ -4934,6 +4959,7 @@ async function buildWatch(){
   });
 }
 $('watchRefresh').onclick=buildWatch;
+setInterval(()=>{if(!$('watchOv').classList.contains('hidden')&&!document.hidden)buildWatch();},15000);
 $('watchBack').onclick=()=>{$('watchOv').classList.add('hidden');$('adminOv').classList.remove('hidden');};
 $('tablesBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('tablesOv').classList.remove('hidden');buildTables();};
 $('tbBack').onclick=()=>{$('tablesOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
@@ -5200,20 +5226,8 @@ async function checkGifts(){
   }else if(rec){
     cloudDirty=true; // המקומית מתקדמת יותר (או שאין בענן) — נדחוף אותה
   }
-  if(enforceBan(d.bans&&d.bans[curUser]))return;
-  const sm=d.summon&&d.summon[curUser];
-  if(sm&&sm.code&&Date.now()-(sm.ts||0)<180e3){
-    delete d.summon[curUser];dirty=true;
-    setTimeout(()=>showSummon(sm),1200);
-  }
-  const g=d.gifts[curUser];
-  if(g){delete d.gifts[curUser];dirty=true;}
-  if(dirty&&!await regPut(d))return;
-  if(g){
-    applyGift(g,null);
-    save();refreshTro();
-    showToast(tr('🎁 קיבלת מתנה מהאדמין!','🎁 You received an admin gift!'));
-  }
+  if(dirty)await regPut(d);
+  await processInbox(d);
 }
 /* ☁️ ניקוד התקדמות — רק מדדים שאף פעם לא יורדים, כדי ששמירה מתקדמת תמיד תנצח */
 function saveScore(d){
