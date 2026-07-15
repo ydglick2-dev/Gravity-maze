@@ -25,7 +25,7 @@
     color:#e8ecf4; text-align:center; padding:22px; z-index:20; transition:opacity .35s;
     overflow-y:auto; } /* תוכן ארוך נגלל — הכפתורים תמיד נגישים */
   .overlay > * { flex-shrink:0; }
-  .overlay.hidden { opacity:0; pointer-events:none; }
+  .overlay.hidden, .overlay.hidden * { opacity:0; pointer-events:none !important; }
   h1 { font-size:36px; font-weight:900; letter-spacing:1px;
        background:linear-gradient(180deg,#ffe9b8,#ffb84d);
        -webkit-background-clip:text; background-clip:text; color:transparent;
@@ -193,7 +193,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v31</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v32</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -202,8 +202,8 @@
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000">⚽ הטה את הטלפון וגלגל · תבקיע גול!</div>
-    <button class="btn" id="menuBtn2">☰ תפריט</button>
+    <div style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000" data-en="⚽ Tilt your phone and roll · score a goal!">⚽ הטה את הטלפון וגלגל · תבקיע גול!</div>
+    <button class="btn" id="menuBtn2" data-en="☰ Menu">☰ תפריט</button>
   </div>
 </div>
 
@@ -215,7 +215,16 @@
   <div class="pill" id="hudInfo"></div>
 </div>
 <div id="raceBar"><span id="oppInfo"></span></div>
-<button class="btn sec" id="updBtn">↻ גרסה חדשה זמינה — עדכן</button>
+<button class="btn sec" id="updBtn" data-en="↻ New version available — Update">↻ גרסה חדשה זמינה — עדכן</button>
+<button class="ic" id="setBtn" style="position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:25;display:none">⚙️</button>
+<div class="overlay hidden" id="settingsOv" style="z-index:24">
+  <h1 data-en="⚙️ Settings">⚙️ הגדרות</h1>
+  <button class="btn sec" id="setLang">🌐 English</button>
+  <button class="btn sec" id="setSound"></button>
+  <button class="btn sec" id="setMusic"></button>
+  <button class="btn sec" id="setPerf"></button>
+  <button class="btn" id="setBack" data-en="✕ Close">✕ סגירה</button>
+</div>
 <div id="hint" style="display:none"></div>
 <div id="toast"></div>
 <div id="banner"><div class="b1" id="bWorld"></div><div class="b2" id="bName"></div></div>
@@ -223,110 +232,113 @@
 <div class="overlay hidden" id="menuOv">
   <div class="big float">🎱</div>
   <h1 class="float">Gravity Maze</h1>
-  <p class="sub">1000 שלבים · 100 עולמות · הקושי מטפס, הכוחות מתחזקים.<br>3 פסילות לשלב. הטה את הטלפון. אל תיפול.</p>
+  <p class="sub" data-en="1000 levels · 100 worlds · the difficulty climbs, the powers grow. 3 falls per level. Tilt your phone. Don't fall.">1000 שלבים · 100 עולמות · הקושי מטפס, הכוחות מתחזקים.<br>3 פסילות לשלב. הטה את הטלפון. אל תיפול.</p>
   <div id="troLine" style="font-size:17px;font-weight:900;color:#ffd257">🏆 0</div>
   <div id="userChip" style="font-size:13px;font-weight:800;color:#9fb2d8;cursor:pointer;padding:4px 12px;border:1px solid #ffffff22;border-radius:999px;margin:2px 0">👤</div>
-  <button class="btn" id="playBtn">▶ שחק</button>
+  <button class="btn" id="playBtn" data-en="▶ Play">▶ שחק</button>
   <div class="row">
-    <button class="btn sec" id="raceBtn">🏁 תחרות</button>
-    <button class="btn sec" id="runBtn">🏃 ריצה</button>
+    <button class="btn sec" id="raceBtn" data-en="🏁 Live Race">🏁 תחרות</button>
+    <button class="btn sec" id="runBtn" data-en="🏃 Endless Run">🏃 ריצה</button>
   </div>
   <div class="row">
-    <button class="btn sec" id="dailyBtn">🎲 אתגר יומי</button>
-    <button class="btn sec" id="questBtn">📜 קווסטים</button>
-    <button class="btn sec" id="boardBtn">🌍 שיאים</button>
+    <button class="btn sec" id="dailyBtn" data-en="🎲 Daily Challenge">🎲 אתגר יומי</button>
+    <button class="btn sec" id="questBtn" data-en="📜 Quests">📜 קווסטים</button>
+    <button class="btn sec" id="boardBtn" data-en="🌍 Leaderboard">🌍 שיאים</button>
   </div>
   <div class="row">
-    <button class="btn sec" id="chestBtn">🎁 תיבות</button>
-    <button class="btn sec" id="skinBtn">🎨 סקינים</button>
+    <button class="btn sec" id="friendsBtn" data-en="👥 Friends">👥 חברים</button>
+    <button class="btn sec" id="tablesBtn" data-en="🏆 Leaderboards">🏆 טבלאות</button>
   </div>
   <div class="row">
-    <button class="btn sec" id="achBtn">🏅 הישגים</button>
-    <button class="btn sec" id="selectBtn">🗺 שלבים</button>
-    <button class="btn sec" id="adminBtn" style="display:none">🛠 אדמין</button>
-    <button class="btn sec" id="langBtn">🌐 English</button>
+    <button class="btn sec" id="chestBtn" data-en="🎁 Chests">🎁 תיבות</button>
+    <button class="btn sec" id="skinBtn" data-en="🎨 Skins">🎨 סקינים</button>
   </div>
-  <button class="btn sec" id="installBtn" style="display:none">📲 התקן כאפליקציה</button>
-  <button class="btn sec" id="menuClose">✕ חזרה ללובי</button>
+  <div class="row">
+    <button class="btn sec" id="achBtn" data-en="🏅 Achievements">🏅 הישגים</button>
+    <button class="btn sec" id="selectBtn" data-en="🗺 Levels">🗺 שלבים</button>
+    <button class="btn sec" id="adminBtn" style="display:none" data-en="🛠 Admin">🛠 אדמין</button>
+  </div>
+  <button class="btn sec" id="installBtn" style="display:none" data-en="📲 Install App">📲 התקן כאפליקציה</button>
+  <button class="btn sec" id="menuClose" data-en="✕ Back to Lobby">✕ חזרה ללובי</button>
 </div>
 
 <div class="overlay hidden" id="authOv" style="z-index:60;background:rgba(8,10,18,.96)">
   <div class="big float">👤</div>
-  <h1>מי משחק?</h1>
-  <p class="sub">לכל שחקן שמירה משלו: התקדמות, מטבעות, תיבות וסקינים.<br>☁️ מתחברים — וההתקדמות נשמרת בענן ועוברת איתך לכל מכשיר.</p>
-  <input class="tin" id="authUser" maxlength="14" placeholder="שם משתמש" autocomplete="username" style="max-width:260px">
-  <input class="tin" id="authPass" maxlength="24" type="password" placeholder="סיסמה" autocomplete="current-password" style="max-width:260px">
+  <h1 data-en="Who's Playing?">מי משחק?</h1>
+  <p class="sub" data-en="Each player has their own save: progress, coins, chests and skins. ☁️ Log in and your progress is saved to the cloud — on every device.">לכל שחקן שמירה משלו: התקדמות, מטבעות, תיבות וסקינים.<br>☁️ מתחברים — וההתקדמות נשמרת בענן ועוברת איתך לכל מכשיר.</p>
+  <input class="tin" id="authUser" maxlength="14" placeholder="שם משתמש" data-en-ph="Username" autocomplete="username" style="max-width:260px">
+  <input class="tin" id="authPass" maxlength="24" type="password" placeholder="סיסמה" data-en-ph="Password" autocomplete="current-password" style="max-width:260px">
   <div id="authErr" style="color:#ff7a7a;font-weight:700;min-height:20px;font-size:13px"></div>
-  <button class="btn" id="authLogin">התחבר</button>
+  <button class="btn" id="authLogin" data-en="Log In">התחבר</button>
   <div class="row">
-    <button class="btn sec" id="authReg">✨ הרשמה</button>
-    <button class="btn sec" id="authGuest">🎮 המשך כאורח</button>
+    <button class="btn sec" id="authReg" data-en="✨ Sign Up">✨ הרשמה</button>
+    <button class="btn sec" id="authGuest" data-en="🎮 Play as Guest">🎮 המשך כאורח</button>
   </div>
 </div>
 
 <div class="overlay hidden" id="adminOv" style="z-index:55;background:rgba(8,10,18,.95)">
-  <h1>🛠 אדמין</h1>
-  <p class="sub">שם ריק = אתה · שחקן במכשיר הזה — מיידי<br>שחקן רחוק — יקבל בכניסה הבאה שלו ☁️</p>
-  <input class="tin" id="admTarget" maxlength="14" placeholder="שם משתמש יעד (ריק = אני)" style="max-width:260px">
+  <h1 data-en="🛠 Admin">🛠 אדמין</h1>
+  <p class="sub" data-en="Empty name = you · player on this device — instant. Remote player — receives on next login ☁️">שם ריק = אתה · שחקן במכשיר הזה — מיידי<br>שחקן רחוק — יקבל בכניסה הבאה שלו ☁️</p>
+  <input class="tin" id="admTarget" maxlength="14" placeholder="שם משתמש יעד (ריק = אני)" data-en-ph="Target username (empty = me)" style="max-width:260px">
   <div class="row">
     <input class="tin" id="admTro" type="number" min="1" value="100" style="max-width:100px">
-    <button class="btn sec" id="admGiveTro">🏆 גביעים</button>
+    <button class="btn sec" id="admGiveTro" data-en="🏆 Trophies">🏆 גביעים</button>
   </div>
   <div class="row">
     <input class="tin" id="admCoins" type="number" min="1" value="500" style="max-width:100px">
-    <button class="btn sec" id="admGiveCoins">🪙 מטבעות</button>
+    <button class="btn sec" id="admGiveCoins" data-en="🪙 Coins">🪙 מטבעות</button>
   </div>
   <div class="row">
     <input class="tin" id="admChests" type="number" min="1" value="3" style="max-width:100px">
-    <button class="btn sec" id="admGiveChests">🎁 תיבות</button>
+    <button class="btn sec" id="admGiveChests" data-en="🎁 Chests">🎁 תיבות</button>
   </div>
   <div class="row">
     <input class="tin" id="admLevel" type="number" min="1" max="100" value="50" style="max-width:100px">
-    <button class="btn sec" id="admGiveLevel">🔓 פתח עד שלב</button>
+    <button class="btn sec" id="admGiveLevel" data-en="🔓 Unlock up to level">🔓 פתח עד שלב</button>
   </div>
   <div class="row">
-    <button class="btn sec" id="admUnlock">🔓 כל השלבים</button>
-    <button class="btn sec" id="admSkins">🎨 כל הסקינים</button>
+    <button class="btn sec" id="admUnlock" data-en="🔓 All levels">🔓 כל השלבים</button>
+    <button class="btn sec" id="admSkins" data-en="🎨 All skins">🎨 כל הסקינים</button>
   </div>
   <div class="row">
-    <button class="btn sec" id="admStars">⭐ 3★ בהכל</button>
-    <button class="btn sec" id="admAll">💎 הכל ביחד</button>
+    <button class="btn sec" id="admStars" data-en="⭐ 3★ everything">⭐ 3★ בהכל</button>
+    <button class="btn sec" id="admAll" data-en="💎 Everything">💎 הכל ביחד</button>
   </div>
   <div id="admMsg" style="color:#7ae08a;font-weight:700;min-height:20px;font-size:13px"></div>
-  <button class="btn sec" id="admBack">חזרה</button>
+  <button class="btn sec" id="admBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="selectOv">
-  <h1>בחר שלב</h1>
+  <h1 data-en="Choose Level">בחר שלב</h1>
   <div id="grid"></div>
-  <button class="btn sec" id="backBtn">חזרה</button>
+  <button class="btn sec" id="backBtn" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="pauseOv">
-  <h1>השהיה</h1>
-  <div class="slider-wrap">רגישות הטיה
+  <h1 data-en="Paused">השהיה</h1>
+  <div class="slider-wrap"><span data-en="Tilt Sensitivity">רגישות הטיה</span>
     <input type="range" id="sensSlider" min="60" max="170" value="100">
   </div>
   <div class="row">
-    <button class="btn" id="resumeBtn">המשך</button>
-    <button class="btn sec" id="restartBtn">שלב מחדש</button>
+    <button class="btn" id="resumeBtn" data-en="Resume">המשך</button>
+    <button class="btn sec" id="restartBtn" data-en="Restart Level">שלב מחדש</button>
   </div>
   <div class="row">
-    <button class="btn sec" id="calibBtn">🎯 כיול (זה "ישר")</button>
-    <button class="btn sec" id="toSelectBtn">בחירת שלב</button>
+    <button class="btn sec" id="calibBtn" data-en="🎯 Calibrate (this is level)">🎯 כיול (זה "ישר")</button>
+    <button class="btn sec" id="toSelectBtn" data-en="Level Select">בחירת שלב</button>
   </div>
   <div class="row">
     <button class="btn sec" id="ghostBtn"></button>
     <button class="btn sec" id="musicBtn"></button>
   </div>
   <div class="row">
-    <button class="btn sec" id="pauseMenuBtn">🏠 תפריט ראשי</button>
+    <button class="btn sec" id="pauseMenuBtn" data-en="🏠 Main Menu">🏠 תפריט ראשי</button>
     <button class="btn sec" id="perfBtn">⚡ ביצועים: אוטו</button>
   </div>
 </div>
 
 <div class="overlay hidden" id="chestOv">
-  <h1>🎁 תיבות</h1>
+  <h1 data-en="🎁 Chests">🎁 תיבות</h1>
   <div id="chestCount" class="pill">🎁 0</div>
   <div id="chestStage">
     <div id="chestRays"></div>
@@ -334,15 +346,15 @@
   </div>
   <div id="dropRow"></div>
   <div class="row">
-    <button class="btn sec" id="buyC1">🎁 תיבה · 300🪙</button>
+    <button class="btn sec" id="buyC1" data-en="🎁 Chest · 300🪙">🎁 תיבה · 300🪙</button>
     <button class="btn sec" id="buyC3">🎁×3 · 800🪙</button>
   </div>
-  <button class="btn" id="chestOpen">פתח תיבה</button>
-  <div style="font-size:12.5px;color:#aeb8c8">מסלול גביעים · תיבה כל 25🏆</div>
+  <button class="btn" id="chestOpen" data-en="Open Chest">פתח תיבה</button>
+  <div style="font-size:12.5px;color:#aeb8c8" data-en="Trophy road · a chest every 25🏆">מסלול גביעים · תיבה כל 25🏆</div>
   <div class="qBarWrap" style="width:230px"><div class="qBar" id="chestBar" style="width:0%"></div></div>
   <div id="chestCyc" style="font-size:12.5px;color:#aeb8c8"></div>
   <div id="chestDw" style="font-size:12.5px;color:#ffd257;font-weight:800"></div>
-  <button class="btn sec" id="chestBack">חזרה</button>
+  <button class="btn sec" id="chestBack" data-en="Back">חזרה</button>
 </div>
 
 <video id="chestVid" playsinline preload="auto" src="chest-open.mp4"
@@ -355,82 +367,111 @@
 </div>
 
 <div class="overlay hidden" id="questOv">
-  <h1>📜 קווסטים יומיים</h1>
+  <h1 data-en="📜 Daily Quests">📜 קווסטים יומיים</h1>
   <div id="questList" style="display:flex;flex-direction:column;gap:8px;width:min(330px,88vw);max-height:46vh;overflow-y:auto;padding:4px"></div>
   <div id="dwLine" class="pill"></div>
   <div id="questCyc" class="pill"></div>
-  <button class="btn sec" id="questBack">🏠 חזרה לתפריט</button>
+  <button class="btn sec" id="questBack" data-en="🏠 Main Menu">🏠 חזרה לתפריט</button>
 </div>
 
 <div class="overlay hidden" id="achOv">
-  <h1>🏅 הישגים</h1>
+  <h1 data-en="🏅 Achievements">🏅 הישגים</h1>
   <div id="achStats" style="font-size:13px;color:#aeb8c8;max-width:330px;line-height:1.7"></div>
   <div id="achList"></div>
-  <button class="btn sec" id="achBack">חזרה</button>
+  <button class="btn sec" id="achBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="skinOv">
-  <h1>🛍 החנות</h1>
+  <h1 data-en="🛍 Shop">🛍 החנות</h1>
   <div id="skinTro" style="font-size:17px;font-weight:900;color:#ffd257"></div>
   <div class="row">
-    <button class="chip on" id="tabSkin">🎨 סקינים</button>
-    <button class="chip" id="tabWin">✨ ניצחון</button>
-    <button class="chip" id="tabDeath">💀 מוות</button>
+    <button class="chip on" id="tabSkin" data-en="🎨 Skins">🎨 סקינים</button>
+    <button class="chip" id="tabWin" data-en="✨ Victory">✨ ניצחון</button>
+    <button class="chip" id="tabDeath" data-en="💀 Death">💀 מוות</button>
   </div>
   <div id="skinGrid"></div>
-  <button class="btn sec" id="skinBack">חזרה</button>
+  <button class="btn sec" id="skinBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="boardOv">
-  <h1>🌍 שיאי היום בעולם</h1>
+  <h1 data-en="🌍 Today's World Records">🌍 שיאי היום בעולם</h1>
   <div id="boardMe" class="pill"></div>
   <div id="boardList" style="display:flex;flex-direction:column;gap:6px;width:min(320px,86vw);max-height:52vh;overflow-y:auto"></div>
-  <button class="btn sec" id="boardBack">חזרה</button>
+  <button class="btn sec" id="boardBack" data-en="Back">חזרה</button>
+</div>
+
+<div class="overlay hidden" id="friendsOv">
+  <h1 data-en="👥 Friends">👥 חברים</h1>
+  <div class="row">
+    <input class="tin" id="frName" maxlength="14" placeholder="שם משתמש" data-en-ph="Username" style="max-width:190px">
+    <button class="btn sec" id="frAdd" data-en="➕ Add">➕ הוסף</button>
+  </div>
+  <div id="frMsg" style="min-height:18px;font-size:13px;color:#ffb0a0"></div>
+  <div id="frList" style="display:flex;flex-direction:column;gap:8px;width:min(340px,90vw);max-height:44vh;overflow-y:auto;padding:4px"></div>
+  <button class="btn sec" id="frBack" data-en="🏠 Main Menu">🏠 חזרה לתפריט</button>
+</div>
+
+<div class="overlay hidden" id="tablesOv">
+  <h1 data-en="🏆 Leaderboards">🏆 טבלאות</h1>
+  <div class="row">
+    <button class="chip on" id="tbWorld" data-en="🌍 World">🌍 עולמי</button>
+    <button class="chip" id="tbFriends" data-en="👥 Friends">👥 חברים</button>
+  </div>
+  <div class="row">
+    <button class="chip on" id="tbTro" data-en="🏆 Trophies">🏆 גביעים</button>
+    <button class="chip" id="tbCoin" data-en="🪙 Coins">🪙 מטבעות</button>
+  </div>
+  <div class="row">
+    <button class="chip" id="tbLvl" data-en="✅ Levels">✅ שלבים</button>
+    <button class="chip" id="tbStar" data-en="⭐ Stars">⭐ כוכבים</button>
+  </div>
+  <div id="tbList" style="display:flex;flex-direction:column;gap:6px;width:min(340px,90vw);max-height:40vh;overflow-y:auto;padding:4px"></div>
+  <button class="btn sec" id="tbBack" data-en="🏠 Main Menu">🏠 חזרה לתפריט</button>
 </div>
 
 <div class="overlay hidden" id="raceOv">
-  <h1>🏁 תחרות חיה</h1>
-  <p class="sub">שני טלפונים, אותם שלבים, אותו רגע.<br>הראשון שמסיים לוקח 🏆10.</p>
-  <input class="tin" id="raceName" maxlength="12" placeholder="השם שלך">
+  <h1 data-en="🏁 Live Race">🏁 תחרות חיה</h1>
+  <p class="sub" data-en="Two phones, same levels, same moment. First to finish takes 🏆10.">שני טלפונים, אותם שלבים, אותו רגע.<br>הראשון שמסיים לוקח 🏆10.</p>
+  <input class="tin" id="raceName" maxlength="12" placeholder="השם שלך" data-en-ph="Your name">
   <div class="row" id="lvChoose">
-    <button class="btn" id="lvCreate">🎯 צור חדר</button>
-    <button class="btn sec" id="lvJoin">🔗 הצטרף עם קוד</button>
-    <button class="btn sec" id="lvQuick">🎲 יריב אקראי</button>
+    <button class="btn" id="lvCreate" data-en="🎯 Create Room">🎯 צור חדר</button>
+    <button class="btn sec" id="lvJoin" data-en="🔗 Join with Code">🔗 הצטרף עם קוד</button>
+    <button class="btn sec" id="lvQuick" data-en="🎲 Random Opponent">🎲 יריב אקראי</button>
   </div>
   <div id="lvHostPanel" style="display:none;flex-direction:column;gap:10px;align-items:center">
-    <div style="font-size:13px;color:#aeb8c8">שלח לחבר את קוד החדר:</div>
+    <div style="font-size:13px;color:#aeb8c8" data-en="Send your friend the room code:">שלח לחבר את קוד החדר:</div>
     <div id="lvCode" style="font-size:42px;font-weight:900;letter-spacing:10px;color:#ffd257;direction:ltr;text-shadow:0 0 18px rgba(255,210,87,.5)"></div>
   </div>
   <div id="lvJoinPanel" style="display:none;flex-direction:column;gap:12px;align-items:center">
-    <input class="tin" id="lvCodeIn" maxlength="5" placeholder="קוד חדר"
+    <input class="tin" id="lvCodeIn" maxlength="5" placeholder="קוד חדר" data-en-ph="Room code"
       style="direction:ltr;text-transform:uppercase;letter-spacing:8px;font-size:24px;text-align:center;width:200px">
-    <button class="btn" id="lvConnect">התחבר</button>
+    <button class="btn" id="lvConnect" data-en="Connect">התחבר</button>
   </div>
   <div id="lvOpp" style="font-size:17px;font-weight:800;color:#a8ff9e"></div>
   <div id="lvHostGo" style="display:none;flex-direction:column;gap:12px;align-items:center">
     <div class="row" id="raceChips"></div>
-    <button class="btn" id="lvStart">🚀 התחל מרוץ</button>
+    <button class="btn" id="lvStart" data-en="🚀 Start Race">🚀 התחל מרוץ</button>
   </div>
   <div id="lvStatus" style="font-size:13.5px;color:#aeb8c8;min-height:20px;max-width:300px"></div>
-  <button class="btn sec" id="raceBack">חזרה</button>
+  <button class="btn sec" id="raceBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="raceResOv">
   <div class="big" id="rrIcon"></div>
   <h1 id="rrTitle"></h1>
   <p class="sub" id="rrText"></p>
-  <button class="btn" id="rrBack">לתפריט</button>
+  <button class="btn" id="rrBack" data-en="To Menu">לתפריט</button>
 </div>
 
 <div class="overlay hidden" id="failOv">
   <div class="big">💔</div>
-  <h1>נגמרו הפסילות</h1>
+  <h1 data-en="Out of Lives">נגמרו הפסילות</h1>
   <p class="sub" id="failText"></p>
   <div class="row">
-    <button class="btn" id="failRetry">נסה שוב</button>
-    <button class="btn sec" id="failSelect">בחירת שלב</button>
+    <button class="btn" id="failRetry" data-en="Try Again">נסה שוב</button>
+    <button class="btn sec" id="failSelect" data-en="Level Select">בחירת שלב</button>
   </div>
-  <button class="btn sec" id="failMenu">🏠 חזרה לתפריט</button>
+  <button class="btn sec" id="failMenu" data-en="🏠 Main Menu">🏠 חזרה לתפריט</button>
 </div>
 
 <div class="overlay hidden" id="doneOv">
@@ -439,12 +480,12 @@
   <div id="starsBig"></div>
   <p class="sub" id="doneText"></p>
   <div class="row">
-    <button class="btn" id="nextBtn">המשך</button>
-    <button class="btn sec" id="replayBtn">שוב</button>
+    <button class="btn" id="nextBtn" data-en="Continue">המשך</button>
+    <button class="btn sec" id="replayBtn" data-en="Again">שוב</button>
   </div>
   <div class="row">
-    <button class="btn sec" id="doneMenu">🏠 תפריט</button>
-    <button class="btn sec" id="doneLobby">⚽ לובי</button>
+    <button class="btn sec" id="doneMenu" data-en="🏠 Menu">🏠 תפריט</button>
+    <button class="btn sec" id="doneLobby" data-en="⚽ Lobby">⚽ לובי</button>
   </div>
 </div>
 
@@ -457,6 +498,9 @@ let W=0,H=0,DPR=1;
 /* ⚡ מצב ביצועים: מנחית blur גלובלית, DPR מופחת, פחות חלקיקים */
 let PERF=false,perfPref='a',__ft=0,__fn=0;
 try{perfPref=localStorage.getItem('mazePerf')||'a';}catch(e){}
+/* 🌐 שפה: he/en · tr() בוחר את המחרוזת לפי השפה */
+let uiLang='he';try{uiLang=localStorage.getItem('mazeLang')||'he';}catch(e){}
+const tr=(he,en)=>uiLang==='en'?en:he;
 window.__BLUR=1;
 function setPerf(on){
   PERF=!!on;
@@ -529,6 +573,13 @@ const THEMES=[
 
 /* ============ LEVELS v3 · פתירות מובטחת · 8 ארכיטיפים · בוסים ============ */
 const ZONES=['ענבר','אורורה','לבה','סופה','תהום','מקדש','זוהר','צללים','ליבה','אינסוף'];
+const ZONES_EN=['Amber','Aurora','Lava','Storm','Abyss','Temple','Glow','Shadows','Core','Infinity'];
+const zoneName=z=>tr(ZONES[z%10],ZONES_EN[z%10]);
+const BOSS_EN={'בוס: שומר הענבר':'Boss: Amber Warden','בוס: לב הקרח':'Boss: Heart of Ice',
+ 'בוס: עין הלבה':'Boss: Lava Eye','בוס: עין הסערה':'Boss: Eye of the Storm',
+ 'בוס: פי התהום':'Boss: Mouth of the Abyss','בוס: כספת המקדש':'Boss: Temple Vault',
+ 'בוס: מסדרון הזוהר':'Boss: Glow Corridor','בוס: מבוך הצללים':'Boss: Shadow Maze',
+ 'בוס: פעימת הליבה':'Boss: Core Pulse','הבוס הסופי: לב האינסוף':'Final Boss: Heart of Infinity'};
 function mulberry(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;
   let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;
   return((t^t>>>14)>>>0)/4294967296;};}
@@ -872,7 +923,7 @@ function drawCine(){
     ctx.font='900 42px -apple-system,Arial';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle='#ff6b5c';
     ctx.shadowColor='rgba(255,60,40,.9)';ctx.shadowBlur=20;
-    ctx.fillText('💔 הפסדת!',0,0);
+    ctx.fillText(tr('💔 הפסדת!','💔 You Lost!'),0,0);
     ctx.shadowBlur=0;ctx.restore();
   }else{
     ctx.save();ctx.translate(W/2,H*.4);ctx.rotate(perfRot);
@@ -890,7 +941,7 @@ function drawCine(){
     ctx.fillStyle='#ffe08a';
     ctx.shadowColor='rgba(255,200,90,1)';ctx.shadowBlur=22;
     const z=(levelIdx/10)|0;
-    ctx.fillText('🏆 עולם '+ZONES[Math.min(9,z)]+' הושלם!',0,0);
+    ctx.fillText('🏆 '+tr('עולם ','World ')+zoneName(Math.min(9,z))+tr(' הושלם!',' complete!'),0,0);
     ctx.shadowBlur=0;ctx.restore();
   }
 }
@@ -1260,8 +1311,8 @@ function loadLevel(i){
   particles.length=0;trail.length=0;shake=0;flashW=0;flashR=0;
   updateHud();
   const z=(levelIdx/10)|0;
-  $('bWorld').textContent=customLv?(customLv._world||'מיוחד'):('עולם '+(z+1)+' · '+ZONES[z%10]);
-  $('bName').textContent=customLv?customLv.name:(lv.boss?lv.name:'שלב '+(levelIdx+1));
+  $('bWorld').textContent=customLv?(customLv._daily?tr('האתגר של היום',"Today's Challenge"):tr(customLv._world||'מיוחד','Special')):(tr('עולם ','World ')+(z+1)+' · '+zoneName(z));
+  $('bName').textContent=customLv?(customLv._daily?tr('אתגר יומי','Daily Challenge'):customLv.name):(lv.boss?tr(lv.name,BOSS_EN[lv.name]||lv.name):tr('שלב ','Level ')+(levelIdx+1));
   $('banner').classList.add('show');
   clearTimeout($('banner')._t);
   $('banner')._t=setTimeout(()=>$('banner').classList.remove('show'),1500);
@@ -1278,7 +1329,7 @@ function respawn(){
 function updateHud(){
   if(runMode){
     $('hudInfo').textContent='❤️'.repeat(Math.max(0,runLives))+'🤍'.repeat(Math.max(0,3-runLives))+
-      ' · '+(runLive?'🏁':'🏃')+' '+(Math.floor(runDist))+'מ׳';
+      ' · '+(runLive?'🏁':'🏃')+' '+(Math.floor(runDist))+tr('מ׳','m');
     return;
   }
   const got=starGot.filter(Boolean).length,tot=starGot.length;
@@ -1319,9 +1370,9 @@ async function enableSensors(){
   setTimeout(()=>{
     if(!gotOrientation){
       touchMode=true;
-      $('hint').textContent='אין גישה לחיישן כאן — גרור אצבע כדי להטות. להטיה אמיתית פתח דרך אתר (HTTPS) בכרום';
+      $('hint').textContent=tr('אין גישה לחיישן כאן — גרור אצבע כדי להטות. להטיה אמיתית פתח דרך אתר (HTTPS) בכרום','No tilt sensor here — drag a finger to steer. For real tilt open via HTTPS in Chrome');
     }else{
-      $('hint').textContent='הטה את הטלפון בעדינות · ⏸ ← 🎯 כיול אם הכיוון עקום';
+      $('hint').textContent=tr('הטה את הטלפון בעדינות · ⏸ ← 🎯 כיול אם הכיוון עקום','Tilt gently · ⏸ → 🎯 calibrate if it drifts');
       setTimeout(()=>{$('hint').style.display='none';},4500);
     }
     updateHud();
@@ -1488,7 +1539,7 @@ function physics(dt,t){
     ball.y+=(fallPt.y-ball.y)*Math.min(1,dt*10);
     if(falling>.55&&POW()==='shield'&&!shieldUsed&&!runMode){
       shieldUsed=true;falling=0;fallPt=null;shake=Math.max(shake,6);
-      showToast('🛡 המגן ספג את הנפילה!');respawn();return;
+      showToast(tr('🛡 המגן ספג את הנפילה!','🛡 Shield absorbed the fall!'));respawn();return;
     }
     if(falling>.55){lvDeaths++;stFalls++;questAdd('fall',1);if(navigator.vibrate)navigator.vibrate(120);
       if(duelLive)send({t:'lh',h:Math.max(0,3-lvDeaths)});
@@ -1576,7 +1627,7 @@ function physics(dt,t){
     const p=P(sw.p),inside=Math.hypot(ball.x-p.x,ball.y-p.y)<swR();
     if(inside&&!swState[i].inside){
       swState[i].open=!swState[i].open;sfx.sw();
-      showToast(swState[i].open?'⚡ מחסום נפתח!':'⚡ מחסום נסגר!');
+      showToast(swState[i].open?tr('⚡ מחסום נפתח!','⚡ Barrier opened!'):tr('⚡ מחסום נסגר!','⚡ Barrier closed!'));
       emit(p.x,p.y,12,{color:THEMES[lv.th].accent,sp:120,size:3,decay:2.4,gl:true});
       if(navigator.vibrate)navigator.vibrate(20);
     }
@@ -1588,7 +1639,7 @@ function physics(dt,t){
     const p=P(s);
     if(Math.hypot(ball.x-p.x,ball.y-p.y)<starR()+ball.r*.6){
       starGot[i]=true;sfx.star();comboN++;comboT=2.5;questAdd('star',1);updateHud();
-      if(comboN>=3)showToast('🔥 קומבו ×'+comboN+'!');
+      if(comboN>=3)showToast(tr('🔥 קומבו ×','🔥 Combo ×')+comboN+'!');
       emit(p.x,p.y,14,{color:['#ffe27a','#ffd257','#fff'],sp:120,size:3,decay:2.4,gl:true});
     }
   });
@@ -1600,7 +1651,7 @@ function physics(dt,t){
       keyGot[i]=true;sfx.key();setTimeout(sfx.gate,250);
       const g=R(k.g);
       emit(g.x+g.w/2,g.y+g.h/2,18,{color:['#ffd98a','#ffe9b8'],sp:110,size:3,decay:2.2,gl:true});
-      showToast('🔓 השער נפתח!');
+      showToast(tr('🔓 השער נפתח!','🔓 Gate opened!'));
     }
   });
   // portals
@@ -1917,7 +1968,7 @@ function draw(t){
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle='#ffe08a';
     ctx.shadowColor='rgba(255,200,90,.9)';ctx.shadowBlur=16;
-    ctx.fillText('✨ מושלם! ✨',board.x+board.w/2,board.y+board.h*.3);
+    ctx.fillText(tr('✨ מושלם! ✨','✨ Perfect! ✨'),board.x+board.w/2,board.y+board.h*.3);
     ctx.shadowBlur=0;ctx.restore();
   }
   ctx.restore(); // clip
@@ -1949,20 +2000,20 @@ function rrc(c,x,y,w,h,rad){const q=Math.min(rad,w/2,h/2);c.beginPath();
 /* ---- ✨💀 אפקטי ניצחון ומוות — פריטים ---- */
 let wSel=0,dSel=0,wOw=[0],dOw=[0];
 const WFX=[
- {name:'קונפטי',icon:'🎊',price:0,rar:0},
- {name:'זיקוקים',icon:'🎆',price:180,rar:1},
- {name:'גשם כוכבים',icon:'⭐',price:220,rar:1},
- {name:'גשם מטבעות',icon:'🪙',price:260,rar:1},
- {name:'לבבות',icon:'💛',price:300,rar:2},
- {name:'סופרנובה',icon:'🌟',price:420,rar:2}
+ {name:'קונפטי',en:'Confetti',icon:'🎊',price:0,rar:0},
+ {name:'זיקוקים',en:'Fireworks',icon:'🎆',price:180,rar:1},
+ {name:'גשם כוכבים',en:'Star Rain',icon:'⭐',price:220,rar:1},
+ {name:'גשם מטבעות',en:'Coin Rain',icon:'🪙',price:260,rar:1},
+ {name:'לבבות',en:'Hearts',icon:'💛',price:300,rar:2},
+ {name:'סופרנובה',en:'Supernova',icon:'🌟',price:420,rar:2}
 ];
 const DFX=[
- {name:'שאיבה',icon:'🌀',price:0,rar:0},
- {name:'פיצוץ',icon:'💥',price:160,rar:0},
- {name:'ברק',icon:'⚡',price:240,rar:1},
- {name:'קרח נשבר',icon:'❄️',price:240,rar:1},
- {name:'להבות',icon:'🔥',price:320,rar:1},
- {name:'חור שחור',icon:'🕳️',price:420,rar:2}
+ {name:'שאיבה',en:'Vortex',icon:'🌀',price:0,rar:0},
+ {name:'פיצוץ',en:'Explosion',icon:'💥',price:160,rar:0},
+ {name:'ברק',en:'Lightning',icon:'⚡',price:240,rar:1},
+ {name:'קרח נשבר',en:'Ice Shatter',icon:'❄️',price:240,rar:1},
+ {name:'להבות',en:'Flames',icon:'🔥',price:320,rar:1},
+ {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:420,rar:2}
 ];
 function playWinFX(x,y,big){
   const k=big?2:1;
@@ -2032,7 +2083,7 @@ function playDeathFX(x,y,T){
   timeScale=Math.min(timeScale,.35);
 }
 const SKINS=[
- {name:'פלדה',price:0,rar:0,draw:(c,r,rot,T)=>{
+ {name:'פלדה',en:'Steel',price:0,rar:0,draw:(c,r,rot,T)=>{
    const bg=c.createRadialGradient(-r*.4,-r*.45,r*.1,0,0,r*1.15);
    bg.addColorStop(0,'#fff');bg.addColorStop(.25,'#d6dde6');bg.addColorStop(.6,'#8a95a2');bg.addColorStop(1,'#333b46');
    c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
@@ -2041,7 +2092,7 @@ const SKINS=[
      c.beginPath();c.arc(Math.cos(a)*r*.55,Math.sin(a)*r*.55,r*.22,0,TAU);c.fill();}
    c.globalAlpha=1;
    c.beginPath();c.arc(-r*.35,-r*.4,r*.16,0,TAU);c.fillStyle='rgba(255,255,255,.95)';c.fill();}},
- {name:'כדורגל',price:100,rar:0,draw:(c,r,rot)=>{
+ {name:'כדורגל',en:'Soccer',price:100,rar:0,draw:(c,r,rot)=>{
    c.fillStyle='#f4f4f0';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.7);
    c.fillStyle='#16181c';pent(c,0,0,r*.34,0);c.fill();
@@ -2052,7 +2103,7 @@ const SKINS=[
      c.beginPath();c.moveTo(Math.cos(a)*r*.34,Math.sin(a)*r*.34);
      c.lineTo(Math.cos(a)*r*.58,Math.sin(a)*r*.58);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'כדורסל',price:100,rar:0,draw:(c,r,rot)=>{
+ {name:'כדורסל',en:'Basketball',price:100,rar:0,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.2,0,0,r);
    g.addColorStop(0,'#ff9a52');g.addColorStop(1,'#c9531e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2063,14 +2114,14 @@ const SKINS=[
    c.beginPath();c.arc(-r*1.15,0,r*.95,0,TAU);c.stroke();
    c.beginPath();c.arc(r*1.15,0,r*.95,0,TAU);c.stroke();
    c.restore();skShade(c,r);}},
- {name:'טניס',price:150,rar:0,draw:(c,r,rot)=>{
+ {name:'טניס',en:'Tennis',price:150,rar:0,draw:(c,r,rot)=>{
    c.fillStyle='#cfe23a';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.7);
    c.strokeStyle='#f8f8f0';c.lineWidth=r*.13;
    c.beginPath();c.arc(-r*1.05,0,r*1.05,-.9,.9);c.stroke();
    c.beginPath();c.arc(r*1.05,0,r*1.05,Math.PI-.9,Math.PI+.9);c.stroke();
    c.restore();skShade(c,r);}},
- {name:'ביליארד 8',price:200,rar:1,draw:(c,r,rot)=>{
+ {name:'ביליארד 8',en:'8-Ball',price:200,rar:1,draw:(c,r,rot)=>{
    c.fillStyle='#101216';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.5);
    c.beginPath();c.arc(0,-r*.13,r*.4,0,TAU);c.fillStyle='#f2f2ee';c.fill();
@@ -2078,7 +2129,7 @@ const SKINS=[
    c.textAlign='center';c.textBaseline='middle';
    c.fillText('8',0,-r*.11);
    c.restore();skShade(c,r);}},
- {name:'לבה',price:250,rar:1,draw:(c,r,rot)=>{
+ {name:'לבה',en:'Lava',price:250,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r);
    g.addColorStop(0,'#ffd23c');g.addColorStop(.45,'#ff7a2a');g.addColorStop(1,'#5a130a');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2089,7 +2140,7 @@ const SKINS=[
      c.lineTo(Math.cos(a+.5)*r*.6,Math.sin(a+.5)*r*.6);
      c.lineTo(Math.cos(a+.3)*r*.95,Math.sin(a+.3)*r*.95);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'קרח',price:250,rar:1,draw:(c,r,rot)=>{
+ {name:'קרח',en:'Ice',price:250,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.35,r*.1,0,0,r);
    g.addColorStop(0,'#eafaff');g.addColorStop(.5,'#9fd8f2');g.addColorStop(1,'#3c85b2');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2099,7 +2150,7 @@ const SKINS=[
      c.beginPath();c.moveTo(Math.cos(a)*r,Math.sin(a)*r);
      c.lineTo(-Math.cos(a)*r,-Math.sin(a)*r);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'קול 😎',price:300,rar:1,draw:(c,r,rot)=>{
+ {name:'קול 😎',en:'Cool 😎',price:300,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.35,r*.1,0,0,r);
    g.addColorStop(0,'#ffe873');g.addColorStop(1,'#f2b31e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2111,20 +2162,20 @@ const SKINS=[
    c.strokeStyle='#16181c';c.lineWidth=r*.11;c.lineCap='round';
    c.beginPath();c.arc(0,r*.12,r*.5,.35,Math.PI-.35);c.stroke();
    c.restore();skShade(c,r);}},
- {name:'זהב',price:400,rar:2,draw:(c,r,rot)=>{
+ {name:'זהב',en:'Gold',price:400,rar:2,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.4,-r*.45,r*.08,0,0,r*1.1);
    g.addColorStop(0,'#fffbe0');g.addColorStop(.35,'#ffd95e');g.addColorStop(.75,'#d69a1e');g.addColorStop(1,'#7a520c');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
    c.strokeStyle='rgba(255,250,220,.6)';c.lineWidth=r*.08;
    c.beginPath();c.arc(0,0,r*.72,Math.PI*1.05,Math.PI*1.65);c.stroke();
    skShade(c,r);}},
- {name:'אבטיח',price:120,rar:0,draw:(c,r,rot)=>{
+ {name:'אבטיח',en:'Watermelon',price:120,rar:0,draw:(c,r,rot)=>{
    c.fillStyle='#2e8b3a';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.5);
    c.strokeStyle='#1d5c26';c.lineWidth=r*.16;
    for(let k=0;k<4;k++){c.beginPath();c.arc(-r*1.3,0,r*(1.1+k*.35),-.7,.7);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'דונאט',price:150,rar:0,draw:(c,r,rot)=>{
+ {name:'דונאט',en:'Donut',price:150,rar:0,draw:(c,r,rot)=>{
    c.fillStyle='#e8a25c';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.6);
    c.beginPath();c.arc(0,0,r*.72,0,TAU);c.fillStyle='#ff8ac2';c.fill();
@@ -2134,7 +2185,7 @@ const SKINS=[
      c.save();c.translate(Math.cos(a)*r*.5,Math.sin(a)*r*.5);c.rotate(a);
      c.fillStyle=cols[k%4];c.fillRect(-r*.09,-r*.03,r*.18,r*.06);c.restore();}
    c.restore();skShade(c,r);}},
- {name:'כדור הארץ',price:200,rar:1,draw:(c,r,rot)=>{
+ {name:'כדור הארץ',en:'Earth',price:200,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.2,0,0,r);
    g.addColorStop(0,'#4aa8e8');g.addColorStop(1,'#1a5c9e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2143,7 +2194,7 @@ const SKINS=[
    c.beginPath();c.ellipse(r*.4,r*.3,r*.3,r*.4,.4,0,TAU);c.fill();
    c.beginPath();c.ellipse(r*.1,-r*.55,r*.2,r*.14,0,0,TAU);c.fill();
    c.restore();skShade(c,r);}},
- {name:'ירח',price:180,rar:1,draw:(c,r,rot)=>{
+ {name:'ירח',en:'Moon',price:180,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.2,0,0,r);
    g.addColorStop(0,'#e8e8f0');g.addColorStop(1,'#9a9ab0');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2151,7 +2202,7 @@ const SKINS=[
    for(const pp of [[-.35,-.2,.2],[.3,.15,.28],[-.1,.5,.15],[.45,-.45,.13],[-.55,.3,.11]]){
      c.beginPath();c.arc(pp[0]*r,pp[1]*r,pp[2]*r,0,TAU);c.fill();}
    c.restore();skShade(c,r);}},
- {name:'עין',price:250,rar:1,draw:(c,r,rot)=>{
+ {name:'עין',en:'Eye',price:250,rar:1,draw:(c,r,rot)=>{
    c.fillStyle='#f2f0e8';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(Math.sin(rot*.5)*.3);
    c.beginPath();c.arc(0,0,r*.52,0,TAU);
@@ -2165,7 +2216,7 @@ const SKINS=[
      c.beginPath();c.moveTo(Math.cos(a)*r*.6,Math.sin(a)*r*.6);
      c.lineTo(Math.cos(a)*r*.95,Math.sin(a)*r*.95);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'כדור חוף',price:160,rar:0,draw:(c,r,rot)=>{
+ {name:'כדור חוף',en:'Beach Ball',price:160,rar:0,draw:(c,r,rot)=>{
    c.save();c.rotate(rot*.7);
    const cols=['#ff5c5c','#fff','#ffd23c','#fff','#4aa8e8','#fff'];
    for(let k=0;k<6;k++){
@@ -2173,7 +2224,7 @@ const SKINS=[
      c.fillStyle=cols[k];c.fill();}
    c.beginPath();c.arc(0,0,r*.16,0,TAU);c.fillStyle='#fff';c.fill();
    c.restore();skShade(c,r);}},
- {name:'דיסקו',price:350,rar:2,draw:(c,r,rot)=>{
+ {name:'דיסקו',en:'Disco',price:350,rar:2,draw:(c,r,rot)=>{
    c.fillStyle='#8a8a9a';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.6);
    for(let gy=-3;gy<=3;gy++)for(let gx=-3;gx<=3;gx++){
@@ -2182,7 +2233,7 @@ const SKINS=[
      c.fillStyle=['#ffd6e8','#d6f0ff','#fff6c8','#e0ffd6','#eed6ff'][hue];
      c.fillRect(gx*r*.3-r*.12,gy*r*.3-r*.12,r*.24,r*.24);}
    c.restore();skShade(c,r);}},
- {name:'פצצה',price:300,rar:1,draw:(c,r,rot)=>{
+ {name:'פצצה',en:'Bomb',price:300,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r);
    g.addColorStop(0,'#4a4a56');g.addColorStop(1,'#101216');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2193,7 +2244,7 @@ const SKINS=[
    c.fillStyle='rgba(255,'+((150+fl*100)|0)+',60,'+fl+')';
    c.beginPath();c.arc(r*.85,-r*.8,r*.14*fl+r*.06,0,TAU);c.fill();
    c.restore();skShade(c,r);}},
- {name:'דלעת',price:220,rar:1,draw:(c,r,rot)=>{
+ {name:'דלעת',en:'Pumpkin',price:220,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.2,0,0,r);
    g.addColorStop(0,'#ffa23c');g.addColorStop(1,'#c9641e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2207,14 +2258,14 @@ const SKINS=[
    for(let k=0;k<=6;k++)c.lineTo(-r*.4+k*r*.133,r*.25+(k%2?r*.14:0));
    c.lineTo(r*.4,r*.42);c.lineTo(-r*.4,r*.42);c.closePath();c.fill();
    c.restore();skShade(c,r);}},
- {name:'קשת בענן',price:450,rar:2,draw:(c,r,rot)=>{
+ {name:'קשת בענן',en:'Rainbow',price:450,rar:2,draw:(c,r,rot)=>{
    c.save();c.rotate(rot*.5);
    const cols=['#ff5c5c','#ffa23c','#ffe45c','#5cd65c','#4aa8e8','#a85ce8'];
    for(let k=0;k<6;k++){
      c.strokeStyle=cols[k];c.lineWidth=r*.19;
      c.beginPath();c.arc(0,0,r*(1.05-k*.17),0,TAU);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'גלקסיה',price:500,rar:2,draw:(c,r,rot)=>{
+ {name:'גלקסיה',en:'Galaxy',price:500,rar:2,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r);
    g.addColorStop(0,'#5a3ba8');g.addColorStop(.6,'#241452');g.addColorStop(1,'#0a0620');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2251,7 +2302,7 @@ function drawBall(T){
 /* ============ ⚽ לובי תלת-ממד: מגרש כדורגל ============ */
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -2321,6 +2372,7 @@ function syncLobbyUI(){
   const anyOv=OVS.some(id=>!$(id).classList.contains('hidden'));
   $('lobbyUI').style.display=(!running&&!anyOv)?'flex':'none';
   $('hud').style.display=running?'flex':'none';
+  $('setBtn').style.display=running?'none':'block'; // ⚙️ זמין בלובי ובתפריטים, לא בזמן משחק
   if(running)$('game3d').style.display='none';
 }
 function buildLobbyBg(){
@@ -2357,7 +2409,7 @@ function lobbyFrame(dt,t){
   if(LB.z<1){
     if(Math.abs(LB.x)<2.7){
       LB.goals++;LB.glow=1;
-      showToast('⚽ גוֹל! ('+LB.goals+')');
+      showToast(tr('⚽ גוֹל! (','⚽ GOAL! (')+LB.goals+')');
       sfx.win();
       for(let i=0;i<30;i++){
         if(particles.length>240)particles.shift();
@@ -2800,7 +2852,7 @@ function finishLevel(){
     let bonus='';
     if(dailyLast!==customLv._daily){addTro(5);stDailies++;questAdd('daily',1);addDailyWin();dailyLast=customLv._daily;bonus=' · +5🏆';}
     if(apiOn())api('/daily/submit',{date:customLv._daily,name:myName||'שחקן',tm:Math.round(lvTime*1000)})
-      .then(r=>{if(r&&r.rank)showToast('🌍 מקום '+r.rank+' בעולם היום!');});
+      .then(r=>{if(r&&r.rank)showToast(tr('🌍 מקום ','🌍 Rank ')+r.rank+tr(' בעולם היום!',' in the world today!'));});
     const gk2=gKeyFor();
     if(gk2&&ghostRec.length>1){
       const db=gLoadDB(),old=db[gk2];
@@ -2808,10 +2860,10 @@ function finishLevel(){
     }
     checkAch();
     $('medalBig').textContent=md2||'🎲';
-    $('doneTitle').textContent='אתגר יומי הושלם!';
+    $('doneTitle').textContent=tr('אתגר יומי הושלם!','Daily challenge complete!');
     $('starsBig').textContent='★'.repeat(starGot.filter(Boolean).length)+'☆'.repeat(Math.max(0,starGot.length-starGot.filter(Boolean).length));
-    $('doneText').textContent='זמן: '+fmt(lvTime)+' '+md2+bonus+' · מחר מחכה אתגר חדש';
-    $('nextBtn').textContent='לתפריט';
+    $('doneText').textContent=tr('זמן: ','Time: ')+fmt(lvTime)+' '+md2+bonus+tr(' · מחר מחכה אתגר חדש',' · a new challenge awaits tomorrow');
+    $('nextBtn').textContent=tr('לתפריט','To Menu');
     save();$('doneOv').classList.remove('hidden');return;
   }
   running=false;paused=false;
@@ -2820,7 +2872,7 @@ function finishLevel(){
   s.done=true;s.stars=Math.max(s.stars,got);
   if(duelLive){
     send({t:'lwin'});duelLive=false;running=false;paused=false;hushRoll();
-    endDuel(true,'סיימת את השלב ראשון! ⚔');
+    endDuel(true,tr('סיימת את השלב ראשון! ⚔','You finished the level first! ⚔'));
     return;
   }
   unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,levelIdx+1));
@@ -2839,15 +2891,15 @@ function finishLevel(){
   const medal=medalFor(levelIdx,lvTime);
   const last=levelIdx+1>=LEVELS.length;
   $('medalBig').textContent=last?'🏆':medal;
-  $('doneTitle').textContent=last?'סוף הפרק הראשון!':'שלב '+(levelIdx+1)+' הושלם!';
+  $('doneTitle').textContent=last?tr('סוף הפרק הראשון!','End of Chapter One!'):tr('שלב ','Level ')+(levelIdx+1)+tr(' הושלם!',' complete!');
   $('starsBig').textContent='★'.repeat(got)+'☆'.repeat(Math.max(0,starGot.length-got));
-  let txt='זמן: '+fmt(lvTime)+' '+medal+(lvDeaths?' · נפילות: '+lvDeaths:' · בלי נפילות!')+' · +'+_cg+'🪙';
+  let txt=tr('זמן: ','Time: ')+fmt(lvTime)+' '+medal+(lvDeaths?tr(' · נפילות: ',' · falls: ')+lvDeaths:tr(' · בלי נפילות!',' · no falls!'))+' · +'+_cg+'🪙';
   if(last){
     const tot=session.reduce((a,x)=>a+x.stars,0);
-    txt+=' — כבשת את כל 100 השלבים! '+tot+'★ מתוך '+LEVELS.length*3+'.\n\n✨ המשך יבוא... ✨';
+    txt+=tr(' — כבשת את כל 100 השלבים! ',' — you conquered all 100 levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
   }
   $('doneText').textContent=txt;
-  $('nextBtn').textContent=last?'לבחירת שלב':'לשלב הבא';
+  $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('לשלב הבא','Next Level');
   addDailyWin();
   checkAch();
   save();
@@ -2876,7 +2928,7 @@ function buildGrid(){
     const lab=document.createElement('div');
     lab.className='world-label';
     lab.style.color=THEMES[z%10].accent;
-    lab.textContent='עולם '+(z+1)+' · '+ZONES[z%10];
+    lab.textContent=tr('עולם ','World ')+(z+1)+' · '+zoneName(z);
     frag.appendChild(lab);
     for(let half=0;half<2;half++){
       const row=document.createElement('div');row.className='wrow';
@@ -2900,7 +2952,7 @@ $('selectBtn').onclick=async()=>{initAudio();await enableSensors();
   buildGrid();$('menuOv').classList.add('hidden');$('selectOv').classList.remove('hidden');};
 $('backBtn').onclick=()=>{$('selectOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('pauseBtn').onclick=()=>{if(!running||cineMode)return;
-  if(runLive){showToast('אין השהיה במרוץ חי 😉');return;}
+  if(runLive){showToast(tr('אין השהיה במרוץ חי 😉','No pausing in a live race 😉'));return;}
   paused=true;hushRoll();
   $('sensSlider').value=SENS*100;$('pauseOv').classList.remove('hidden');};
 $('resumeBtn').onclick=()=>{$('pauseOv').classList.add('hidden');paused=false;lastT=performance.now();};
@@ -2921,7 +2973,7 @@ $('pauseMenuBtn').onclick=()=>{
   $('menuOv').classList.remove('hidden');
   if(typeof syncLobbyUI==='function')try{syncLobbyUI();}catch(e){}
 };
-$('calibBtn').onclick=()=>{neutB=rawB;neutG=rawG;save();showToast('🎯 כויל!');};
+$('calibBtn').onclick=()=>{neutB=rawB;neutG=rawG;save();showToast(tr('🎯 כויל!','🎯 Calibrated!'));};
 $('sensSlider').oninput=e=>{SENS=e.target.value/100;save();};
 $('soundBtn').onclick=()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';save();};
 $('doneMenu').onclick=()=>{
@@ -2968,8 +3020,8 @@ async function api(path,body){
   }catch(e){return null;}
 }
 let KEY='mazeUltra100_v2';
-let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0;
-let coins=0,troLife=0,chests=0,troClaimed=0,dailyFail='',qCyc=0,qDate='',qProg=[0,0,0],qDone=[false,false,false],dwD='',dwN=0;
+let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0,friends=[];
+let coins=0,troLife=0,chests=0,troClaimed=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
@@ -2994,7 +3046,7 @@ function saveBlob(){
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
     co:coins,tl:troLife,ch:chests,tc:troClaimed,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
     ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,
-    gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,
+    gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
     sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG};
 }
@@ -3037,6 +3089,7 @@ function applySave(d){
     ghostOn=d.gh!==0;musicOn=d.mu2!==0;
     stFalls=d.fd|0;stTime=d.tm|0;stDailies=d.dd|0;stRaceWins=d.rw|0;
     stBossClean=!!d.bc;achEarned=Array.isArray(d.ac)?d.ac:[];
+    friends=Array.isArray(d.fr)?d.fr.filter(x=>typeof x==='string').slice(0,50):[];
     (d.s||[]).forEach((a,i)=>{if(!session[i])return;
       session[i].done=!!a[0];session[i].stars=a[1]|0;session[i].best=(a[2]|0)/10;});
     if(d.sens)SENS=d.sens/100;
@@ -3058,13 +3111,13 @@ function addTro(n){
 }
 /* 🦸 סקיני-כוח: נפתחים אוטומטית לפי התקדמות */
 const POWSKINS=[
- {name:'מגן',pow:'shield',unl:100,price:0,rar:3,draw:(c,r,rot,T)=>{
+ {name:'מגן',en:'Shield',pow:'shield',unl:100,price:0,rar:3,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r*1.1);
    g.addColorStop(0,'#bfe3ff');g.addColorStop(.6,'#2f7dd1');g.addColorStop(1,'#0a2f5c');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
    c.strokeStyle='rgba(255,255,255,.85)';c.lineWidth=r*.14;
    c.beginPath();c.arc(0,0,r*.55,rot,rot+4.4);c.stroke();}},
- {name:'האטה',pow:'slow',unl:200,price:0,rar:3,draw:(c,r,rot,T)=>{
+ {name:'האטה',en:'Slow-Mo',pow:'slow',unl:200,price:0,rar:3,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r*1.1);
    g.addColorStop(0,'#eafff2');g.addColorStop(.55,'#27b06a');g.addColorStop(1,'#083d22');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3072,7 +3125,7 @@ const POWSKINS=[
    c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(rot)*r*.5,Math.sin(rot)*r*.5);
    c.moveTo(0,0);c.lineTo(Math.cos(rot+2)*r*.32,Math.sin(rot+2)*r*.32);c.stroke();
    c.beginPath();c.arc(0,0,r*.6,0,TAU);c.stroke();}},
- {name:'רפאים',pow:'ghost',unl:300,price:0,rar:3,draw:(c,r,rot,T)=>{
+ {name:'רפאים',en:'Phantom',pow:'ghost',unl:300,price:0,rar:3,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(-r*.3,-r*.4,r*.05,0,0,r*1.15);
    g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#b9a6e8');g.addColorStop(1,'#3c2a6e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3080,7 +3133,7 @@ const POWSKINS=[
    for(let k=0;k<3;k++){const a=rot*.7+k*2.1;
      c.beginPath();c.arc(Math.cos(a)*r*.45,Math.sin(a)*r*.45,r*.16,0,TAU);c.fill();}
    c.globalAlpha=1;}},
- {name:'עשיר',pow:'rich',unl:500,price:0,rar:3,draw:(c,r,rot,T)=>{
+ {name:'עשיר',en:'Rich',pow:'rich',unl:500,price:0,rar:3,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(-r*.3,-r*.35,r*.08,0,0,r*1.1);
    g.addColorStop(0,'#fff7cf');g.addColorStop(.5,'#f5c531');g.addColorStop(1,'#6e4a05');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3089,7 +3142,7 @@ const POWSKINS=[
    c.beginPath();c.moveTo(0,-r*.55);c.lineTo(0,r*.55);c.stroke();}}
 ];
 SKINS.push(
- {name:'לבה',price:350,rar:1,draw:(c,r,rot,T)=>{
+ {name:'לבה',en:'Magma',price:350,rar:1,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r*1.1);
    g.addColorStop(0,'#ffd76b');g.addColorStop(.5,'#f5541f');g.addColorStop(1,'#5c0e0e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3097,21 +3150,21 @@ SKINS.push(
    for(let k=0;k<4;k++){const a=rot*.5+k*1.57;
      c.beginPath();c.moveTo(Math.cos(a)*r*.2,Math.sin(a)*r*.2);
      c.lineTo(Math.cos(a+.5)*r*.75,Math.sin(a+.5)*r*.75);c.stroke();}}},
- {name:'קרח',price:350,rar:1,draw:(c,r,rot,T)=>{
+ {name:'קרח',en:'Frost',price:350,rar:1,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.05,0,0,r*1.1);
    g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#9fdcff');g.addColorStop(1,'#123a5e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
    c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=r*.07;
    for(let k=0;k<6;k++){const a=rot*.3+k*1.047;
      c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*r*.7,Math.sin(a)*r*.7);c.stroke();}}},
- {name:'ג׳ונגל',price:450,rar:1,draw:(c,r,rot,T)=>{
+ {name:'ג׳ונגל',en:'Jungle',price:450,rar:1,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(-r*.2,-r*.4,r*.1,0,0,r*1.05);
    g.addColorStop(0,'#d9ff9e');g.addColorStop(.55,'#3f9b3f');g.addColorStop(1,'#0d3311');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
    c.fillStyle='rgba(20,60,20,.55)';
    for(let k=0;k<5;k++){const a=rot*.4+k*1.256;
      c.beginPath();c.ellipse(Math.cos(a)*r*.45,Math.sin(a)*r*.45,r*.2,r*.09,a,0,TAU);c.fill();}}},
- {name:'נחש',price:600,rar:2,draw:(c,r,rot,T)=>{
+ {name:'נחש',en:'Snake',price:600,rar:2,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r*1.1);
    g.addColorStop(0,'#e8ffb0');g.addColorStop(.5,'#7ab648');g.addColorStop(1,'#243d0e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3120,13 +3173,13 @@ SKINS.push(
    for(let k=0;k<=20;k++){const t2=k/20*TAU;
      c.lineTo(Math.cos(t2+rot)*r*(.3+.25*Math.sin(t2*3)),Math.sin(t2+rot)*r*(.3+.25*Math.sin(t2*3)));}
    c.stroke();}},
- {name:'שקיעה',price:600,rar:2,draw:(c,r,rot,T)=>{
+ {name:'שקיעה',en:'Sunset',price:600,rar:2,draw:(c,r,rot,T)=>{
    const g=c.createLinearGradient(0,-r,0,r);
    g.addColorStop(0,'#ffd166');g.addColorStop(.5,'#ef6c57');g.addColorStop(1,'#5b2a86');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
    c.fillStyle='rgba(255,235,170,.9)';
    c.beginPath();c.arc(0,-r*.15,r*.28,0,TAU);c.fill();}},
- {name:'מטריקס',price:900,rar:2,draw:(c,r,rot,T)=>{
+ {name:'מטריקס',en:'Matrix',price:900,rar:2,draw:(c,r,rot,T)=>{
    c.fillStyle='#02120a';c.fillRect(-r,-r,r*2,r*2);
    c.fillStyle='rgba(60,255,140,.85)';c.font='bold '+(r*.34)+'px monospace';
    c.textAlign='center';c.textBaseline='middle';
@@ -3134,13 +3187,13 @@ SKINS.push(
      c.fillText(String((k*37)%10),Math.cos(a)*r*.55,Math.sin(a)*r*.55);}}}
 );
 WFX.push(
- {name:'לייזרים',icon:'🌈',price:400,rar:2},
- {name:'מטאורים',icon:'☄️',price:550,rar:2},
- {name:'יונים',icon:'🕊️',price:750,rar:3});
+ {name:'לייזרים',en:'Lasers',icon:'🌈',price:400,rar:2},
+ {name:'מטאורים',en:'Meteors',icon:'☄️',price:550,rar:2},
+ {name:'יונים',en:'Doves',icon:'🕊️',price:750,rar:3});
 DFX.push(
- {name:'קרח',icon:'🧊',price:400,rar:2},
- {name:'ברקים',icon:'⚡',price:550,rar:2},
- {name:'חור שחור',icon:'🕳️',price:750,rar:3});
+ {name:'קרח',en:'Ice',icon:'🧊',price:400,rar:2},
+ {name:'ברקים',en:'Bolts',icon:'⚡',price:550,rar:2},
+ {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:750,rar:3});
 POWSKINS.forEach(s=>SKINS.push(s));
 const POW=()=>((SKINS[skinSel]||{}).pow)||'';
 let shieldUsed=false,winStreak=0;
@@ -3148,39 +3201,38 @@ function grantPowSkins(){
   POWSKINS.forEach(s=>{const idx=SKINS.indexOf(s);
     if(unlocked+1>=s.unl&&!skinOwned.includes(idx)){
       skinOwned.push(idx);
-      showToast('🦸 סקין-כוח חדש: '+s.name+'! (בחנות הסקינים)');
+      showToast(tr('🦸 סקין-כוח חדש: ','🦸 New power skin: ')+tr(s.name,s.en||s.name)+tr('! (בחנות הסקינים)','! (in the skin shop)'));
     }});
 }
 function addCoins(n){coins+=n;refreshTro();}
 /* ---- 📜 קווסטים יומיים ---- */
 const QPOOL=[
- {ty:'star', txt:n=>'אסוף '+n+' כוכבים',        base:10, rew:70},
- {ty:'level',txt:n=>'סיים '+n+' שלבים',          base:3,  rew:80},
- {ty:'runm', txt:n=>'רוץ '+n+' מ׳ במצטבר',       base:400,rew:80},
- {ty:'race', txt:n=>'נצח מרוץ חי',               base:1,  rew:120},
- {ty:'chest',txt:n=>'פתח תיבה',                  base:1,  rew:60},
- {ty:'daily',txt:n=>'השלם את האתגר היומי',       base:1,  rew:100},
- {ty:'fall', txt:n=>'שרוד '+n+' נפילות (זה בסדר)',base:8, rew:60}
+ {ty:'star', txt:n=>tr('אסוף '+n+' כוכבים','Collect '+n+' stars'),        base:10, rew:70},
+ {ty:'level',txt:n=>tr('סיים '+n+' שלבים','Finish '+n+' levels'),          base:3,  rew:80},
+ {ty:'runm', txt:n=>tr('רוץ '+n+' מ׳ במצטבר','Run '+n+' m in total'),      base:400,rew:80},
+ {ty:'race', txt:n=>tr('נצח מרוץ חי','Win a live race'),                   base:1,  rew:120},
+ {ty:'chest',txt:n=>tr('פתח תיבה','Open a chest'),                         base:1,  rew:60},
+ {ty:'daily',txt:n=>tr('השלם את האתגר היומי','Complete the daily challenge'),base:1,rew:100},
+ {ty:'fall', txt:n=>tr('שרוד '+n+' נפילות (זה בסדר)','Survive '+n+' falls (it happens)'),base:8, rew:60}
 ];
 let qDefs=[];
 function todayStr(){const d=new Date();
   return ''+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
+const QN=20; // 20 קווסטים ביום
 function rollQuests(){
   const ds=todayStr();
-  if(qDate===ds&&qDefs.length===3)return;
-  if(qDate!==ds){qProg=[0,0,0];qDone=[false,false,false];qDate=ds;}
+  if(qDate===ds&&qDefs.length===QN)return;
+  if(qDate!==ds){qProg=Array(QN).fill(0);qDone=Array(QN).fill(false);qDate=ds;}
   const rnd=mulberry(parseInt(ds,10)*13+7);
-  // בדיוק 3 קווסטים ייחודיים ביום — qProg/qDone בנויים ל-3 (הלולאה הישנה יצרה 20)
   const idxs=[];
-  let guard=0;
-  while(idxs.length<3&&guard++<200){
-    const k=(rnd()*QPOOL.length)|0;
-    if(!idxs.includes(k))idxs.push(k);
-  }
+  while(idxs.length<QN)idxs.push((rnd()*QPOOL.length)|0);
   qDefs=idxs.map(i=>{
     const p=QPOOL[i],mult=1+((rnd()*4)|0)*.5;
     return {ty:p.ty,target:Math.max(1,Math.round(p.base*mult)),rew:p.rew,txt:p.txt};
   });
+  // שמירות ישנות עקבו רק אחרי 3 — משלימים את מערכי המעקב ל-20
+  while(qProg.length<QN)qProg.push(0);
+  while(qDone.length<QN)qDone.push(false);
 }
 function questAdd(ty,amt){
   rollQuests();
@@ -3190,8 +3242,12 @@ function questAdd(ty,amt){
     qProg[i]=Math.min(q.target,qProg[i]+amt);
     if(qProg[i]>=q.target){
       qDone[i]=true;addCoins(q.rew);qCyc++;
-      showToast('📜 קווסט הושלם! +'+q.rew+'🪙');
+      showToast(tr('📜 קווסט הושלם! +','📜 Quest complete! +')+q.rew+'🪙');
       tone(740,.1,'sine',.3);setTimeout(()=>tone(1108,.18,'sine',.3),110);
+      if(qCyc>=6){ // 6 השלמות = תיבה (הובטח במסך התיבות אך מעולם לא חולק)
+        qCyc-=6;chests++;refreshTro();
+        setTimeout(()=>showToast(tr('🎁 6 קווסטים הושלמו — קיבלת תיבה!','🎁 6 quests done — you earned a chest!')),900);
+      }
     }
     changed=true;
   });
@@ -3209,9 +3265,9 @@ function dwResetStr(){
 setInterval(()=>{
   const n=(dwD===todayStr())?dwN:0,t=dwResetStr();
   if(!$('questOv').classList.contains('hidden'))
-    $('dwLine').textContent='🎁 תיבות יומיות: '+n+'/6 · איפוס בעוד '+t;
+    $('dwLine').textContent=tr('🎁 תיבות יומיות: ','🎁 Daily chests: ')+n+'/6'+tr(' · איפוס בעוד ',' · resets in ')+t;
   if(!$('chestOv').classList.contains('hidden'))
-    $('chestDw').textContent='🏅 ניצחונות יומיים: '+n+'/6 · איפוס בעוד '+t;
+    $('chestDw').textContent=tr('🏅 ניצחונות יומיים: ','🏅 Daily wins: ')+n+'/6'+tr(' · איפוס בעוד ',' · resets in ')+t;
 },1000)
 function buildQuests(){
   rollQuests();
@@ -3225,23 +3281,23 @@ function buildQuests(){
       '<small>'+qProg[i]+'/'+q.target+'</small></div><span class="skPrice">+'+q.rew+'🪙</span>';
     g.appendChild(row);
   });
-  $('questCyc').textContent='עוד '+(6-qCyc)+' השלמות = 🎁 תיבה';
-  $('dwLine').textContent='🎁 תיבות יומיות: '+((dwD===todayStr())?dwN:0)+'/6 · איפוס בעוד '+dwResetStr();
+  $('questCyc').textContent=tr('עוד ','')+(6-qCyc)+tr(' השלמות = 🎁 תיבה',' more completions = 🎁 chest');
+  $('dwLine').textContent=tr('🎁 תיבות יומיות: ','🎁 Daily chests: ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
 }
 const ACH=[
- {id:'a1', name:'צעד ראשון',   desc:'סיים את שלב 1',            tro:2,  chk:()=>session[0]&&session[0].done},
- {id:'a2', name:'עשירייה',      desc:'סיים 10 שלבים',            tro:5,  chk:()=>session.filter(s=>s.done).length>=10},
- {id:'a3', name:'חצי דרך',      desc:'סיים 50 שלבים',            tro:10, chk:()=>session.filter(s=>s.done).length>=50},
- {id:'a4', name:'המאה',         desc:'סיים את כל 100 השלבים',    tro:25, chk:()=>session.filter(s=>s.done).length>=100},
- {id:'a5', name:'קוטף כוכבים',  desc:'אסוף 30 כוכבים',           tro:5,  chk:()=>session.reduce((a,s)=>a+s.stars,0)>=30},
- {id:'a6', name:'שמיים מלאים',  desc:'אסוף 100 כוכבים',          tro:15, chk:()=>session.reduce((a,s)=>a+s.stars,0)>=100},
- {id:'a7', name:'מנצח סדרתי',   desc:'נצח 3 מרוצים חיים',        tro:10, chk:()=>stRaceWins>=3},
- {id:'a8', name:'בוס נקי',      desc:'נצח בוס בלי נפילה אחת',    tro:10, chk:()=>stBossClean},
- {id:'a9', name:'ספרינטר',      desc:'רוץ 300 מ׳ בריצה אינסופית',tro:5,  chk:()=>runBest>=300},
- {id:'a10',name:'מרתוניסט',     desc:'רוץ 800 מ׳',               tro:15, chk:()=>runBest>=800},
- {id:'a11',name:'אספן',         desc:'החזק 3 סקינים',            tro:5,  chk:()=>skinOwned.length>=3},
- {id:'a12',name:'מתמיד',        desc:'השלם 5 אתגרים יומיים',     tro:10, chk:()=>stDailies>=5},
- {id:'a13',name:'חלק מהדרך',    desc:'צבור 100 נפילות',          tro:5,  chk:()=>stFalls>=100}
+ {id:'a1', name:'צעד ראשון',   desc:'סיים את שלב 1',            en:['First Step','Finish level 1'],tro:2,  chk:()=>session[0]&&session[0].done},
+ {id:'a2', name:'עשירייה',      desc:'סיים 10 שלבים',            en:['Perfect Ten','Finish 10 levels'],tro:5,  chk:()=>session.filter(s=>s.done).length>=10},
+ {id:'a3', name:'חצי דרך',      desc:'סיים 50 שלבים',            en:['Halfway There','Finish 50 levels'],tro:10, chk:()=>session.filter(s=>s.done).length>=50},
+ {id:'a4', name:'המאה',         desc:'סיים את כל 100 השלבים',    en:['The Hundred','Finish all 100 levels'],tro:25, chk:()=>session.filter(s=>s.done).length>=100},
+ {id:'a5', name:'קוטף כוכבים',  desc:'אסוף 30 כוכבים',           en:['Star Picker','Collect 30 stars'],tro:5,  chk:()=>session.reduce((a,s)=>a+s.stars,0)>=30},
+ {id:'a6', name:'שמיים מלאים',  desc:'אסוף 100 כוכבים',          en:['Full Sky','Collect 100 stars'],tro:15, chk:()=>session.reduce((a,s)=>a+s.stars,0)>=100},
+ {id:'a7', name:'מנצח סדרתי',   desc:'נצח 3 מרוצים חיים',        en:['Serial Winner','Win 3 live races'],tro:10, chk:()=>stRaceWins>=3},
+ {id:'a8', name:'בוס נקי',      desc:'נצח בוס בלי נפילה אחת',    en:['Clean Boss','Beat a boss with no falls'],tro:10, chk:()=>stBossClean},
+ {id:'a9', name:'ספרינטר',      desc:'רוץ 300 מ׳ בריצה אינסופית',en:['Sprinter','Run 300 m in endless run'],tro:5,  chk:()=>runBest>=300},
+ {id:'a10',name:'מרתוניסט',     desc:'רוץ 800 מ׳',               en:['Marathoner','Run 800 m'],tro:15, chk:()=>runBest>=800},
+ {id:'a11',name:'אספן',         desc:'החזק 3 סקינים',            en:['Collector','Own 3 skins'],tro:5,  chk:()=>skinOwned.length>=3},
+ {id:'a12',name:'מתמיד',        desc:'השלם 5 אתגרים יומיים',     en:['Devoted','Complete 5 daily challenges'],tro:10, chk:()=>stDailies>=5},
+ {id:'a13',name:'חלק מהדרך',    desc:'צבור 100 נפילות',          en:['Part of the Journey','Rack up 100 falls'],tro:5,  chk:()=>stFalls>=100}
 ];
 function checkAch(){
   let got=false;
@@ -3250,7 +3306,7 @@ function checkAch(){
     let ok=false;try{ok=a.chk();}catch(e){}
     if(ok){
       achEarned.push(a.id);addTro(a.tro);got=true;
-      showToast('🏅 הישג: '+a.name+' · +'+a.tro+'🏆');
+      showToast(tr('🏅 הישג: ','🏅 Achievement: ')+tr(a.name,a.en?a.en[0]:a.name)+' · +'+a.tro+'🏆');
       tone(880,.12,'sine',.3);setTimeout(()=>tone(1318,.2,'sine',.3),120);
     }
   }
@@ -3258,14 +3314,14 @@ function checkAch(){
 }
 function buildAch(){
   $('achStats').textContent=
-    '⏱ '+fmt(stTime)+' · 💀 '+stFalls+' נפילות · ✅ '+session.filter(s=>s.done).length+'/100 · ★'+
-    session.reduce((a,s)=>a+s.stars,0)+' · 🏁 '+stRaceWins+' נצחונות · 🏃 '+Math.floor(runBest)+'מ׳';
+    '⏱ '+fmt(stTime)+' · 💀 '+stFalls+tr(' נפילות',' falls')+' · ✅ '+session.filter(s=>s.done).length+'/100 · ★'+
+    session.reduce((a,s)=>a+s.stars,0)+' · 🏁 '+stRaceWins+tr(' נצחונות',' wins')+' · 🏃 '+Math.floor(runBest)+tr('מ׳','m');
   const g=$('achList');g.innerHTML='';
   ACH.forEach(a=>{
     const got=achEarned.includes(a.id);
     const row=document.createElement('div');
     row.className='achRow'+(got?' got':'');
-    row.innerHTML='<span>'+(got?'✅':'⬜')+'</span><div><b>'+a.name+'</b><br><small>'+a.desc+'</small></div><span class="skPrice">+'+a.tro+'🏆</span>';
+    row.innerHTML='<span>'+(got?'✅':'⬜')+'</span><div><b>'+tr(a.name,a.en?a.en[0]:a.name)+'</b><br><small>'+tr(a.desc,a.en?a.en[1]:a.desc)+'</small></div><span class="skPrice">+'+a.tro+'🏆</span>';
     g.appendChild(row);
   });
 }
@@ -3273,7 +3329,7 @@ function failLevel(){
   winStreak=0;
   if(duelLive){
     send({t:'lfail'});duelLive=false;running=false;paused=false;hushRoll();
-    endDuel(false,'נפסלת 3 פעמים — היריב ניצח ⚔');
+    endDuel(false,tr('נפסלת 3 פעמים — היריב ניצח ⚔','Three falls — opponent wins ⚔'));
     return;
   }
   hushRoll();
@@ -3284,9 +3340,9 @@ function failLevel(){
     running=false;paused=false;
     if(isDaily){
       customLv=null;syncLobbyUI();
-      showResult('🔒','האתגר ננעל להיום','שלוש נפילות — האתגר היומי נעול עד מחר. מחר מחכה אתגר חדש!');
+      showResult('🔒',tr('האתגר ננעל להיום','Locked for today'),tr('שלוש נפילות — האתגר היומי נעול עד מחר. מחר מחכה אתגר חדש!','Three falls — the daily challenge is locked until tomorrow. A new one awaits!'));
     }else{
-      $('failText').textContent='שלב '+(levelIdx+1)+' — שלוש נפילות. קורה גם לטובים ביותר.';
+      $('failText').textContent=tr('שלב ','Level ')+(levelIdx+1)+tr(' — שלוש נפילות. קורה גם לטובים ביותר.',' — three falls. Happens to the best.');
       $('failOv').classList.remove('hidden');
     }
   });
@@ -3347,7 +3403,7 @@ function wire(c,guestMade){
     if(joinWatch){clearTimeout(joinWatch);joinWatch=null;}
     send({t:'hello',name:myName||'שחקן'});
     if(liveRole==='host'){send({t:'cfg',x:raceSel});}
-    else lvStatus('מחובר! ממתין שהמארח יתחיל…');
+    else lvStatus(tr('מחובר! ממתין שהמארח יתחיל…','Connected! Waiting for host…'));
   };
   if(c.open)hello();
   else c.on('open',hello);
@@ -3359,28 +3415,28 @@ function onMsg(raw){
   let m;try{m=JSON.parse(raw);}catch(e){return;}
   if(m.t==='hello'){
     oppName=(m.name||'יריב').slice(0,12);
-    $('lvOpp').textContent='🔴 '+oppName+' מחובר!';
-    if(liveRole==='host'){$('lvHostGo').style.display='flex';buildChips();lvStatus('בחר מרחק ולחץ התחל');}
+    $('lvOpp').textContent='🔴 '+oppName+tr(' מחובר!',' connected!');
+    if(liveRole==='host'){$('lvHostGo').style.display='flex';buildChips();lvStatus(tr('בחר מרחק ולחץ התחל','Pick a distance and press start'));}
   }
   else if(m.t==='cfg'){raceSel=m.x|0;raceMode=m.m==='lvl'?'lvl':'run';buildChips();
-    if(liveRole==='guest')lvStatus(raceMode==='lvl'?'⚔ דו-קרב שלב · ממתין להתחלה…':'מרוץ עד '+raceSel+' מטר · ממתין להתחלה…');}
-  else if(m.t==='lh'){showToast('❤ ליריב נשארו '+m.h+' פסילות');}
+    if(liveRole==='guest')lvStatus(raceMode==='lvl'?tr('⚔ דו-קרב שלב · ממתין להתחלה…','⚔ Level duel · waiting for start…'):tr('מרוץ עד ','Race to ')+raceSel+tr(' מטר · ממתין להתחלה…',' m · waiting for start…'));}
+  else if(m.t==='lh'){showToast(tr('❤ ליריב נשארו ','❤ Opponent has ')+m.h+tr(' פסילות',' lives left'));}
   else if(m.t==='lwin'&&duelLive){duelEnd(false);}
   else if(m.t==='lfail'&&duelLive){duelEnd(true);}
   else if(m.t==='start'){if(m.m==='lvl')duelStart(m.seed|0);else beginCountdown(m.x|0,m.seed|0);}
   else if(m.t==='pos'){oppM=+m.m||0;oppD=Math.min(3,m.d|0);}
-  else if(m.t==='elim'){oppElim=+m.m||0;showToast('🔴 '+oppName+' נפסל ב-'+Math.floor(oppElim)+'מ׳!');resolveRun(false);}
-  else if(m.t==='fin'){oppFin=+m.tm||0;oppM=+m.m||oppM;showToast('🔴 '+oppName+' הגיע ליעד!');resolveRun(false);}
+  else if(m.t==='elim'){oppElim=+m.m||0;showToast('🔴 '+oppName+tr(' נפסל ב-',' eliminated at ')+Math.floor(oppElim)+tr('מ׳!','m!'));resolveRun(false);}
+  else if(m.t==='fin'){oppFin=+m.tm||0;oppM=+m.m||oppM;showToast('🔴 '+oppName+tr(' הגיע ליעד!',' reached the goal!'));resolveRun(false);}
   else if(m.t==='quit'){onDrop();}
 }
 function onDrop(){
   if(runLive&&runMode&&iFin===null&&oppFin===null&&oppElim===null){
     runMode=false;running=false;hushRoll();$('raceBar').style.display='none';
     addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();checkAch();save();refreshTro();
-    showResult('🏆','ניצחון טכני! +10🏆','היריב התנתק באמצע. סה"כ '+trophies+'🏆');
+    showResult('🏆',tr('ניצחון טכני! +10🏆','Technical win! +10🏆'),tr('היריב התנתק באמצע. סה"כ ','Opponent disconnected. Total ')+trophies+'🏆');
     cleanupLive();
   }else if(!runMode&&peer){
-    lvStatus('החיבור נותק — נסו שוב');
+    lvStatus(tr('החיבור נותק — נסו שוב','Connection dropped — try again'));
     cleanupLive();resetLobby();
   }
 }
@@ -3394,7 +3450,7 @@ function resetLobby(){
 function hostPeer(){
   peer=new Peer('mzk100-'+roomCode,{debug:0,config:ICE});
   peer.on('open',()=>{
-    lvStatus('החדר פתוח ✓ ממתין ליריב — שלחו לו את הקוד');
+    lvStatus(tr('החדר פתוח ✓ ממתין ליריב — שלחו לו את הקוד','Room open ✓ waiting for opponent — send them the code'));
     if(hostDial)clearInterval(hostDial);
     let pending=null;
     hostDial=setInterval(()=>{ // חיוג יזום לאורח — עוקף פיצול שרתי איתות
@@ -3418,22 +3474,22 @@ function hostPeer(){
       try{peer.destroy();}catch(e){}
       hostPeer();return;
     }
-    lvStatus('שגיאת רשת: '+err.type+' — נסו שוב');
+    lvStatus(tr('שגיאת רשת: ','Network error: ')+err.type+tr(' — נסו שוב',' — try again'));
   });
 }
 $('lvQuick').onclick=async()=>{
-  if(!havePeerLib()){lvStatus('תחרות חיה דורשת אינטרנט');return;}
+  if(!havePeerLib()){lvStatus(tr('תחרות חיה דורשת אינטרנט','Live race needs internet'));return;}
   myName=$('raceName').value.trim();save();
-  lvStatus('🔎 מחפש יריב בעולם…');
+  lvStatus(tr('🔎 מחפש יריב בעולם…','🔎 Searching for an opponent…'));
   const d=await regFetch();
-  if(!d){lvStatus('חיפוש יריב דורש אינטרנט');return;}
+  if(!d){lvStatus(tr('חיפוש יריב דורש אינטרנט','Matchmaking needs internet'));return;}
   const mm=d.mm;
   const me=myName||curUser||'שחקן';
   if(mm&&mm.code&&Date.now()-mm.ts<60000&&mm.name!==me){
     d.mm=null;regPut(d);
     $('lvChoose').style.display='none';$('lvJoinPanel').style.display='flex';
     $('lvCodeIn').value=mm.code;
-    lvStatus('נמצא יריב: '+(mm.name||'שחקן')+'! מתחבר…');
+    lvStatus(tr('נמצא יריב: ','Opponent found: ')+(mm.name||tr('שחקן','player'))+tr('! מתחבר…','! connecting…'));
     $('lvConnect').onclick();
   }else{
     await $('lvCreate').onclick();
@@ -3443,19 +3499,19 @@ $('lvQuick').onclick=async()=>{
       const d2=await regFetch();if(!d2)return;
       d2.mm={code:roomCode,ts:Date.now(),name:me};
       await regPut(d2);
-      lvStatus('נרשמת לתור העולמי 🌍 — ברגע שמישהו ילחץ 🎲 הוא יגיע אליך…');
+      lvStatus(tr('נרשמת לתור העולמי 🌍 — ברגע שמישהו ילחץ 🎲 הוא יגיע אליך…','In the world queue 🌍 — the next 🎲 player will reach you…'));
     };
     reg();
   }
 };
 $('lvCreate').onclick=async()=>{
-  if(!havePeerLib()){lvStatus('תחרות חיה דורשת אינטרנט בפתיחה הראשונה');return;}
+  if(!havePeerLib()){lvStatus(tr('תחרות חיה דורשת אינטרנט בפתיחה הראשונה','Live race needs internet on first open'));return;}
   initAudio();await enableSensors();
   myName=$('raceName').value.trim();save();
   cleanupLive();liveRole='host';hostTries=0;roomCode=makeCode();
   $('lvCode').textContent=roomCode;
   $('lvChoose').style.display='none';$('lvHostPanel').style.display='flex';
-  lvStatus('פותח חדר…');
+  lvStatus(tr('פותח חדר…','Opening room…'));
   hostPeer();
 };
 $('lvJoin').onclick=()=>{
@@ -3467,12 +3523,12 @@ function guestJoin(code){
   joinWatch=setTimeout(()=>{
     joinWatch=null;
     if(conn&&conn.open)return;
-    lvStatus('לא הצליח להתחבר 😕 בדקו שהקוד נכון ושלשניכם יש אינטרנט, ונסו שוב');
+    lvStatus(tr('לא הצליח להתחבר 😕 בדקו שהקוד נכון ושלשניכם יש אינטרנט, ונסו שוב','Could not connect 😕 check the code and that you both have internet, then retry'));
     try{peer&&peer.destroy();}catch(e){}
     peer=null;
   },28000);
   const attempt=(anon)=>{
-    lvStatus(joinTries?('מתחבר… ניסיון '+(joinTries+1)+'/8'):'מתחבר…');
+    lvStatus(joinTries?(tr('מתחבר… ניסיון ','Connecting… attempt ')+(joinTries+1)+'/8'):tr('מתחבר…','Connecting…'));
     try{if(peer)peer.destroy();}catch(e){}
     peer=anon?new Peer({debug:0,config:ICE})
              :new Peer('mzk100-'+code+'-g',{debug:0,config:ICE});
@@ -3487,17 +3543,17 @@ function guestJoin(code){
         joinTries++;
         setTimeout(()=>attempt(anon),2500);
       }else if(err.type!=='peer-unavailable'){
-        lvStatus('שגיאת רשת ('+err.type+') — נסו שוב');
+        lvStatus(tr('שגיאת רשת (','Network error (')+err.type+tr(') — נסו שוב',') — try again'));
       }
     });
   };
   attempt(false);
 }
 $('lvConnect').onclick=async()=>{
-  if(!havePeerLib()){lvStatus('תחרות חיה דורשת אינטרנט');return;}
+  if(!havePeerLib()){lvStatus(tr('תחרות חיה דורשת אינטרנט','Live race needs internet'));return;}
   initAudio();await enableSensors(); // מחוות משתמש — קריטי להרשאת חיישן ב-iOS
   const code=($('lvCodeIn').value||'').trim().toUpperCase();
-  if(code.length<4){lvStatus('קוד קצר מדי');return;}
+  if(code.length<4){lvStatus(tr('קוד קצר מדי','Code too short'));return;}
   myName=$('raceName').value.trim();save();
   guestJoin(code);
 };
@@ -3506,13 +3562,13 @@ function buildChips(){
   RUN_OPTS.forEach(x=>{
     const b=document.createElement('button');
     b.className='chip'+(raceMode==='run'&&x===raceSel?' on':'');
-    b.textContent=x+' מ׳';
+    b.textContent=x+tr(' מ׳',' m');
     b.onclick=()=>{raceMode='run';raceSel=x;buildChips();send({t:'cfg',x,m:'run'});};
     c.appendChild(b);
   });
   const d=document.createElement('button');
   d.className='chip'+(raceMode==='lvl'?' on':'');
-  d.textContent='⚔ דו-קרב שלב';
+  d.textContent=tr('⚔ דו-קרב שלב','⚔ Level Duel');
   d.onclick=()=>{raceMode='lvl';buildChips();send({t:'cfg',x:raceSel,m:'lvl'});};
   c.appendChild(d);
 }
@@ -3526,13 +3582,13 @@ function duelStart(seed){
   const li=40+(seed%60)*7%960; // שלב זהה משני הצדדים, טווח 40-999
   duelLive=true;customLv=null;
   $('raceOv').classList.add('hidden');
-  showToast('⚔ דו-קרב: מי מסיים ראשון את שלב '+(li+1)+'!');
+  showToast(tr('⚔ דו-קרב: מי מסיים ראשון את שלב ','⚔ Duel: first to finish level ')+(li+1)+'!');
   startRun(li);
 }
 function duelEnd(win){
   if(!duelLive)return;
   duelLive=false;running=false;paused=false;hushRoll();
-  endDuel(win,win?'היריב נפסל — הניצחון שלך! ⚔':'היריב סיים ראשון ⚔');
+  endDuel(win,win?tr('היריב נפסל — הניצחון שלך! ⚔','Opponent eliminated — the win is yours! ⚔'):tr('היריב סיים ראשון ⚔','Opponent finished first ⚔'));
 }
 async function beginCountdown(x,seed){
   runTarget=x;runSeed=seed;runLive=true;
@@ -3542,7 +3598,7 @@ async function beginCountdown(x,seed){
   const tick=()=>{
     if(!runLive&&!runMode)return;
     if(n>0){showToast(''+n);tone(600+n*120,.14,'sine',.32);n--;setTimeout(tick,850);}
-    else{showToast('צא! 🏁');tone(1046,.25,'sine',.35);startRunner(true,runSeed,runTarget);}
+    else{showToast(tr('צא! 🏁','Go! 🏁'));tone(1046,.25,'sine',.35);startRunner(true,runSeed,runTarget);}
   };
   tick();
 }
@@ -3560,8 +3616,8 @@ function startRunner(live,seed,target){
   ['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv'].forEach(id=>$(id).classList.add('hidden'));
   $('hud').style.display='flex';$('hint').style.display='none';
   $('raceBar').style.display=runLive?'flex':'none';
-  $('bWorld').textContent=runLive?'🏁 מרוץ חי עד '+target+' מ׳':'🏃 ריצה אינסופית';
-  $('bName').textContent=runLive?'הראשון שמגיע — מנצח':'כמה רחוק תגיע?';
+  $('bWorld').textContent=runLive?tr('🏁 מרוץ חי עד ','🏁 Live race to ')+target+tr(' מ׳',' m'):tr('🏃 ריצה אינסופית','🏃 Endless Run');
+  $('bName').textContent=runLive?tr('הראשון שמגיע — מנצח','First to arrive wins'):tr('כמה רחוק תגיע?','How far can you go?');
   $('banner').classList.add('show');
   clearTimeout($('banner')._t);
   $('banner')._t=setTimeout(()=>$('banner').classList.remove('show'),1600);
@@ -3613,15 +3669,15 @@ function runEliminate(){
     if(wasLive){
       myElim=Math.round(runDist);
       send({t:'elim',m:myElim});
-      showToast('👀 צופה ביריב…');
+      showToast(tr('👀 צופה ביריב…','👀 Watching opponent…'));
       resolveRun(false);
     }else{
       runMode=false;running=false;
       const rec=runDist>runBest;
       if(rec)runBest=Math.floor(runDist);
       checkAch();save();
-      showResult('🏃',Math.floor(runDist)+' מטר!',
-        rec?'🎉 שיא חדש!':'השיא שלך: '+Math.floor(runBest)+' מ׳');
+      showResult('🏃',Math.floor(runDist)+tr(' מטר!',' meters!'),
+        rec?tr('🎉 שיא חדש!','🎉 New record!'):tr('השיא שלך: ','Your best: ')+Math.floor(runBest)+tr(' מ׳',' m'));
     }
   });
 }
@@ -3638,12 +3694,12 @@ function resolveRun(force){
     if(iFin!==null&&oppFin!==null)win=iFin<oppFin||(iFin===oppFin&&liveRole==='host');
     else win=iFin!==null;
     endDuel(win,
-      win?'הגעת ל-'+runTarget+'מ׳ ב-'+fmt(iFin):(oppName+' הגיע ראשון ב-'+fmt(oppFin)+' · אתה: '+Math.floor(runDist)+'מ׳'));
+      win?tr('הגעת ל-','You reached ')+runTarget+tr('מ׳ ב-','m in ')+fmt(iFin):(oppName+tr(' הגיע ראשון ב-',' arrived first in ')+fmt(oppFin)+tr(' · אתה: ',' · you: ')+Math.floor(runDist)+tr('מ׳','m')));
     return;
   }
   if(myElim!==null&&oppElim!==null){
     const win=myElim>oppElim||(myElim===oppElim&&liveRole==='host');
-    endDuel(win,'אתה: '+myElim+'מ׳ · '+oppName+': '+Math.floor(oppElim)+'מ׳');
+    endDuel(win,tr('אתה: ','You: ')+myElim+tr('מ׳','m')+' · '+oppName+': '+Math.floor(oppElim)+tr('מ׳','m'));
   }
 }
 function endDuel(win,detail){
@@ -3651,8 +3707,8 @@ function endDuel(win,detail){
   $('raceBar').style.display='none';
   if(win){addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();}
   checkAch();save();refreshTro();
-  showResult(win?'🏆':'🥈',win?'ניצחת! +10🏆':'הפסדת הפעם',
-    detail+(win?' · סה"כ '+trophies+'🏆':''));
+  showResult(win?'🏆':'🥈',win?tr('ניצחת! +10🏆','You won! +10🏆'):tr('הפסדת הפעם','Lost this time'),
+    detail+(win?tr(' · סה"כ ',' · total ')+trophies+'🏆':''));
   setTimeout(cleanupLive,600);
 }
 function showResult(icon,title,text){
@@ -3691,7 +3747,7 @@ function runFrame(dt,t){
     const tier=(runDist/100)|0;
     if(tier!==runTier){
       runTier=tier;
-      if(tier>0){showToast('⚡ מהירות +10% ('+(tier*100)+'מ׳)');tone(600+tier*45,.12,'square',.26);}
+      if(tier>0){showToast(tr('⚡ מהירות +10% (','⚡ Speed +10% (')+(tier*100)+tr('מ׳)','m)'));tone(600+tier*45,.12,'square',.26);}
     }
     const tv=Math.min(5*Math.pow(1.1,tier),17.5); // +10% לכל 100מ׳
     runV+=(tv-runV)*Math.min(1,dt*1.6);
@@ -3768,7 +3824,7 @@ function runFrame(dt,t){
     netAcc+=dt;
     if(netAcc>.12){netAcc=0;send({t:'pos',m:Math.floor(runDist),d:3-runLives});}
     const d2=Math.max(0,Math.min(3,oppD));
-    $('oppInfo').textContent='🔴 '+oppName+' · '+Math.floor(oppElim!==null?oppElim:oppM)+'מ׳ · '+
+    $('oppInfo').textContent='🔴 '+oppName+' · '+Math.floor(oppElim!==null?oppElim:oppM)+tr('מ׳','m')+' · '+
       '❤️'.repeat(3-d2)+'🤍'.repeat(d2)+(oppElim!==null?' 💀':'');
   }
 }
@@ -3840,12 +3896,12 @@ function runDraw(t,T){
   ctx.font='900 26px -apple-system,Arial';ctx.textAlign='center';ctx.textBaseline='top';
   ctx.fillStyle='rgba(255,255,255,.85)';
   ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=6;
-  ctx.fillText(Math.floor(runDist)+' מ׳',board.x+board.w/2,board.y+10);
+  ctx.fillText(Math.floor(runDist)+' '+tr('מ׳','m'),board.x+board.w/2,board.y+10);
   ctx.shadowBlur=0;
   if(runDead&&!cineMode){
     ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(board.x,board.y,board.w,board.h);
     ctx.fillStyle='#ffd257';ctx.font='900 22px -apple-system,Arial';
-    ctx.fillText('💔 נפסלת · צופה ביריב…',board.x+board.w/2,board.y+board.h*.4);
+    ctx.fillText(tr('💔 נפסלת · צופה ביריב…','💔 Eliminated · watching opponent…'),board.x+board.w/2,board.y+board.h*.4);
   }
   ctx.restore();ctx.restore();
   if(flashR>0){
@@ -3857,7 +3913,7 @@ function runDraw(t,T){
 /* ---- אתגר יומי ---- */
 $('dailyBtn').onclick=async()=>{
   const ds=todayStr();
-  if(dailyFail===ds){showToast('🔒 האתגר נעול להיום — חזור מחר!');return;}
+  if(dailyFail===ds){showToast(tr('🔒 האתגר נעול להיום — חזור מחר!','🔒 Locked for today — come back tomorrow!'));return;}
   initAudio();await enableSensors();
   $('menuOv').classList.add('hidden');
   startRun(genDaily(ds));
@@ -3892,17 +3948,17 @@ function buildSkins(){
       ic.style.cssText='font-size:36px;line-height:60px';
       ic.textContent=s.icon;card.appendChild(ic);
     }
-    const nm=document.createElement('div');nm.textContent=s.name;card.appendChild(nm);
+    const nm=document.createElement('div');nm.textContent=tr(s.name,s.en||s.name);card.appendChild(nm);
     const pr=document.createElement('div');pr.className='skPrice';
-    pr.textContent=sel?'✓ נבחר':(owned?'לחץ לבחירה':s.price+' 🪙 '+['','◆','★'][s.rar||0]);
+    pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select'):s.price+' 🪙 '+['','◆','★'][s.rar||0]);
     card.appendChild(pr);
     card.onclick=()=>{
-      if(owned){cat.setSel(i);save();buildSkins();showToast(s.name+' ✓');return;}
+      if(owned){cat.setSel(i);save();buildSkins();showToast(tr(s.name,s.en||s.name)+' ✓');return;}
       if(coins>=s.price){
         coins-=s.price;cat.ow.push(i);cat.setSel(i);
         checkAch();save();refreshTro();buildSkins();
-        showToast('🎉 '+s.name+' נרכש!');sfx.key();
-      }else showToast('חסרים '+(s.price-coins)+'🪙 — פתחו תיבות!');
+        showToast('🎉 '+tr(s.name,s.en||s.name)+tr(' נרכש!',' purchased!'));sfx.key();
+      }else showToast(tr('חסרים ','Missing ')+(s.price-coins)+tr('🪙 — פתחו תיבות!','🪙 — open chests!'));
     };
     g.appendChild(card);
   });
@@ -3927,15 +3983,15 @@ function rollChest(){
     const r=Math.random();
     if(r<.12){
       const pk=pickUnowned(SKINS,skinOwned);
-      if(pk>=0){skinOwned.push(pk);drops.push({icon:'🎨',label:SKINS[pk].name,rar:SKINS[pk].rar||0});continue;}
+      if(pk>=0){skinOwned.push(pk);drops.push({icon:'🎨',label:tr(SKINS[pk].name,SKINS[pk].en||SKINS[pk].name),rar:SKINS[pk].rar||0});continue;}
     }
     if(r<.22){
       const pk=pickUnowned(WFX,wOw);
-      if(pk>=0){wOw.push(pk);drops.push({icon:WFX[pk].icon,label:'ניצחון: '+WFX[pk].name,rar:WFX[pk].rar});continue;}
+      if(pk>=0){wOw.push(pk);drops.push({icon:WFX[pk].icon,label:tr('ניצחון: ','Victory: ')+tr(WFX[pk].name,WFX[pk].en||WFX[pk].name),rar:WFX[pk].rar});continue;}
     }
     if(r<.32){
       const pk=pickUnowned(DFX,dOw);
-      if(pk>=0){dOw.push(pk);drops.push({icon:DFX[pk].icon,label:'מוות: '+DFX[pk].name,rar:DFX[pk].rar});continue;}
+      if(pk>=0){dOw.push(pk);drops.push({icon:DFX[pk].icon,label:tr('מוות: ','Death: ')+tr(DFX[pk].name,DFX[pk].en||DFX[pk].name),rar:DFX[pk].rar});continue;}
     }
     const big=r<.5, m=big?(120+((Math.random()*140)|0)):(40+((Math.random()*60)|0));
     addCoins(m);drops.push({icon:big?'💰':'🪙',label:'+'+m,rar:big?1:0});
@@ -3945,7 +4001,7 @@ function rollChest(){
 let chestBusy=false;
 function openChest(){
   if(chestBusy)return;
-  if(chests<=0){showToast('אין תיבות — נצח שלבים היום או השלם קווסטים!');return;}
+  if(chests<=0){showToast(tr('אין תיבות — השלימו קווסטים או קנו בחנות!','No chests — complete quests or buy some!'));return;}
   chestBusy=true;chests--;questAdd('chest',1);
   const drops=rollChest();
   checkAch();save();refreshTro();
@@ -3995,7 +4051,7 @@ function megaReveal(drops){
     ic.style.animation='none';void ic.offsetWidth;
     ic.style.animation='popIn .45s cubic-bezier(.2,1.6,.4,1)';
     $('prizeLb').textContent=d.label;
-    $('prizeHint').textContent=(i<drops.length-1)?'הקש לפרס הבא · '+(i+1)+'/'+drops.length:'הקש לסיום';
+    $('prizeHint').textContent=(i<drops.length-1)?tr('הקש לפרס הבא · ','Tap for next prize · ')+(i+1)+'/'+drops.length:tr('הקש לסיום','Tap to finish');
     tone(520+i*150+d.rar*160,.16,'sine',.3);
     if(d.rar===2){sfx.win();flashW=Math.max(flashW,.4);}
     else if(d.rar===1)sfx.key();
@@ -4007,15 +4063,15 @@ $('chestBtn').onclick=()=>{
   $('chestCount').textContent='🎁 '+chests;
   $('dropRow').innerHTML='';
   $('chestBar').style.width='0%';
-  $('chestCyc').textContent='קווסטים לתיבה הבאה: '+qCyc+'/6';
-  $('chestDw').textContent='🏅 ניצחונות יומיים: '+((dwD===todayStr())?dwN:0)+'/6 · איפוס בעוד '+dwResetStr();
+  $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
+  $('chestDw').textContent=tr('🏅 ניצחונות יומיים: ','🏅 Daily wins: ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChests(n,cost){
-  if(coins<cost){showToast('חסרים '+(cost-coins)+'🪙 — השלימו קווסטים!');return;}
+  if(coins<cost){showToast(tr('חסרים ','Missing ')+(cost-coins)+tr('🪙 — השלימו קווסטים!','🪙 — complete quests!'));return;}
   coins-=cost;chests+=n;
   $('chestCount').textContent='🎁 '+chests;
-  showToast('🎁 +'+n+' תיבות!');
+  showToast('🎁 +'+n+tr(' תיבות!',' chests!'));
   tone(880,.12,'sine',.3);
   save();refreshTro();
 }
@@ -4025,11 +4081,11 @@ $('chestOpen').onclick=openChest;
 $('chestBack').onclick=()=>{$('chestOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('boardBtn').onclick=async()=>{
   $('menuOv').classList.add('hidden');$('boardOv').classList.remove('hidden');
-  $('boardMe').textContent='טוען…';$('boardList').innerHTML='';
+  $('boardMe').textContent=tr('טוען…','Loading…');$('boardList').innerHTML='';
   const r=await api('/daily/top?date='+todayStr()+'&name='+encodeURIComponent(myName||''));
-  if(!r||!r.ok){$('boardMe').textContent='אין חיבור לשרת כרגע';return;}
-  $('boardMe').textContent=r.rank?('אתה במקום '+r.rank+' מתוך '+r.total):'עוד לא רצת את האתגר היום';
-  if(!r.top.length){$('boardList').innerHTML='<div style="color:#aeb8c8">היה הראשון היום! 🎲</div>';return;}
+  if(!r||!r.ok){$('boardMe').textContent=tr('אין חיבור לשרת כרגע','No server connection right now');return;}
+  $('boardMe').textContent=r.rank?(tr('אתה במקום ','You are ranked ')+r.rank+tr(' מתוך ',' of ')+r.total):tr('עוד לא רצת את האתגר היום',"You haven't run today's challenge yet");
+  if(!r.top.length){$('boardList').innerHTML='<div style="color:#aeb8c8">'+tr('היה הראשון היום! 🎲','Be the first today! 🎲')+'</div>';return;}
   r.top.forEach((e,i)=>{
     const row=document.createElement('div');
     row.className='achRow'+(e.n===(myName||'')?' got':'');
@@ -4039,6 +4095,109 @@ $('boardBtn').onclick=async()=>{
   });
 };
 $('boardBack').onclick=()=>{$('boardOv').classList.add('hidden');$('menuOv').classList.remove('hidden');};
+/* ============ 👥 חברים + 🏆 טבלאות (מבוסס על ענן המשתמשים) ============ */
+let regCache=null,regCacheAt=0;
+async function regCached(){
+  if(regCache&&Date.now()-regCacheAt<30000)return regCache;
+  const d=await regFetch();
+  if(d){regCache=d;regCacheAt=Date.now();}
+  return d;
+}
+const esc=s=>String(s).replace(/</g,'&lt;');
+function statsOf(sv,name){
+  let done=0,stars=0;
+  if(sv&&Array.isArray(sv.s))for(const a of sv.s){if(a[0])done++;stars+=a[1]|0;}
+  return {name,tro:sv?sv.tro|0:0,co:sv?sv.co|0:0,done,stars,has:!!sv};
+}
+function myLiveStats(){
+  let done=0,stars=0;
+  for(const s of session){if(s.done)done++;stars+=s.stars;}
+  return {name:curUser||myName||tr('אני','me'),tro:trophies,co:coins,done,stars,me:true};
+}
+async function buildFriends(){
+  $('frMsg').textContent='';
+  const g=$('frList');
+  g.innerHTML='<div style="color:#aeb8c8">'+tr('טוען…','Loading…')+'</div>';
+  const d=await regCached();
+  g.innerHTML='';
+  if(!friends.length){
+    g.innerHTML='<div style="color:#aeb8c8">'+tr('אין חברים עדיין — הוסיפו לפי שם משתמש','No friends yet — add by username')+'</div>';
+    return;
+  }
+  friends.forEach(n=>{
+    const rec=d&&d.users[n],s=statsOf(rec&&rec.sv,n);
+    const row=document.createElement('div');
+    row.className='achRow got';
+    const inner=document.createElement('div');
+    inner.style.flex='1';
+    inner.innerHTML='<b>👤 '+esc(n)+'</b><br><small>'+
+      (rec?('🏆 '+s.tro+' · 🪙 '+s.co+' · ✅ '+s.done+'/100 · ⭐ '+s.stars)
+          :tr('עוד לא סנכרן לענן','no cloud data yet'))+'</small>';
+    row.appendChild(inner);
+    const x=document.createElement('button');
+    x.className='chip';x.textContent='✕';
+    x.onclick=()=>{friends=friends.filter(f=>f!==n);save();buildFriends();};
+    row.appendChild(x);
+    g.appendChild(row);
+  });
+  if(!d)$('frMsg').textContent=tr('אין אינטרנט — הנתונים לא נטענו','No internet — stats not loaded');
+}
+$('frAdd').onclick=async()=>{
+  const n=($('frName').value||'').trim();
+  if(n.length<2)return $('frMsg').textContent=tr('שם קצר מדי','Name too short');
+  if(curUser&&n===curUser)return $('frMsg').textContent=tr('זה אתה 🙂',"That's you 🙂");
+  if(friends.includes(n))return $('frMsg').textContent=tr('כבר ברשימה','Already in the list');
+  if(friends.length>=50)return $('frMsg').textContent=tr('הרשימה מלאה','List is full');
+  $('frMsg').textContent=tr('מחפש… 🌍','Searching… 🌍');
+  const d=await regFetch();
+  if(d){regCache=d;regCacheAt=Date.now();}
+  if(!d)return $('frMsg').textContent=tr('דרוש אינטרנט','Internet required');
+  if(!d.users[n])return $('frMsg').textContent=tr('לא נמצא שחקן בשם הזה','No player with that name');
+  friends.push(n);save();
+  $('frName').value='';$('frMsg').textContent='';
+  buildFriends();
+};
+$('friendsBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('friendsOv').classList.remove('hidden');buildFriends();};
+$('frBack').onclick=()=>{$('friendsOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
+/* ---- טבלאות: עולמי / חברים × גביעים / מטבעות / שלבים / כוכבים ---- */
+let tbScope='world',tbMetric='tro';
+async function buildTables(){
+  $('tbWorld').className='chip'+(tbScope==='world'?' on':'');
+  $('tbFriends').className='chip'+(tbScope==='fr'?' on':'');
+  const mk={tro:'tbTro',co:'tbCoin',lvl:'tbLvl',star:'tbStar'};
+  for(const k in mk)$(mk[k]).className='chip'+(tbMetric===k?' on':'');
+  const g=$('tbList');
+  g.innerHTML='<div style="color:#aeb8c8">'+tr('טוען…','Loading…')+'</div>';
+  const d=await regCached();
+  if(!d){g.innerHTML='<div style="color:#aeb8c8">'+tr('הטבלאות דורשות אינטרנט','Leaderboards need internet')+'</div>';return;}
+  const me=myLiveStats();
+  let rows=Object.keys(d.users).map(n=>
+    (curUser&&n===curUser)?Object.assign(statsOf(d.users[n].sv,n),me,{name:n}):statsOf(d.users[n].sv,n));
+  if(!curUser||!d.users[curUser])rows.push(me);
+  if(tbScope==='fr')rows=rows.filter(r=>r.me||friends.includes(r.name));
+  const V={tro:r=>r.tro,co:r=>r.co,lvl:r=>r.done,star:r=>r.stars}[tbMetric];
+  const IC={tro:'🏆',co:'🪙',lvl:'✅',star:'⭐'}[tbMetric];
+  rows.sort((a,b)=>V(b)-V(a));
+  rows=rows.slice(0,30);
+  g.innerHTML='';
+  if(!rows.length){g.innerHTML='<div style="color:#aeb8c8">'+tr('אין נתונים עדיין','No data yet')+'</div>';return;}
+  rows.forEach((r,i)=>{
+    const row=document.createElement('div');
+    row.className='achRow'+(r.me?' got':'');
+    row.innerHTML='<span>'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.')+'</span><div><b>'+
+      esc(r.name)+(r.me?' · '+tr('אני','me'):'')+'</b><br><small>🏆 '+r.tro+' · 🪙 '+r.co+' · ✅ '+r.done+' · ⭐ '+r.stars+
+      '</small></div><span class="skPrice">'+IC+' '+V(r)+'</span>';
+    g.appendChild(row);
+  });
+}
+$('tablesBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('tablesOv').classList.remove('hidden');buildTables();};
+$('tbBack').onclick=()=>{$('tablesOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
+$('tbWorld').onclick=()=>{tbScope='world';buildTables();};
+$('tbFriends').onclick=()=>{tbScope='fr';buildTables();};
+$('tbTro').onclick=()=>{tbMetric='tro';buildTables();};
+$('tbCoin').onclick=()=>{tbMetric='co';buildTables();};
+$('tbLvl').onclick=()=>{tbMetric='lvl';buildTables();};
+$('tbStar').onclick=()=>{tbMetric='star';buildTables();};
 $('questBtn').onclick=()=>{buildQuests();$('menuOv').classList.add('hidden');$('questOv').classList.remove('hidden');};
 $('questBack').onclick=()=>{$('questOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('menuBtn2').onclick=()=>{refreshTro();$('menuOv').classList.remove('hidden');};
@@ -4077,17 +4236,17 @@ $('installBtn').onclick=async()=>{
   deferredPrompt.prompt();
   const r=await deferredPrompt.userChoice;
   deferredPrompt=null;$('installBtn').style.display='none';
-  if(r.outcome==='accepted')showToast('✅ מותקן!');
+  if(r.outcome==='accepted')showToast(tr('✅ מותקן!','✅ Installed!'));
 };
 window.addEventListener('appinstalled',()=>{
-  $('installBtn').style.display='none';showToast('🎉 האפליקציה הותקנה!');
+  $('installBtn').style.display='none';showToast(tr('🎉 האפליקציה הותקנה!','🎉 App installed!'));
 });
 
 $('achBtn').onclick=()=>{buildAch();$('menuOv').classList.add('hidden');$('achOv').classList.remove('hidden');};
 $('achBack').onclick=()=>{$('achOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 function syncToggles(){
-  $('ghostBtn').textContent='👻 רוח: '+(ghostOn?'פעיל':'כבוי');
-  $('musicBtn').textContent='🎵 מוזיקה: '+(musicOn?'פעיל':'כבוי');
+  $('ghostBtn').textContent='👻 '+tr('רוח: ','Ghost: ')+(ghostOn?tr('פעיל','on'):tr('כבוי','off'));
+  $('musicBtn').textContent='🎵 '+tr('מוזיקה: ','Music: ')+(musicOn?tr('פעיל','on'):tr('כבוי','off'));
 }
 $('ghostBtn').onclick=()=>{ghostOn=!ghostOn;syncToggles();save();};
 $('musicBtn').onclick=()=>{musicOn=!musicOn;syncToggles();save();};
@@ -4192,7 +4351,7 @@ async function pwMatch(user,pw,rec){
 }
 function getUsers(){const st=store();if(!st)return{};try{return JSON.parse(st.getItem(UKEY)||'{}')||{}}catch(e){return{}}}
 function putUsers(u){const st=store();if(st)try{st.setItem(UKEY,JSON.stringify(u))}catch(e){}}
-function refreshUserChip(){$('userChip').textContent=curUser?('👤 '+curUser+' · החלף'):'👤 אורח · כניסה';}
+function refreshUserChip(){$('userChip').textContent=curUser?('👤 '+curUser+tr(' · החלף',' · switch')):tr('👤 אורח · כניסה','👤 Guest · log in');}
 function applyUser(name){
   curUser=name;
   if(name){KEY='mazeU_'+name;GKEY='mazeG_'+name;}
@@ -4206,21 +4365,21 @@ function applyUser(name){
 function authMsg(m){$('authErr').textContent=m||'';}
 async function doAuth(reg){
   const u=($('authUser').value||'').trim(),p=$('authPass').value||'';
-  if(u.length<2)return authMsg('שם משתמש: לפחות 2 תווים');
-  if(/[|"\\]/.test(u))return authMsg('בלי התווים | " \\ בשם');
-  if(u==='__guest__'||u==='__ask__')return authMsg('שם שמור — בחרו שם אחר');
-  if(p.length<4)return authMsg('סיסמה: לפחות 4 תווים');
+  if(u.length<2)return authMsg(tr('שם משתמש: לפחות 2 תווים','Username: at least 2 characters'));
+  if(/[|"\\]/.test(u))return authMsg(tr('בלי התווים | " \\ בשם','No | " \\ characters in the name'));
+  if(u==='__guest__'||u==='__ask__')return authMsg(tr('שם שמור — בחרו שם אחר','Reserved name — pick another'));
+  if(p.length<4)return authMsg(tr('סיסמה: לפחות 4 תווים','Password: at least 4 characters'));
   const users=getUsers(),ex=users[u];
   if(reg){
-    if(ex)return authMsg('שם משתמש זה תפוס');
-    authMsg('בודק זמינות בעולם… 🌍');
+    if(ex)return authMsg(tr('שם משתמש זה תפוס','Username taken'));
+    authMsg(tr('בודק זמינות בעולם… 🌍','Checking availability… 🌍'));
     const cloud=await regFetch();
-    if(!cloud)return authMsg('הרשמה דורשת אינטרנט — בדקו חיבור ונסו שוב');
-    if(cloud.users[u])return authMsg('שם משתמש זה תפוס');
+    if(!cloud)return authMsg(tr('הרשמה דורשת אינטרנט — בדקו חיבור ונסו שוב','Sign-up needs internet — check your connection'));
+    if(cloud.users[u])return authMsg(tr('שם משתמש זה תפוס','Username taken'));
     const salt=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
     const rec={s:salt,h:await pwHash(u,p,salt),c:Date.now()};
     cloud.users[u]=rec;
-    if(!await regPut(cloud))return authMsg('שגיאת רשת — נסו שוב');
+    if(!await regPut(cloud))return authMsg(tr('שגיאת רשת — נסו שוב','Network error — try again'));
     const first=!Object.keys(users).length;
     users[u]=rec;putUsers(users);
     const st=store();
@@ -4232,15 +4391,15 @@ async function doAuth(reg){
       }catch(e){}
     }
     await finishLogin(u,p);
-    showToast('ברוך הבא, '+u+'! 🎉');
+    showToast(tr('ברוך הבא, ','Welcome, ')+u+'! 🎉');
   }else{
     let rec=ex;
     if(!rec){
-      authMsg('מחפש חשבון בעולם… 🌍');
+      authMsg(tr('מחפש חשבון בעולם… 🌍','Looking up account… 🌍'));
       const cloud=await regFetch();
-      if(!cloud)return authMsg('המשתמש לא במכשיר הזה — צריך אינטרנט להתחברות ראשונה');
+      if(!cloud)return authMsg(tr('המשתמש לא במכשיר הזה — צריך אינטרנט להתחברות ראשונה','Account not on this device — first login needs internet'));
       rec=cloud.users[u];
-      if(!rec)return authMsg('משתמש לא קיים — לחצו "הרשמה"');
+      if(!rec)return authMsg(tr('משתמש לא קיים — לחצו "הרשמה"','No such user — tap "Sign Up"'));
     }
     if(!await pwMatch(u,p,rec)){
       // אולי הרשומה המקומית ישנה — בדיקה מול העותק העדכני בענן לפני שמוותרים
@@ -4249,12 +4408,12 @@ async function doAuth(reg){
         const cloud=await regFetch();
         cloudRec=cloud&&cloud.users[u];
         if(cloudRec&&(cloudRec.h!==rec.h||cloudRec.s!==rec.s)&&await pwMatch(u,p,cloudRec))rec=cloudRec;
-        else return authMsg('סיסמה שגויה');
-      }else return authMsg('סיסמה שגויה');
+        else return authMsg(tr('סיסמה שגויה','Wrong password'));
+      }else return authMsg(tr('סיסמה שגויה','Wrong password'));
     }
     users[u]=rec;putUsers(users);
     await finishLogin(u,p);
-    showToast('שלום, '+u+'! 👋');
+    showToast(tr('שלום, ','Hello, ')+u+'! 👋');
   }
 }
 async function finishLogin(u,p){
@@ -4283,7 +4442,7 @@ async function checkGifts(){
   const cs=saveScore(cl),ls=saveScore(loc);
   if(cl&&(cs>ls||(cs===ls&&(cl.t||0)>=((loc&&loc.t)||0)))){
     applySave(cl);save();refreshTro();
-    showToast('☁️ ההתקדמות שלך נטענה מהענן');
+    showToast(tr('☁️ ההתקדמות שלך נטענה מהענן','☁️ Your progress was loaded from the cloud'));
   }else if(rec){
     cloudDirty=true; // המקומית מתקדמת יותר (או שאין בענן) — נדחוף אותה
   }
@@ -4293,7 +4452,7 @@ async function checkGifts(){
   if(g){
     applyGift(g,null);
     save();refreshTro();
-    showToast('🎁 קיבלת מתנה מהאדמין!');
+    showToast(tr('🎁 קיבלת מתנה מהאדמין!','🎁 You received an admin gift!'));
   }
 }
 /* ☁️ ניקוד התקדמות — רק מדדים שאף פעם לא יורדים, כדי ששמירה מתקדמת תמיד תנצח */
@@ -4317,7 +4476,7 @@ async function cloudPush(){
       if(cl&&saveScore(cl)>saveScore(mine)){
         // בענן יש התקדמות גדולה יותר (מכשיר אחר) — לא דורסים, מושכים
         applySave(cl);save();refreshTro();cloudDirty=false;
-        showToast('☁️ נטענה התקדמות חדשה מהענן');
+        showToast(tr('☁️ נטענה התקדמות חדשה מהענן','☁️ Newer cloud progress loaded'));
       }else{
         d.users[curUser].sv=mine;
         if(await regPut(d))cloudDirty=false;
@@ -4380,28 +4539,36 @@ async function admGive(g,label){
   d.gifts[t]=q;
   $('admMsg').textContent=(await regPut(d))?('✓ '+label+' — ממתין ל־'+t+' בענן ☁️'):'שגיאת רשת — נסו שוב';
 }
-const I18N_EN={playBtn:'▶ Play',selectBtn:'🗺 Levels',skinBtn:'🎨 Skins',runBtn:'🏃 Endless Run',
- achBtn:'🏅 Achievements',raceBtn:'🏁 Live Race',dailyBtn:'🎲 Daily Challenge',questBtn:'📜 Quests',
- boardBtn:'🌍 Leaderboard',adminBtn:'🛠 Admin',resumeBtn:'Resume',restartBtn:'Restart',
- calibBtn:'🎯 Calibrate (hold flat)',toSelectBtn:'Level Select',pauseMenuBtn:'🏠 Main Menu',
- nextBtn:'Continue',replayBtn:'Again',doneMenu:'🏠 Menu',doneLobby:'⚽ Lobby',failRetry:'Try Again',
- failMenu:'🏠 Main Menu',failSelect:'Level Select',
- authLogin:'Log In',authReg:'✨ Sign Up',authGuest:'🎮 Play as Guest',
- admBack:'Back',achBack:'Back',skinBack:'Back',questBack:'🏠 Main Menu',boardBack:'Back',playBtn2:'▶ Play'};
-let uiLang='he';try{uiLang=localStorage.getItem('mazeLang')||'he';}catch(e){}
+/* 🌐 תרגום מלא: כל אלמנט עם data-en מוחלף באנגלית; חזרה לעברית = רענון (העברית ב-HTML) */
 function applyLang(){
-  if(uiLang==='en'){
-    document.documentElement.lang='en';
-    for(const id in I18N_EN){const e=$(id);if(e)e.textContent=I18N_EN[id];}
-  }
-  $('langBtn').textContent=uiLang==='en'?'🌐 עברית':'🌐 English';
+  if(uiLang!=='en')return;
+  document.documentElement.lang='en';
+  document.documentElement.dir='ltr';
+  document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=el.getAttribute('data-en');});
+  document.querySelectorAll('[data-en-ph]').forEach(el=>{el.placeholder=el.getAttribute('data-en-ph');});
 }
-$('langBtn').onclick=()=>{
+applyLang();
+/* ⚙️ מסך הגדרות */
+function syncSettings(){
+  $('setLang').textContent=uiLang==='en'?'🌐 עברית':'🌐 English';
+  $('setSound').textContent=(muted?'🔇 ':'🔊 ')+tr('צלילים: ','Sound: ')+(muted?tr('כבוי','off'):tr('פעיל','on'));
+  $('setMusic').textContent='🎵 '+tr('מוזיקה: ','Music: ')+(musicOn?tr('פעיל','on'):tr('כבוי','off'));
+  $('setPerf').textContent='⚡ '+tr('ביצועים: ','Performance: ')+(perfPref==='1'?tr('פועל','on'):perfPref==='0'?tr('כבוי','off'):tr('אוטו','auto'));
+}
+$('setBtn').onclick=()=>{
+  const ov=$('settingsOv');
+  if(ov.classList.contains('hidden')){syncSettings();ov.classList.remove('hidden');}
+  else ov.classList.add('hidden');
+};
+$('setBack').onclick=()=>$('settingsOv').classList.add('hidden');
+$('setLang').onclick=()=>{
   uiLang=uiLang==='en'?'he':'en';
   try{localStorage.setItem('mazeLang',uiLang);}catch(e){}
   location.reload();
 };
-applyLang();
+$('setSound').onclick=()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';save();syncSettings();};
+$('setMusic').onclick=()=>{musicOn=!musicOn;syncToggles();save();syncSettings();};
+$('setPerf').onclick=()=>{cyclePerf();syncSettings();};
 $('adminBtn').onclick=()=>{
   if(!isAdmin)return;
   $('menuOv').classList.add('hidden');$('adminOv').classList.remove('hidden');
@@ -4424,27 +4591,28 @@ $('authReg').onclick=()=>doAuth(true);
 $('authGuest').onclick=()=>{isAdmin=false;$('adminBtn').style.display='none';applyUser(null);$('authOv').classList.add('hidden');};
 $('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth(false);});
 $('userChip').onclick=()=>{
-  const q=curUser?('להתנתק מ־'+curUser+'?'):'לעבור למסך כניסה?';
+  const q=curUser?(tr('להתנתק מ־','Log out of ')+curUser+'?'):tr('לעבור למסך כניסה?','Go to the login screen?');
   if(!confirm(q))return;
   save();gSaveDB();
   const st=store();if(st)try{st.setItem(CKEY,'__ask__')}catch(e){}
   location.reload();
 };
-function syncPerfBtn(){$('perfBtn').textContent='⚡ ביצועים: '+(perfPref==='1'?'פועל':perfPref==='0'?'כבוי':'אוטו');}
-$('perfBtn').onclick=()=>{
+function syncPerfBtn(){$('perfBtn').textContent='⚡ '+tr('ביצועים: ','Performance: ')+(perfPref==='1'?tr('פועל','on'):perfPref==='0'?tr('כבוי','off'):tr('אוטו','auto'));}
+function cyclePerf(){
   perfPref=perfPref==='a'?'1':perfPref==='1'?'0':'a';
   if(perfPref==='a'){try{localStorage.removeItem('mazeTier_v3');}catch(e){}}
   try{localStorage.setItem('mazePerf',perfPref);}catch(e){}
   setPerf(perfPref==='1'||(perfPref==='a'&&TIER!=='high'));
   if(perfPref==='0')loadThree();
   syncPerfBtn();
-  showToast(perfPref==='1'?'⚡ מצב ביצועים פועל':perfPref==='0'?'✨ גרפיקה מלאה':'🤖 זיהוי אוטומטי');
-};
+  showToast(perfPref==='1'?tr('⚡ מצב ביצועים פועל','⚡ Performance mode on'):perfPref==='0'?tr('✨ גרפיקה מלאה','✨ Full graphics'):tr('🤖 זיהוי אוטומטי','🤖 Auto detect'));
+}
+$('perfBtn').onclick=cyclePerf;
 syncPerfBtn();
 loadThree();
 if(window.__tierFresh){
   setTimeout(()=>{
-    showToast('🔍 הסורק זיהה מכשיר '+(TIER==='low'?'חלש — הופעלה תצורה קלה':TIER==='med'?'בינוני — הותאם אוטומטית':'חזק — גרפיקה מלאה'));
+    showToast(tr('🔍 הסורק זיהה מכשיר ','🔍 Device scan: ')+(TIER==='low'?tr('חלש — הופעלה תצורה קלה','low-end — light mode on'):TIER==='med'?tr('בינוני — הותאם אוטומטית','mid-range — auto tuned'):tr('חזק — גרפיקה מלאה','high-end — full graphics')));
   },1200);
 }
 function initAuth(){
@@ -4463,8 +4631,8 @@ function initAuth(){
 initAuth();
 {const bm=document.getElementById('bootMsg');if(bm)bm.remove();} // המשחק עלה בהצלחה
 if(!storageOK)setTimeout(()=>{
-  showToast(curUser?'⚠️ הדפדפן חוסם שמירה מקומית — נשמר בענן ☁️'
-                   :'⚠️ הדפדפן חוסם שמירה — התחברו עם משתמש כדי לשמור בענן ☁️');
+  showToast(curUser?tr('⚠️ הדפדפן חוסם שמירה מקומית — נשמר בענן ☁️','⚠️ Browser blocks local saves — saving to cloud ☁️')
+                   :tr('⚠️ הדפדפן חוסם שמירה — התחברו עם משתמש כדי לשמור בענן ☁️','⚠️ Browser blocks saves — log in to save to the cloud ☁️'));
 },2200);
 resize();
 refreshTro();
