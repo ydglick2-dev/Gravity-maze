@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v38</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v39</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -439,8 +439,18 @@
     <button class="btn sec" id="frAdd" data-en="➕ Add">➕ הוסף</button>
   </div>
   <div id="frMsg" style="min-height:18px;font-size:13px;color:#ffb0a0"></div>
-  <div id="frList" style="display:flex;flex-direction:column;gap:8px;width:min(340px,90vw);max-height:44vh;overflow-y:auto;padding:4px"></div>
+  <div id="frList" style="display:flex;flex-direction:column;gap:8px;width:min(340px,90vw);max-height:40vh;overflow-y:auto;padding:4px"></div>
+  <div style="font-size:11.5px;color:#8a94a8" data-en="Tap a friend to view their profile and journal">הקישו על חבר כדי לצפות בפרופיל וביומן שלו</div>
+  <button class="btn sec" id="myProfileBtn" data-en="📖 My Journal">📖 היומן שלי</button>
   <button class="btn sec" id="frBack" data-en="🏠 Main Menu">🏠 חזרה לתפריט</button>
+</div>
+
+<div class="overlay hidden" id="profileOv">
+  <h1 id="pfName">👤</h1>
+  <div id="pfStats" class="pill"></div>
+  <div style="font-size:13px;color:#aeb8c8;font-weight:800" data-en="📖 Game Journal">📖 יומן משחקים</div>
+  <div id="pfLog" style="display:flex;flex-direction:column;gap:6px;width:min(340px,90vw);max-height:44vh;overflow-y:auto;padding:4px"></div>
+  <button class="btn sec" id="pfBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="tablesOv">
@@ -2402,7 +2412,7 @@ function drawBall(T){
 /* ============ ⚽ לובי תלת-ממד: מגרש כדורגל ============ */
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -2960,7 +2970,7 @@ function finishLevel(){
     running=false;paused=false;
     const md2=medalFor2(customLv.par,lvTime);
     let bonus='';
-    if(dailyLast!==customLv._daily){addTro(5);stDailies++;questAdd('daily',1);addDailyWin();dailyLast=customLv._daily;bonus=' · +5🏆';}
+    if(dailyLast!==customLv._daily){addTro(5);stDailies++;questAdd('daily',1);addDailyWin();dailyLast=customLv._daily;bonus=' · +5🏆';logEv('dy');}
     if(apiOn())api('/daily/submit',{date:customLv._daily,name:myName||'שחקן',tm:Math.round(lvTime*1000)})
       .then(r=>{if(r&&r.rank)showToast(tr('🌍 מקום ','🌍 Rank ')+r.rank+tr(' בעולם היום!',' in the world today!'));});
     const gk2=gKeyFor();
@@ -2983,6 +2993,7 @@ function finishLevel(){
   const troGain=firstClear?(((levelIdx+1)%10===0)?3:1):0;
   s.done=true;s.stars=Math.max(s.stars,got);
   if(troGain)addTro(troGain);
+  logEv((levelIdx+1)%10===0?'bs':'lv',levelIdx+1,got);
   if(duelLive){
     if(duelCur>=duelTarget){
       send({t:'lwin'});duelLive=false;running=false;paused=false;hushRoll();
@@ -3141,7 +3152,16 @@ async function api(path,body){
   }catch(e){return null;}
 }
 let KEY='mazeUltra100_v2';
-let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0,friends=[];
+let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0,friends=[],gameLog=[];
+/* 📖 יומן משחקים: 30 האירועים האחרונים, נשמר בענן וגלוי לחברים */
+function logEv(ty,a,b2){
+  const e=[ty,(Date.now()/60000)|0];
+  if(a!==undefined)e.push(a);
+  if(b2!==undefined)e.push(b2);
+  gameLog.unshift(e);
+  if(gameLog.length>30)gameLog.length=30;
+  save();
+}
 let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false,lvlSel=5,duelTarget=5,duelCur=1,duelOppLv=1;
@@ -3169,6 +3189,7 @@ function saveBlob(){
     ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,
     la:lossAcc,gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
+    lg:gameLog.slice(0,30),
     sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG};
 }
 function save(){
@@ -3212,6 +3233,7 @@ function applySave(d){
     stFalls=d.fd|0;stTime=d.tm|0;stDailies=d.dd|0;stRaceWins=d.rw|0;
     stBossClean=!!d.bc;achEarned=Array.isArray(d.ac)?d.ac:[];
     friends=Array.isArray(d.fr)?d.fr.filter(x=>typeof x==='string').slice(0,50):[];
+    gameLog=Array.isArray(d.lg)?d.lg.slice(0,30):[];
     (d.s||[]).forEach((a,i)=>{if(!session[i])return;
       session[i].done=!!a[0];session[i].stars=a[1]|0;session[i].best=(a[2]|0)/10;});
     if(d.sens)SENS=d.sens/100;
@@ -3447,7 +3469,7 @@ function checkAch(){
     if(achEarned.includes(a.id))continue;
     let ok=false;try{ok=a.chk();}catch(e){}
     if(ok){
-      achEarned.push(a.id);addTro(a.tro);got=true;
+      achEarned.push(a.id);addTro(a.tro);got=true;logEv('ac',a.id);
       showToast(tr('🏅 הישג: ','🏅 Achievement: ')+tr(a.name,a.en?a.en[0]:a.name)+' · +'+a.tro+'🏆');
       tone(880,.12,'sine',.3);setTimeout(()=>tone(1318,.2,'sine',.3),120);
     }
@@ -3494,6 +3516,7 @@ function failLevel(){
     }
     save();
   }
+  logEv('fl',customLv?0:levelIdx+1);
   const isDaily=customLv&&customLv._daily;
   if(isDaily){dailyFail=customLv._daily;save();}
   playDeathFX(ball.x,ball.y,THEMES[L().th]);
@@ -3853,7 +3876,7 @@ function runEliminate(){
     }else{
       runMode=false;running=false;
       const rec=runDist>runBest;
-      if(rec)runBest=Math.floor(runDist);
+      if(rec){runBest=Math.floor(runDist);logEv('rn',runBest);}
       checkAch();save();
       showResult('🏃',Math.floor(runDist)+tr(' מטר!',' meters!'),
         rec?tr('🎉 שיא חדש!','🎉 New record!'):tr('השיא שלך: ','Your best: ')+Math.floor(runBest)+tr(' מ׳',' m'));
@@ -3890,6 +3913,7 @@ function endDuel(win,detail){
     trophies=Math.max(0,trophies-10);
     if(b4>trophies){detail+=' · -'+(b4-trophies)+'🏆';refreshTro();}
   }
+  logEv(win?'rw':'rl');
   checkAch();save();refreshTro();
   showResult(win?'🏆':'🥈',win?tr('ניצחת! +10🏆','You won! +10🏆'):tr('הפסדת הפעם','Lost this time'),
     detail+(win?tr(' · סה"כ ',' · total ')+trophies+'🏆':''));
@@ -4339,7 +4363,7 @@ let chestBusy=false;
 function openChest(){
   if(chestBusy)return;
   if(chests<=0){showToast(tr('אין תיבות — השלימו קווסטים או קנו בחנות!','No chests — complete quests or buy some!'));return;}
-  chestBusy=true;chests--;questAdd('chest',1);
+  chestBusy=true;chests--;questAdd('chest',1);logEv('ch');
   const drops=rollChest();
   checkAch();save();refreshTro();
   const vid=$('chestVid');
@@ -4473,9 +4497,11 @@ async function buildFriends(){
     row.className='achRow got';
     const inner=document.createElement('div');
     inner.style.flex='1';
-    inner.innerHTML='<b>👤 '+esc(n)+'</b><br><small>'+
+    inner.style.cursor='pointer';
+    inner.innerHTML='<b>👤 '+esc(n)+' ▸</b><br><small>'+
       (rec?('🏆 '+s.tro+' · 🪙 '+s.co+' · ✅ '+s.done+'/100 · ⭐ '+s.stars)
           :tr('עוד לא סנכרן לענן','no cloud data yet'))+'</small>';
+    inner.onclick=()=>showProfile(n,rec&&rec.sv,false); // 📖 כניסה לפרופיל וליומן
     row.appendChild(inner);
     const x=document.createElement('button');
     x.className='chip';x.textContent='✕';
@@ -4500,6 +4526,50 @@ $('frAdd').onclick=async()=>{
   $('frName').value='';$('frMsg').textContent='';
   buildFriends();
 };
+function agoTxt(m){
+  const d=Math.max(0,((Date.now()/60000)|0)-(m|0));
+  if(d<1)return tr('עכשיו','now');
+  if(d<60)return tr('לפני '+d+' ד׳',d+'m ago');
+  const h2=(d/60)|0;
+  if(h2<24)return tr('לפני '+h2+' ש׳',h2+'h ago');
+  const dd=(h2/24)|0;
+  if(dd===1)return tr('אתמול','yesterday');
+  return tr('לפני '+dd+' ימים',dd+'d ago');
+}
+function logLine(e){
+  const t=e[0],v=e[2],v2=e[3];
+  switch(t){
+   case 'lv':return['🎯',tr('סיים שלב ','Finished level ')+v+(v2?' · '+'★'.repeat(Math.min(3,v2)):'')];
+   case 'bs':return['👑',tr('ניצח בוס — שלב ','Beat the boss — level ')+v];
+   case 'fl':return['💔',v?tr('נפסל בשלב ','Failed level ')+v:tr('נפסל באתגר היומי','Failed the daily challenge')];
+   case 'dy':return['🎲',tr('השלים את האתגר היומי','Completed the daily challenge')];
+   case 'rw':return['🏁',tr('ניצח מרוץ חי! +10🏆','Won a live race! +10🏆')];
+   case 'rl':return['🏳',tr('הפסיד מרוץ חי','Lost a live race')];
+   case 'ch':return['🎁',tr('פתח תיבה','Opened a chest')];
+   case 'rn':return['🏃',tr('שיא ריצה חדש: ','New run record: ')+v+tr(' מ׳',' m')];
+   case 'ac':{const a=ACH.find(x=>x.id===v);return['🏅',tr('הישג: ','Achievement: ')+(a?tr(a.name,a.en?a.en[0]:a.name):'')];}
+  }
+  return['•',String(t)];
+}
+function showProfile(name,sv,live){
+  $('pfName').textContent='👤 '+esc(name);
+  const s=live?myLiveStats():statsOf(sv,name);
+  $('pfStats').textContent='🏆 '+s.tro+' · 🪙 '+s.co+' · ✅ '+s.done+'/100 · ⭐ '+s.stars;
+  const g=$('pfLog');g.innerHTML='';
+  const lg=live?gameLog:((sv&&Array.isArray(sv.lg))?sv.lg:[]);
+  if(!lg.length)g.innerHTML='<div style="color:#aeb8c8">'+tr('אין עדיין רישומים ביומן','No journal entries yet')+'</div>';
+  lg.slice(0,30).forEach(e=>{
+    const L2=logLine(e);
+    const row=document.createElement('div');
+    row.className='achRow got';
+    row.innerHTML='<span>'+L2[0]+'</span><div><b>'+L2[1]+'</b></div><small style="color:#aeb8c8">'+agoTxt(e[1])+'</small>';
+    g.appendChild(row);
+  });
+  $('friendsOv').classList.add('hidden');
+  $('profileOv').classList.remove('hidden');
+}
+$('pfBack').onclick=()=>{$('profileOv').classList.add('hidden');$('friendsOv').classList.remove('hidden');buildFriends();};
+$('myProfileBtn').onclick=()=>showProfile(curUser||myName||tr('אני','me'),null,true);
 $('friendsBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('friendsOv').classList.remove('hidden');buildFriends();};
 $('frBack').onclick=()=>{$('friendsOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 /* ---- טבלאות: עולמי / חברים × גביעים / מטבעות / שלבים / כוכבים ---- */
@@ -4837,7 +4907,7 @@ function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   dailyLast='';dailyFail='';runBest=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
-  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];
+  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];
   session.forEach(s=>{s.done=false;s.stars=0;s.best=0;});
   cloudForce=true; // שהאיפוס ינצח את שומר-הדריסה של הענן
   refreshTro();
