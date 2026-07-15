@@ -205,7 +205,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v49</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v50</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -300,6 +300,10 @@
 <div class="overlay hidden" id="adminOv" style="z-index:55;background:rgba(8,10,18,.95)">
   <h1 data-en="🛠 Admin">🛠 אדמין</h1>
   <div id="admNet" style="font-size:12.5px;font-weight:800;color:#aeb8c8">🌍 …</div>
+  <div class="row">
+    <input class="tin" id="admBackend" placeholder="כתובת שרת בקנד (workers.dev)" data-en-ph="Backend URL (workers.dev)" style="max-width:210px;direction:ltr">
+    <button class="btn sec" id="admBeSet" data-en="🔌 Connect">🔌 חבר</button>
+  </div>
   <p class="sub" data-en="Empty name = you · player on this device — instant. Remote player — receives on next login ☁️">שם ריק = אתה · שחקן במכשיר הזה — מיידי<br>שחקן רחוק — יקבל בכניסה הבאה שלו ☁️</p>
   <input class="tin" id="admTarget" maxlength="14" placeholder="שם משתמש יעד (ריק = אני)" data-en-ph="Target username (empty = me)" style="max-width:260px">
   <div class="row">
@@ -4877,26 +4881,21 @@ $('summonNo').onclick=()=>$('summonOv').classList.add('hidden');
 setInterval(async()=>{
   if(!curUser||!running||document.hidden)return;
   try{
+    const e2={lv:runMode?0:levelIdx+1,md:runMode?'run':(duelLive?'race':'maze'),t:Date.now()};
+    if(beOn()){be('/api/live',{u:curUser,e:e2});return;}
     const d=await regFetch();
     if(!d)return;
-    d.live[curUser]={lv:runMode?0:levelIdx+1,md:runMode?'run':(duelLive?'race':'maze'),t:Date.now()};
+    d.live[curUser]=e2;
     regPut(d);
   }catch(e){}
 },30000);
 /* 📬 דואר נכנס כמעט-מיידי: מתנות, איפוסים, באנים וזימונים מוחלים תוך ~10 שניות,
    בלובי וגם באמצע משחק — בלי לחכות לכניסה מחדש */
-async function processInbox(d){
-  if(!curUser||!d)return false;
-  if(enforceBan(d.bans&&d.bans[curUser]))return true;
-  let dirty=false;
-  const sm=d.summon&&d.summon[curUser];
-  if(sm&&sm.code&&Date.now()-(sm.ts||0)<180e3){
-    delete d.summon[curUser];dirty=true;
-    setTimeout(()=>showSummon(sm),400);
-  }
-  const g=d.gifts&&d.gifts[curUser];
-  if(g){delete d.gifts[curUser];dirty=true;}
-  if(dirty&&!await regPut(d))return false;
+function applyInbox(r){ // {gift,summon,ban} — מכל מקור
+  if(enforceBan(r.ban))return true;
+  const sm=r.summon;
+  if(sm&&sm.code&&Date.now()-(sm.ts||0)<180e3)setTimeout(()=>showSummon(sm),400);
+  const g=r.gift;
   if(g){
     const hadRst=!!g.rst;
     applyGift(g,null);
@@ -4912,18 +4911,48 @@ async function processInbox(d){
   }
   return false;
 }
+async function processInbox(d){ // מסלול textdb
+  if(!curUser||!d)return false;
+  const gift=(d.gifts&&d.gifts[curUser])||null;
+  const summon=(d.summon&&d.summon[curUser])||null;
+  const ban=(d.bans&&d.bans[curUser])||null;
+  if(gift||summon){
+    delete d.gifts[curUser];delete d.summon[curUser];
+    if(!await regPut(d))return false;
+  }
+  return applyInbox({gift,summon,ban});
+}
 let inboxBusy=false;
 async function pollInbox(){
   if(!curUser||document.hidden||inboxBusy)return;
   inboxBusy=true;
   try{
-    const d=await regFetch();
-    if(d){regCache=d;regCacheAt=Date.now();await processInbox(d);}
+    if(beOn()){ // 🚀 משיכה אטומית מהשרת
+      const r=await be('/api/claim',{u:curUser});
+      if(r)applyInbox(r);
+    }else{
+      const d=await regFetch();
+      if(d){regCache=d;regCacheAt=Date.now();await processInbox(d);}
+    }
   }catch(e){}
   inboxBusy=false;
 }
 setInterval(pollInbox,10000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(pollInbox,600);});
+/* 🔌 דחיפה מיידית: השרת מודיע — ואנחנו מושכים באותה שנייה */
+let inboxWS=null,wsRetry=0;
+function wsInbox(){
+  if(!beOn()||!curUser||inboxWS)return;
+  try{
+    inboxWS=new WebSocket(BACKEND.replace(/^http/,'ws')+'/ws?u='+encodeURIComponent(curUser));
+    inboxWS.onopen=()=>{wsRetry=0;};
+    inboxWS.onmessage=()=>pollInbox();
+    inboxWS.onclose=inboxWS.onerror=()=>{
+      inboxWS=null;
+      setTimeout(wsInbox,Math.min(30000,2000+wsRetry++*3000));
+    };
+  }catch(e){inboxWS=null;}
+}
 /* 👀 לוח "משחקים עכשיו" לאדמין */
 async function buildWatch(){
   const g=$('watchList');
@@ -5029,25 +5058,72 @@ const REG_URL='https://textdb.dev/api/data/mzk-glk-reg-7g2k9-v1';
 const ADMIN_H='5b758919c1f5a4019d63bb03ffc4bdfa2dbf992043785e8ab81d3d943b393c11';
 const ADMIN_SEED={s:'glkmrj0s82lx7',h:'af2f11b3faa2c7f1491ba594da41b990a6f090172a8b2a338a312856939b5ccd',c:1783935181000};
 let curUser=null,isAdmin=false;
-async function regFetch(){
+/* ============ 🚀 שרת בקנד ייעודי (אופציונלי אך מומלץ) ============
+   כשמחובר: דחיפת WebSocket מיידית, כתיבות אטומיות, הכרעת שמירות בשרת.
+   הכתובת מתגלה אוטומטית אצל כל השחקנים דרך d.backend ב-textdb. */
+let BACKEND='';
+try{BACKEND=(localStorage.getItem('mazeBackend')||'').replace(/\/+$/,'');}catch(e){}
+const beOn=()=>/^https?:\/\//.test(BACKEND);
+async function be(path,body){
+  try{
+    const ac=new AbortController();
+    const to=setTimeout(()=>ac.abort(),6000);
+    const r=await fetch(BACKEND+path,{
+      method:body!==undefined?'POST':'GET',
+      headers:body!==undefined?{'Content-Type':'application/json'}:undefined,
+      body:body!==undefined?JSON.stringify(body):undefined,
+      signal:ac.signal});
+    clearTimeout(to);
+    return await r.json();
+  }catch(e){return null;}
+}
+function normDoc(d){
+  if(!d||typeof d!=='object')return{users:{},gifts:{},summon:{},bans:{},live:{}};
+  if(!d.users)d.users={};if(!d.gifts)d.gifts={};
+  if(!d.summon)d.summon={};if(!d.bans)d.bans={};if(!d.live)d.live={};
+  return d;
+}
+async function tdbFetch(){
   try{
     const r=await fetch(REG_URL+'?t='+Date.now(),{cache:'no-store'});
     if(!r.ok)return null;
     const tx=await r.text();
-    if(!tx||!tx.trim())return{users:{},gifts:{}};
-    let d;try{d=JSON.parse(tx);}catch(e){return{users:{},gifts:{}};}
-    if(!d||typeof d!=='object')return{users:{},gifts:{}};
-    if(!d.users)d.users={};if(!d.gifts)d.gifts={};
-    if(!d.summon)d.summon={};if(!d.bans)d.bans={};if(!d.live)d.live={};
-    return d;
+    if(!tx||!tx.trim())return normDoc({});
+    let d;try{d=JSON.parse(tx);}catch(e){return normDoc({});}
+    return normDoc(d);
   }catch(e){return null;}
 }
-async function regPut(d){
+async function tdbPut(d){
   try{
     if(!d.users['גליקי'])d.users['גליקי']=ADMIN_SEED;
     const r=await fetch(REG_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(d)});
     return r.ok;
   }catch(e){return false;}
+}
+function adoptBackend(url){
+  BACKEND=String(url||'').replace(/\/+$/,'');
+  try{localStorage.setItem('mazeBackend',BACKEND);}catch(e){}
+  wsInbox();
+}
+async function regFetch(){
+  if(beOn()){
+    const d=await be('/api/doc');
+    if(d&&d.users)return normDoc(d);
+    return null; // השרת לא זמין — עדיף להיכשל מאשר להתפצל לשני מקורות
+  }
+  const d=await tdbFetch();
+  if(d&&typeof d.backend==='string'&&/^https?:\/\//.test(d.backend)&&!beOn()){
+    adoptBackend(d.backend); // 🚀 גילוי אוטומטי של השרת אצל כל השחקנים
+    showToast(tr('🚀 מחובר לשרת המשחק המהיר!','🚀 Connected to the fast game server!'));
+  }
+  return d;
+}
+async function regPut(d){
+  if(beOn()){
+    const r=await be('/api/doc',d);
+    return !!(r&&r.ok);
+  }
+  return tdbPut(d);
 }
 /* שני מנגנוני hash: SHA-256 כשהדפדפן מאפשר, ו-fallback כשלא (למשל iframe בסנדבוקס,
    שם isSecureContext=false). התחברות מקבלת את שניהם — אחרת סיסמה שנרשמה בדפדפן רגיל
@@ -5133,6 +5209,7 @@ function applyUser(name){
   load();refreshUserChip();
   // בלי save() כאן — שמירה מוקדמת הייתה גוברת בטעות על השמירה שבענן
   if(name&&!myName)myName=name.slice(0,12);
+  if(name)setTimeout(wsInbox,400); // 🔌 חיבור לדחיפה מיידית מהשרת
 }
 function authMsg(m){$('authErr').textContent=m||'';}
 async function doAuth(reg){
@@ -5151,7 +5228,11 @@ async function doAuth(reg){
     const salt=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
     const rec={s:salt,h:await pwHash(u,p,salt),c:Date.now()};
     cloud.users[u]=rec;
-    if(!await regPut(cloud))return authMsg(tr('שגיאת רשת — נסו שוב','Network error — try again'));
+    if(beOn()){
+      const rr=await be('/api/register',{u,rec});
+      if(!rr)return authMsg(tr('שגיאת רשת — נסו שוב','Network error — try again'));
+      if(rr.err==='taken')return authMsg(tr('שם משתמש זה תפוס','Username taken'));
+    }else if(!await regPut(cloud))return authMsg(tr('שגיאת רשת — נסו שוב','Network error — try again'));
     const first=!Object.keys(users).length;
     users[u]=rec;putUsers(users);
     const st=store();
@@ -5244,16 +5325,26 @@ async function cloudPush(){
   if(!curUser||cloudBusy)return;
   cloudBusy=true;
   try{
-    const d=await regFetch();
-    if(d&&d.users[curUser]){
-      const mine=saveBlob(),cl=d.users[curUser].sv;
-      if(!cloudForce&&cl&&saveScore(cl)>saveScore(mine)){
-        // בענן יש התקדמות גדולה יותר (מכשיר אחר) — לא דורסים, מושכים
-        applySave(cl);claimTroRoad();save();refreshTro();cloudDirty=false;
-        showToast(tr('☁️ נטענה התקדמות חדשה מהענן','☁️ Newer cloud progress loaded'));
-      }else{
-        d.users[curUser].sv=mine;
-        if(await regPut(d)){cloudDirty=false;cloudForce=false;}
+    if(beOn()){ // 🚀 השרת מכריע בעצמו מי מתקדם יותר
+      const r=await be('/api/save',{u:curUser,sv:saveBlob(),force:cloudForce});
+      if(r&&r.ok){
+        if(r.kept==='server'&&r.sv){
+          applySave(r.sv);claimTroRoad();save();refreshTro();
+          showToast(tr('☁️ נטענה התקדמות חדשה מהשרת','☁️ Newer progress loaded from server'));
+        }
+        cloudDirty=false;cloudForce=false;
+      }
+    }else{
+      const d=await regFetch();
+      if(d&&d.users[curUser]){
+        const mine=saveBlob(),cl=d.users[curUser].sv;
+        if(!cloudForce&&cl&&saveScore(cl)>saveScore(mine)){
+          applySave(cl);claimTroRoad();save();refreshTro();cloudDirty=false;
+          showToast(tr('☁️ נטענה התקדמות חדשה מהענן','☁️ Newer cloud progress loaded'));
+        }else{
+          d.users[curUser].sv=mine;
+          if(await regPut(d)){cloudDirty=false;cloudForce=false;}
+        }
       }
     }
   }catch(e){}
@@ -5322,6 +5413,13 @@ async function admGive(g,label){
     applyGift(g,null);save();refreshTro();
     if(g.rst)cloudPush(); // דחיפת האיפוס לענן מיד (cloudForce כבר דלוק)
     $('admMsg').textContent='✓ '+label+' — הוחל עליך';
+    return;
+  }
+  if(beOn()){ // 🚀 דרך השרת: מיזוג אטומי + דחיפה מיידית לשחקן (גם מפחיתים)
+    const rr=await be('/api/gift',{t,g});
+    $('admMsg').textContent=rr&&rr.ok
+      ?('✓ '+label+tr(' — נשלח ל-',' — sent to ')+t+tr(' ויגיע אליו מיד ⚡',' instantly ⚡'))
+      :(rr&&rr.err==='nouser'?('"'+t+'" '+tr('לא רשום בעולם','is not registered')):tr('שגיאת רשת','Network error'));
     return;
   }
   const st=store();
@@ -5565,6 +5663,40 @@ $('edRestore').onclick=async()=>{
   await admGive({clr:n-1},tr('החזרת שלב ','Restoring level ')+n+tr(' לרגיל',' to default'));
   $('edMsg').textContent=$('admMsg').textContent;
 };
+$('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה אוטומטית לכל השחקנים
+  const url=($('admBackend').value||'').trim().replace(/\/+$/,'');
+  if(!url){ // שדה ריק = ניתוק מהשרת
+    BACKEND='';
+    try{localStorage.removeItem('mazeBackend');}catch(e){}
+    const d0=await tdbFetch();
+    if(d0){delete d0.backend;await tdbPut(d0);}
+    $('admMsg').textContent=tr('השרת נותק — חוזרים ל-textdb','Backend disconnected — back to textdb');
+    return;
+  }
+  if(!/^https?:\/\//.test(url))return $('admMsg').textContent=tr('כתובת לא תקינה (חייבת להתחיל ב-https://)','Invalid URL (must start with https://)');
+  $('admMsg').textContent=tr('בודק את השרת…','Checking server…');
+  let ping=null;
+  try{
+    const r=await fetch(url+'/api/ping');
+    ping=await r.json();
+  }catch(e){}
+  if(!ping||!ping.ok||ping.name!=='gravity-maze-backend')
+    return $('admMsg').textContent=tr('⚠️ לא נמצא שרת Gravity Maze בכתובת הזאת','⚠️ No Gravity Maze backend at that URL');
+  // מעבירים את הנתונים הקיימים מ-textdb (בלי לדרוס משתמשים שכבר בשרת)
+  const legacy=await tdbFetch();
+  let imported=0;
+  if(legacy){
+    try{
+      const r=await fetch(url+'/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({doc:legacy})});
+      const jr=await r.json();
+      imported=jr&&jr.imported||0;
+    }catch(e){}
+    legacy.backend=url; // 🚀 כל השחקנים יגלו את השרת אוטומטית
+    await tdbPut(legacy);
+  }
+  adoptBackend(url);
+  $('admMsg').textContent='🚀 '+tr('השרת חובר! יובאו ','Backend connected! Imported ')+imported+tr(' שחקנים · כל השחקנים יעברו אליו אוטומטית',' players · everyone migrates automatically');
+};
 $('admSummon').onclick=async()=>{
   const t=($('admTarget').value||'').trim();
   if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
@@ -5582,10 +5714,14 @@ $('admSummon').onclick=async()=>{
   const wait=setInterval(async()=>{
     if(!roomCode){if(++tries>20)clearInterval(wait);return;}
     clearInterval(wait);
-    const d2=await regFetch();
-    if(!d2)return lvStatus(tr('שגיאת רשת בשליחת הזימון','Network error sending summon'));
-    d2.summon[t]={code:roomCode,ts:Date.now(),from:curUser||'אדמין'};
-    await regPut(d2);
+    const s2={code:roomCode,ts:Date.now(),from:curUser||'אדמין'};
+    if(beOn()){await be('/api/summon',{t,s:s2});}
+    else{
+      const d2=await regFetch();
+      if(!d2)return lvStatus(tr('שגיאת רשת בשליחת הזימון','Network error sending summon'));
+      d2.summon[t]=s2;
+      await regPut(d2);
+    }
     lvStatus(tr('🚀 זימון נשלח ל-','🚀 Summon sent to ')+t+tr(' — יקבל אותו תוך פחות מדקה','' )+' ⏳');
   },700);
 };
@@ -5606,13 +5742,16 @@ $('admBan').onclick=async()=>{
   const d=await regFetch();
   if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
   if(!d.users[t])return $('admMsg').textContent='"'+t+'" '+tr('לא רשום בעולם','is not registered');
-  d.bans[t]={
+  const bn={
     until:Date.now()+hrs*3600e3,ts:Date.now(),
     r:($('admBanReason').value||'').trim().slice(0,60),
     f:admBanSys?tr('המערכת','the System'):(curUser||tr('האדמין','the Admin'))
   };
-  $('admMsg').textContent=(await regPut(d))
-    ?('🚫 '+t+tr(' נחסם ל-',' banned for ')+hrs+tr(' שעות',' hours')+(d.bans[t].r?' · "'+d.bans[t].r+'"':''))
+  let ok2;
+  if(beOn()){const rr=await be('/api/ban',{t,b:bn});ok2=!!(rr&&rr.ok);}
+  else{d.bans[t]=bn;ok2=await regPut(d);}
+  $('admMsg').textContent=ok2
+    ?('🚫 '+t+tr(' נחסם ל-',' banned for ')+hrs+tr(' שעות',' hours')+(bn.r?' · "'+bn.r+'"':''))
     :tr('שגיאת רשת','Network error');
 };
 $('admUnban').onclick=async()=>{
@@ -5620,8 +5759,10 @@ $('admUnban').onclick=async()=>{
   if(!t)return $('admMsg').textContent=tr('כתבו שם שחקן יעד','Enter a target username');
   const d=await regFetch();
   if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
-  delete d.bans[t];
-  $('admMsg').textContent=(await regPut(d))?('✅ '+t+tr(' שוחרר מהבאן',' unbanned')):tr('שגיאת רשת','Network error');
+  let ok3;
+  if(beOn()){const rr=await be('/api/ban',{t,b:null});ok3=!!(rr&&rr.ok);}
+  else{delete d.bans[t];ok3=await regPut(d);}
+  $('admMsg').textContent=ok3?('✅ '+t+tr(' שוחרר מהבאן',' unbanned')):tr('שגיאת רשת','Network error');
 };
 $('admEditor').onclick=()=>{
   $('adminOv').classList.add('hidden');
@@ -5638,11 +5779,12 @@ $('adminBtn').onclick=async()=>{
   $('menuOv').classList.add('hidden');$('adminOv').classList.remove('hidden');
   $('admMsg').textContent='';$('admTarget').value='';
   // 🌍 אבחון חיבור לענן — כדי שיהיה ברור מיד אם שירות הרישום נפל
-  $('admNet').textContent=tr('🌍 בודק חיבור לענן…','🌍 Checking cloud…');
+  $('admBackend').value=BACKEND;
+  $('admNet').textContent=tr('🌍 בודק חיבור…','🌍 Checking…');
   const d=await regFetch();
   $('admNet').textContent=d
-    ?tr('🌍 ענן מחובר · ','🌍 Cloud online · ')+Object.keys(d.users).length+tr(' שחקנים רשומים',' registered players')
-    :tr('⚠️ אין חיבור לענן (textdb.dev) — מתנות רחוקות לא יעבדו','⚠️ Cloud unreachable (textdb.dev) — remote gifts will not work');
+    ?(beOn()?tr('🚀 שרת בקנד מחובר · ','🚀 Backend online · '):tr('🌍 ענן מחובר · ','🌍 Cloud online · '))+Object.keys(d.users).length+tr(' שחקנים',' players')+(beOn()?tr(' · דחיפה מיידית ⚡',' · instant push ⚡'):'')
+    :tr('⚠️ אין חיבור — מתנות רחוקות לא יעבדו','⚠️ Offline — remote actions will not work');
   $('admNet').style.color=d?'#7ae08a':'#ff9e9e';
 };
 $('admBack').onclick=()=>{$('adminOv').classList.add('hidden');$('menuOv').classList.remove('hidden');};
@@ -5680,9 +5822,14 @@ $('admResetPw').onclick=async()=>{
   if(!d.users[t])return $('admMsg').textContent='"'+t+'" '+tr('לא רשום בעולם','is not registered');
   const salt=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
   const rec={s:salt,h:await pwHash(t,np,salt),c:d.users[t].c||Date.now()};
-  if(d.users[t].sv)rec.sv=d.users[t].sv;
-  d.users[t]=rec;
-  if(!await regPut(d))return $('admMsg').textContent=tr('שגיאת רשת — נסו שוב','Network error — try again');
+  let okPw;
+  if(beOn()){const rr=await be('/api/pw',{u:t,rec});okPw=!!(rr&&rr.ok);}
+  else{
+    if(d.users[t].sv)rec.sv=d.users[t].sv;
+    d.users[t]=rec;
+    okPw=await regPut(d);
+  }
+  if(!okPw)return $('admMsg').textContent=tr('שגיאת רשת — נסו שוב','Network error — try again');
   const lu=getUsers();
   if(lu[t]){lu[t]=rec;putUsers(lu);}
   $('admMsg').textContent='🔑 '+t+tr(' — הסיסמה החדשה: ',' — new password: ')+np;
