@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v39</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v40</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -234,6 +234,7 @@
   <button class="btn sec" id="setSound"></button>
   <button class="btn sec" id="setMusic"></button>
   <button class="btn sec" id="setPerf"></button>
+  <button class="btn sec" id="setRec"></button>
   <div class="row">
     <input class="tin" id="spInput" placeholder="קישור מספוטיפיי" data-en-ph="Spotify link" style="max-width:190px">
     <button class="btn sec" id="spSet" data-en="🎧 Play">🎧 נגן</button>
@@ -388,6 +389,13 @@
   <button class="btn sec" id="chestBack" data-en="Back">חזרה</button>
 </div>
 
+<div id="clipOv" style="display:none;position:fixed;inset:0;z-index:65;background:rgba(3,4,8,.97);flex-direction:column;align-items:center;justify-content:center;gap:12px">
+  <video id="clipVid" playsinline controls style="max-width:96vw;max-height:68vh;border-radius:12px;background:#000"></video>
+  <div class="row">
+    <button class="btn" id="clipShare" data-en="📤 Share">📤 שיתוף</button>
+    <button class="btn sec" id="clipClose" data-en="✕ Close">✕ סגירה</button>
+  </div>
+</div>
 <canvas id="crateCv" style="display:none;position:fixed;inset:0;z-index:60;background:#05070c"></canvas>
 <video id="chestVid" playsinline preload="auto" src="chest-open.mp4"
   style="display:none;position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:60;background:#000"></video>
@@ -1375,6 +1383,105 @@ function medalFor(i,t){
   return t<=g?'🥇':(t<=g*1.6?'🥈':'🥉');
 }
 
+/* ============ 🎥 הקלטת שלבים: MP4/WebM מתוך הקנבס, נשמר במכשיר (IndexedDB) ============ */
+let recMR=null,recChunks=[],recStartT=0,clipDB=null,clipCur=null,clipUrl=null;
+let recOn=TIER!=='low';
+try{const v=localStorage.getItem('mazeRec');if(v!==null)recOn=v==='1';}catch(e){}
+function clipOpen(cb){
+  if(clipDB)return cb(clipDB);
+  try{
+    const rq=indexedDB.open('mazeClips',1);
+    rq.onupgradeneeded=()=>{rq.result.createObjectStore('clips',{keyPath:'id'});};
+    rq.onsuccess=()=>{clipDB=rq.result;cb(clipDB);};
+    rq.onerror=()=>cb(null);
+  }catch(e){cb(null);}
+}
+function clipPut(rec,done){
+  clipOpen(db=>{
+    if(!db)return done&&done(false);
+    try{
+      const tx=db.transaction('clips','readwrite'),st2=tx.objectStore('clips');
+      st2.put(rec);
+      const ks=st2.getAllKeys();
+      ks.onsuccess=()=>{ // שומרים רק 4 סרטונים אחרונים
+        const keys=(ks.result||[]).sort((a,b)=>b-a);
+        keys.slice(4).forEach(k=>st2.delete(k));
+      };
+      tx.oncomplete=()=>done&&done(true);
+      tx.onerror=()=>done&&done(false);
+    }catch(e){done&&done(false);}
+  });
+}
+function clipGet(id,cb){
+  clipOpen(db=>{
+    if(!db)return cb(null);
+    try{
+      const rq=db.transaction('clips').objectStore('clips').get(id);
+      rq.onsuccess=()=>cb(rq.result||null);
+      rq.onerror=()=>cb(null);
+    }catch(e){cb(null);}
+  });
+}
+function recStart(){
+  if(!recOn||recMR||typeof MediaRecorder==='undefined')return;
+  try{
+    const stream=canvas.captureStream(30);
+    const mimes=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'];
+    let mime='';
+    for(const m of mimes)if(MediaRecorder.isTypeSupported(m)){mime=m;break;}
+    if(!mime)return;
+    const chunks=[]; // מקומי להקלטה הזו — מונע התנגשות בין שלבים עוקבים
+    recMR=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:2200000});
+    recMR._chunks=chunks;
+    recMR.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+    recMR.start(1000);
+    recStartT=Date.now();
+  }catch(e){recMR=null;}
+}
+function recStop(saveIt,lvNum,cb){
+  const mr=recMR;recMR=null;
+  if(!mr)return cb&&cb(0);
+  try{
+    mr.onstop=()=>{
+      // קליפים קצרים מ-3 שניות או כבדים מ-25MB לא נשמרים
+      const chunks=mr._chunks||[];
+      if(!saveIt||!chunks.length||Date.now()-recStartT<3000)return cb&&cb(0);
+      const blob=new Blob(chunks,{type:mr.mimeType});
+      if(blob.size>25e6)return cb&&cb(0);
+      const id=Date.now();
+      clipPut({id,blob,mime:mr.mimeType,lv:lvNum||0,t:id},ok=>cb&&cb(ok?id:0));
+    };
+    mr.stop();
+  }catch(e){cb&&cb(0);}
+}
+function openClip(id){
+  clipGet(id,rec=>{
+    if(!rec||!rec.blob){showToast(tr('🎥 הסרטון כבר לא שמור במכשיר הזה','🎥 Clip no longer stored on this device'));return;}
+    clipCur=rec;
+    if(clipUrl)URL.revokeObjectURL(clipUrl);
+    clipUrl=URL.createObjectURL(rec.blob);
+    $('clipVid').src=clipUrl;
+    $('clipOv').style.display='flex';
+    $('clipVid').play().catch(()=>{});
+  });
+}
+$('clipClose').onclick=()=>{
+  $('clipOv').style.display='none';
+  try{$('clipVid').pause();}catch(e){}
+};
+$('clipShare').onclick=async()=>{ // 📤 שיתוף הקובץ עצמו (או הורדה כשאין Web Share)
+  if(!clipCur)return;
+  const ext=/mp4/.test(clipCur.mime||'')?'mp4':'webm';
+  const file=new File([clipCur.blob],'gravity-maze-lv'+(clipCur.lv||'x')+'.'+ext,{type:clipCur.mime||'video/webm'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:'Gravity Maze'});return;}catch(e){}
+  }
+  const a=document.createElement('a');
+  a.href=clipUrl||URL.createObjectURL(clipCur.blob);
+  a.download=file.name;
+  document.body.appendChild(a);a.click();a.remove();
+  showToast(tr('📥 הקובץ ירד למכשיר','📥 File downloaded'));
+};
 /* ============ LEVEL FLOW ============ */
 function loadLevel(i){
   shieldUsed=false;
@@ -2993,7 +3100,8 @@ function finishLevel(){
   const troGain=firstClear?(((levelIdx+1)%10===0)?3:1):0;
   s.done=true;s.stars=Math.max(s.stars,got);
   if(troGain)addTro(troGain);
-  logEv((levelIdx+1)%10===0?'bs':'lv',levelIdx+1,got);
+  const _le=logEv((levelIdx+1)%10===0?'bs':'lv',levelIdx+1,got);
+  recStop(true,levelIdx+1,id=>{if(id){_le[4]=id;save();}});
   if(duelLive){
     if(duelCur>=duelTarget){
       send({t:'lwin'});duelLive=false;running=false;paused=false;hushRoll();
@@ -3050,6 +3158,7 @@ function startRun(i){
   $('raceBar').style.display='none';
   loadLevel(i);
   running=true;paused=false;
+  recStop(false);recStart(); // 🎥 הקלטה חדשה לכל שלב
   closeLobbyNet();
   syncLobbyUI();
 }
@@ -3092,11 +3201,13 @@ $('restartBtn').onclick=()=>{$('pauseOv').classList.add('hidden');
   if(runMode){startRunner(runLive,runSeed,runTarget);return;}
   startRun(customLv||levelIdx);};
 $('toSelectBtn').onclick=()=>{
+  recStop(false);
   if(runLive){send({t:'quit'});setTimeout(cleanupLive,300);}
   running=false;paused=false;runMode=false;runLive=false;duelLive=false;customLv=null;hushRoll();
   $('raceBar').style.display='none';
   $('pauseOv').classList.add('hidden');buildGrid();$('selectOv').classList.remove('hidden');};
 $('pauseMenuBtn').onclick=()=>{
+  recStop(false);
   if(runLive||conn){try{send({t:'quit'});}catch(e){}setTimeout(cleanupLive,300);}
   running=false;paused=false;runMode=false;runLive=false;duelLive=false;customLv=null;
   $('raceBar').style.display='none';
@@ -3161,6 +3272,7 @@ function logEv(ty,a,b2){
   gameLog.unshift(e);
   if(gameLog.length>30)gameLog.length=30;
   save();
+  return e;
 }
 let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
@@ -3516,7 +3628,8 @@ function failLevel(){
     }
     save();
   }
-  logEv('fl',customLv?0:levelIdx+1);
+  const _fe=logEv('fl',customLv?0:levelIdx+1);
+  recStop(true,customLv?0:levelIdx+1,id=>{if(id){_fe[4]=id;save();}});
   const isDaily=customLv&&customLv._daily;
   if(isDaily){dailyFail=customLv._daily;save();}
   playDeathFX(ball.x,ball.y,THEMES[L().th]);
@@ -4563,6 +4676,12 @@ function showProfile(name,sv,live){
     const row=document.createElement('div');
     row.className='achRow got';
     row.innerHTML='<span>'+L2[0]+'</span><div><b>'+L2[1]+'</b></div><small style="color:#aeb8c8">'+agoTxt(e[1])+'</small>';
+    if(live&&e[4]){ // 🎥 יש סרטון לשלב הזה
+      const pb=document.createElement('button');
+      pb.className='chip';pb.textContent='▶';
+      pb.onclick=()=>openClip(e[4]);
+      row.appendChild(pb);
+    }
     g.appendChild(row);
   });
   $('friendsOv').classList.add('hidden');
@@ -5007,6 +5126,7 @@ function syncSettings(){
   $('setSound').textContent=(muted?'🔇 ':'🔊 ')+tr('צלילים: ','Sound: ')+(muted?tr('כבוי','off'):tr('פעיל','on'));
   $('setMusic').textContent='🎵 '+tr('מוזיקה: ','Music: ')+(musicOn?tr('פעיל','on'):tr('כבוי','off'));
   $('setPerf').textContent='⚡ '+tr('ביצועים: ','Performance: ')+(perfPref==='1'?tr('פועל','on'):perfPref==='0'?tr('כבוי','off'):tr('אוטו','auto'));
+  $('setRec').textContent='🎥 '+tr('הקלטת שלבים ליומן: ','Record levels to journal: ')+(recOn?tr('פעיל','on'):tr('כבוי','off'));
 }
 $('setBtn').onclick=()=>{
   const ov=$('settingsOv');
@@ -5037,6 +5157,12 @@ $('spClear').onclick=()=>{
 applySpotify();
 $('setMusic').onclick=()=>{musicOn=!musicOn;syncToggles();save();syncSettings();};
 $('setPerf').onclick=()=>{cyclePerf();syncSettings();};
+$('setRec').onclick=()=>{
+  recOn=!recOn;
+  try{localStorage.setItem('mazeRec',recOn?'1':'0');}catch(e){}
+  if(!recOn)recStop(false);
+  syncSettings();
+};
 $('adminBtn').onclick=async()=>{
   if(!isAdmin)return;
   $('menuOv').classList.add('hidden');$('adminOv').classList.remove('hidden');

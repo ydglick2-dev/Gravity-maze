@@ -1,4 +1,4 @@
-const CACHE = 'maze-ultra-v39';
+const CACHE = 'maze-ultra-v40';
 const ASSETS = [
   './',
   './index.html',
