@@ -202,7 +202,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v40</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v41</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -500,6 +500,12 @@
   <div id="lvOpp" style="font-size:17px;font-weight:800;color:#a8ff9e"></div>
   <div id="lvHostGo" style="display:none;flex-direction:column;gap:12px;align-items:center">
     <div class="row" id="raceChips"></div>
+    <div class="row" id="lvRange" style="display:none;align-items:center">
+      <span style="color:#aeb8c8;font-size:13px" data-en="from level">משלב</span>
+      <input class="tin" id="lvFrom" type="number" min="1" max="1000" value="1" style="max-width:80px">
+      <span style="color:#aeb8c8;font-size:13px" data-en="to level">עד שלב</span>
+      <input class="tin" id="lvTo" type="number" min="1" max="1000" value="5" style="max-width:80px">
+    </div>
     <button class="btn" id="lvStart" data-en="🚀 Start Race">🚀 התחל מרוץ</button>
   </div>
   <div id="lvStatus" style="font-size:13.5px;color:#aeb8c8;min-height:20px;max-width:300px"></div>
@@ -3103,13 +3109,13 @@ function finishLevel(){
   const _le=logEv((levelIdx+1)%10===0?'bs':'lv',levelIdx+1,got);
   recStop(true,levelIdx+1,id=>{if(id){_le[4]=id;save();}});
   if(duelLive){
-    if(duelCur>=duelTarget){
+    if(duelCur>=duelTo){
       send({t:'lwin'});duelLive=false;running=false;paused=false;hushRoll();
-      endDuel(true,tr('סיימת ראשון את כל ','You finished all ')+duelTarget+tr(' השלבים! ⚔',' levels first! ⚔'));
+      endDuel(true,tr('סיימת ראשון את שלבים ','You finished levels ')+duelFrom+'-'+duelTo+tr('! ⚔',' first! ⚔'));
     }else{
       duelCur++;
       send({t:'lprog',l:duelCur});
-      showToast(tr('✅ שלב הושלם! עכשיו שלב ','✅ Level done! Now level ')+duelCur+'/'+duelTarget);
+      showToast(tr('✅ שלב הושלם! עכשיו שלב ','✅ Level done! Now level ')+duelCur+tr(' (עד ',' (to ')+duelTo+')');
       startRun(duelCur-1);
       duelHud();
     }
@@ -3276,7 +3282,7 @@ function logEv(ty,a,b2){
 }
 let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
-let raceSel=500,raceMode='run',duelLive=false,lvlSel=5,duelTarget=5,duelCur=1,duelOppLv=1;
+let raceSel=500,raceMode='run',duelLive=false,raceFrom=1,raceTo=5,duelFrom=1,duelTo=5,duelCur=1,duelOppLv=1;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
    וההתקדמות של משתמשים מחוברים ממשיכה להישמר בענן */
 let memDB=null,storageOK=true;
@@ -3715,16 +3721,19 @@ function onMsg(raw){
     $('lvOpp').textContent='🔴 '+oppName+tr(' מחובר!',' connected!');
     if(liveRole==='host'){$('lvHostGo').style.display='flex';buildChips();lvStatus(tr('בחר מרחק ולחץ התחל','Pick a distance and press start'));}
   }
-  else if(m.t==='cfg'){raceSel=m.x|0;raceMode=m.m==='lvl'?'lvl':'run';if(m.n)lvlSel=Math.max(1,m.n|0);buildChips();
-    if(liveRole==='guest')lvStatus(raceMode==='lvl'?tr('🏁 מרוץ שלבים 1-','🏁 Level race 1-')+lvlSel+tr(' · ממתין להתחלה…',' · waiting for start…'):tr('מרוץ עד ','Race to ')+raceSel+tr(' מטר · ממתין להתחלה…',' m · waiting for start…'));}
+  else if(m.t==='cfg'){raceSel=m.x|0;raceMode=m.m==='lvl'?'lvl':'run';
+    if(m.f)raceFrom=Math.max(1,m.f|0);
+    if(m.n)raceTo=Math.max(raceFrom,m.n|0);
+    buildChips();
+    if(liveRole==='guest')lvStatus(raceMode==='lvl'?tr('🏁 מרוץ שלבים ','🏁 Level race ')+raceFrom+'-'+raceTo+tr(' · ממתין להתחלה…',' · waiting for start…'):tr('מרוץ עד ','Race to ')+raceSel+tr(' מטר · ממתין להתחלה…',' m · waiting for start…'));}
   else if(m.t==='lh'){showToast(tr('❤ ליריב נשארו ','❤ Opponent has ')+m.h+tr(' פסילות',' lives left'));}
   else if(m.t==='lprog'&&duelLive){
-    duelOppLv=Math.max(1,m.l|0);duelHud();
+    duelOppLv=Math.max(duelFrom,m.l|0);duelHud();
     if(duelOppLv>duelCur)showToast('🔴 '+oppName+' '+tr('כבר בשלב ','is on level ')+duelOppLv+'!');
   }
   else if(m.t==='lwin'&&duelLive){duelEnd(false);}
   else if(m.t==='lfail'&&duelLive){duelEnd(true);}
-  else if(m.t==='start'){if(m.m==='lvl')duelStart(m.n|0||lvlSel);else beginCountdown(m.x|0,m.seed|0);}
+  else if(m.t==='start'){if(m.m==='lvl')duelStart(m.f|0||1,m.n|0||raceTo);else beginCountdown(m.x|0,m.seed|0);}
   else if(m.t==='pos'){oppM=+m.m||0;oppD=Math.min(3,m.d|0);}
   else if(m.t==='elim'){oppElim=+m.m||0;showToast('🔴 '+oppName+tr(' נפסל ב-',' eliminated at ')+Math.floor(oppElim)+tr('מ׳!','m!'));resolveRun(false);}
   else if(m.t==='fin'){oppFin=+m.tm||0;oppM=+m.m||oppM;showToast('🔴 '+oppName+tr(' הגיע ליעד!',' reached the goal!'));resolveRun(false);}
@@ -3873,32 +3882,41 @@ function buildChips(){
     b.onclick=()=>{raceMode='run';raceSel=x;buildChips();send({t:'cfg',x,m:'run'});};
     c.appendChild(b);
   });
-  [3,5,10].forEach(n=>{ // 🏁 מרוץ שלבים: המארח בוחר עד איזה שלב, שניהם מתחילים משלב 1
-    const b=document.createElement('button');
-    b.className='chip'+(raceMode==='lvl'&&lvlSel===n?' on':'');
-    b.textContent='🏁 '+n+tr(' שלבים',' levels');
-    b.onclick=()=>{raceMode='lvl';lvlSel=n;buildChips();send({t:'cfg',x:raceSel,m:'lvl',n});};
-    c.appendChild(b);
-  });
+  const b=document.createElement('button'); // 🏁 מרוץ שלבים: המארח בוחר טווח שלבים
+  b.className='chip'+(raceMode==='lvl'?' on':'');
+  b.textContent=tr('🏁 מרוץ שלבים','🏁 Level Race');
+  b.onclick=()=>{raceMode='lvl';buildChips();syncRange();};
+  c.appendChild(b);
+  $('lvRange').style.display=raceMode==='lvl'?'flex':'none';
 }
+function syncRange(){
+  raceFrom=Math.max(1,Math.min(1000,$('lvFrom').value|0||1));
+  raceTo=Math.max(raceFrom,Math.min(1000,$('lvTo').value|0||raceFrom));
+  $('lvFrom').value=raceFrom;$('lvTo').value=raceTo;
+  send({t:'cfg',x:raceSel,m:'lvl',f:raceFrom,n:raceTo});
+}
+$('lvFrom').onchange=syncRange;
+$('lvTo').onchange=syncRange;
 $('lvStart').onclick=()=>{
   const seed=(Math.random()*16777216)|0;
-  send({t:'start',x:raceSel,seed,m:raceMode,n:lvlSel});
-  if(raceMode==='lvl')duelStart(lvlSel);
+  send({t:'start',x:raceSel,seed,m:raceMode,f:raceFrom,n:raceTo});
+  if(raceMode==='lvl')duelStart(raceFrom,raceTo);
   else beginCountdown(raceSel,seed);
 };
-function duelStart(n){
+function duelStart(f,t2){
   duelLive=true;customLv=null;
-  duelTarget=Math.max(1,n|0||5);duelCur=1;duelOppLv=1;
+  duelFrom=Math.max(1,Math.min(1000,f|0||1));
+  duelTo=Math.max(duelFrom,Math.min(1000,t2|0||duelFrom));
+  duelCur=duelFrom;duelOppLv=duelFrom;
   $('raceOv').classList.add('hidden');
-  showToast(tr('🏁 מרוץ שלבים: הראשון שמסיים ','🏁 Level race: first to finish ')+duelTarget+tr(' שלבים מנצח!',' levels wins!'));
-  startRun(0); // שניהם מתחילים משלב 1
+  showToast(tr('🏁 מרוץ שלבים ','🏁 Level race ')+duelFrom+'-'+duelTo+tr(' — הראשון שמסיים מנצח!',' — first to finish wins!'));
+  startRun(duelFrom-1); // שניהם מתחילים מאותו שלב
   duelHud();
 }
 function duelHud(){
   if(!duelLive)return;
   $('raceBar').style.display='flex';
-  $('oppInfo').textContent='🔴 '+oppName+' '+duelOppLv+'/'+duelTarget+' · '+tr('אתה ','you ')+duelCur+'/'+duelTarget;
+  $('oppInfo').textContent='🔴 '+oppName+' '+tr('בשלב ','lv ')+duelOppLv+' · '+tr('אתה בשלב ','you lv ')+duelCur+' · '+tr('עד ','to ')+duelTo;
 }
 function duelEnd(win){
   if(!duelLive)return;
