@@ -217,7 +217,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v58</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v59</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -274,6 +274,7 @@
     <button class="btn sec" id="runBtn" data-en="🏃 Endless Run">🏃 ריצה</button>
   </div>
   <div class="row">
+    <button class="btn sec glowy" id="passBtn" data-en="🎫 Season Pass">🎫 פס העונה</button>
     <button class="btn sec" id="dailyBtn" data-en="🎲 Daily Challenge">🎲 אתגר יומי</button>
     <button class="btn sec" id="questBtn" data-en="📜 Quests">📜 קווסטים</button>
     <button class="btn sec" id="boardBtn" data-en="🌍 Leaderboard">🌍 שיאים</button>
@@ -310,6 +311,22 @@
   </div>
 </div>
 
+<div class="overlay hidden" id="passOv">
+  <h1>🎫 <span data-en="Season Pass">פס העונה</span></h1>
+  <p class="sub" id="psSeason"></p>
+  <div style="width:min(300px,80vw)">
+    <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800">
+      <span id="psTier"></span><span id="psPts"></span>
+    </div>
+    <div style="height:14px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:4px">
+      <div id="psBar" style="height:100%;width:0;background:linear-gradient(90deg,#ffd257,#ff9e4d);transition:width .4s"></div>
+    </div>
+  </div>
+  <button class="btn" id="psClaim" style="display:none" data-en="🎁 Collect rewards!">🎁 אסוף פרסים!</button>
+  <div id="psTrack" style="display:flex;flex-direction:column;gap:8px;width:min(300px,80vw);max-height:44vh;overflow-y:auto;padding:4px"></div>
+  <p class="sub" style="max-width:300px;text-align:center" data-en="Earn pass points from wins, stars, bosses, daily challenges, races, chests and scratch cards!">צוברים נקודות מנצחונות, כוכבים, בוסים, אתגר יומי, מרוצים, תיבות וכרטיסי גירוד!</p>
+  <div class="row"><button class="btn sec" id="psBack" data-en="⬅ Menu">⬅ תפריט</button></div>
+</div>
 <div id="boxOv" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(3,5,9,.96);flex-direction:column;align-items:center;justify-content:center;gap:10px">
   <div id="boxRays" style="display:none;position:absolute;inset:0;margin:auto;width:640px;height:640px;border-radius:50%;animation:boxspin 9s linear infinite;pointer-events:none"></div>
   <canvas id="boxCv" width="340" height="430" style="position:relative;max-width:92vw;touch-action:manipulation"></canvas>
@@ -2637,7 +2654,7 @@ function drawBall(T){
 /* ============ ⚽ לובי תלת-ממד: מגרש כדורגל ============ */
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -3195,7 +3212,7 @@ function finishLevel(){
     running=false;paused=false;
     const md2=medalFor2(customLv.par,lvTime);
     let bonus='';
-    if(dailyLast!==customLv._daily){addTro(5);stDailies++;questAdd('daily',1);addDailyWin();dailyLast=customLv._daily;bonus=' · +5🏆';logEv('dy');}
+    if(dailyLast!==customLv._daily){addTro(5);stDailies++;questAdd('daily',1);addDailyWin();dailyLast=customLv._daily;bonus=' · +5🏆';logEv('dy');passAdd(40);}
     if(apiOn())api('/daily/submit',{date:customLv._daily,name:myName||'שחקן',tm:Math.round(lvTime*1000)})
       .then(r=>{if(r&&r.rank)showToast(tr('🌍 מקום ','🌍 Rank ')+r.rank+tr(' בעולם היום!',' in the world today!'));});
     const gk2=gKeyFor();
@@ -3269,6 +3286,7 @@ function finishLevel(){
   $('doneText').textContent=txt;
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('לשלב הבא','Next Level');
   addDailyWin();
+  passAdd(8+got*4+(firstClear?20:0)+(firstClear&&(levelIdx+1)%10===0?30:0)); // 🎫 נקודות עונה
   checkAch();
   save();
   if(!customLv&&(levelIdx+1)%10===0){
@@ -3432,7 +3450,7 @@ function saveBlob(){
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
     lg:gameLog.slice(0,30),
     cl:customLevels,
-    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity};
+    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity,psn:passN,psp:passP,psc:passC};
 }
 function save(){
   const st=store();
@@ -3450,7 +3468,7 @@ function load(){
 function applySave(d){
   try{
     unlocked=Math.min(LEVELS.length-1,d.un|0);
-    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';pity=d.py|0;
+    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';pity=d.py|0;passN=d.psn|0;passP=d.psp|0;passC=d.psc|0;
     skinOwned=Array.isArray(d.ow)?d.ow.filter(n=>n>=0&&n<SKINS.length):[0];
     if(!skinOwned.includes(0))skinOwned.unshift(0);
     skinSel=skinOwned.includes(d.sk|0)?(d.sk|0):0;
@@ -3887,7 +3905,7 @@ function onDrop(){
   }
   if(runLive&&runMode&&iFin===null&&oppFin===null&&oppElim===null){
     runMode=false;running=false;hushRoll();$('raceBar').style.display='none';
-    addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();checkAch();save();refreshTro();
+    addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();passAdd(30);checkAch();save();refreshTro();
     showResult('🏆',tr('ניצחון טכני! +10🏆','Technical win! +10🏆'),tr('היריב התנתק באמצע. סה"כ ','Opponent disconnected. Total ')+trophies+'🏆');
     cleanupLive();
   }else if(!runMode&&peer){
@@ -4177,7 +4195,7 @@ function resolveRun(force){
 function endDuel(win,detail){
   runMode=false;runLive=false;running=false;hushRoll();
   $('raceBar').style.display='none';
-  if(win){addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();}
+  if(win){addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();passAdd(30);}
   else{ // 🏳 הפסד בתחרות עולה 10 גביעים
     const b4=trophies;
     trophies=Math.max(0,trophies-10);
@@ -4516,7 +4534,7 @@ let chestBusy=false;
 function openChest(){
   if(chestBusy)return;
   if(chests<=0){showToast(tr('אין תיבות — השלימו קווסטים או קנו בחנות!','No chests — complete quests or buy some!'));return;}
-  chestBusy=true;chests--;questAdd('chest',1);logEv('ch');
+  chestBusy=true;chests--;questAdd('chest',1);logEv('ch');passAdd(5);
   const drops=rollChest();
   checkAch();save();refreshTro();
   const mx=drops.reduce((m,d)=>Math.max(m,d.rar|0),0);
@@ -4997,6 +5015,7 @@ function logLine(e){
    case 'rn':return['🏃',tr('שיא ריצה חדש: ','New run record: ')+v+tr(' מ׳',' m')];
    case 'ac':{const a=ACH.find(x=>x.id===v);return['🏅',tr('הישג: ','Achievement: ')+(a?tr(a.name,a.en?a.en[0]:a.name):'')];}
    case 'wh':return['🎟',tr('כרטיס גירוד: זכה ב-','Scratch card: won ')+(v||'')];
+   case 'ps':return['🎫',tr('פס העונה: אסף ','Season pass: collected ')+(v||'')];
   }
   return['•',String(t)];
 }
@@ -5590,7 +5609,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;
-  dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;
+  dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
   stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];customLevels={};
@@ -6181,7 +6200,7 @@ function scAward(prize){ // הפרס נזקף כבר בגירוד הראשון �
     skinOwned.push(prize.idx);
     scratchRv={kind:'skin',idx:prize.idx,rar:SKINS[prize.idx].rar|0,label:prize.label,story:loreOf(prize.idx)};
   }
-  logEv('wh',msg);
+  logEv('wh',msg);passAdd(15);
   save();refreshTro();scratchUiSync();
 }
 function scFinish(){
@@ -6230,6 +6249,95 @@ $('scBack').onclick=()=>{
   syncLobbyUI();
 };
 setInterval(scratchUiSync,60000);scratchUiSync();
+/* 🎫 פס העונה — 30 דרגות, עונה חדשה בכל חודש (כמו בראול פאס, הכול בחינם) */
+const PASS_T=30,PASS_COST=100,PASS_BASE=2026*12+6; // יולי 2026 = עונה 1
+let passN=0,passP=0,passC=0;
+const passSeasonId=()=>{const d2=new Date();return d2.getFullYear()*12+d2.getMonth();};
+function passSync(){
+  const cur=passSeasonId();
+  if(passN!==cur){passN=cur;passP=0;passC=0;} // עונה חדשה — הפס מתאפס
+}
+function passReward(i){ // סולם פרסים דטרמיניסטי
+  if(i===PASS_T-1)return{gm:25,ch:2,ic:'👑',lb:'25💎 + 2🎁'};
+  if(i%10===9)return{gm:10,ch:1,ic:'🎁',lb:'10💎 + 🎁'};
+  if(i%5===4)return{gm:6,ic:'💎',lb:'6💎'};
+  const c=[{co:30,ic:'🪙',lb:'30🪙'},{gm:3,ic:'💎',lb:'3💎'},{co:25,ic:'🪙',lb:'25🪙'},{gm:4,ic:'💎',lb:'4💎'}];
+  return c[i%4];
+}
+const passTierNow=()=>Math.min(PASS_T,(passP/PASS_COST)|0);
+const passClaimable=()=>passTierNow()-passC;
+function passDaysLeft(){
+  const d2=new Date();
+  return new Date(d2.getFullYear(),d2.getMonth()+1,1)-d2>0?Math.ceil((new Date(d2.getFullYear(),d2.getMonth()+1,1)-d2)/864e5):0;
+}
+function passAdd(n){
+  passSync();
+  const t0=passTierNow();
+  passP+=n|0;
+  const t1=passTierNow();
+  if(t1>t0){
+    showToast('🎫 '+tr('עלית לדרגה ','Pass tier up! Tier ')+t1+tr(' בפס העונה! יש פרס לאסוף 🎁','! A reward awaits 🎁'));
+    tone(880,.1,'sine',.3);setTimeout(()=>tone(1318,.16,'sine',.3),110);
+    if(navigator.vibrate)navigator.vibrate([30,50,30]);
+  }
+  passUiBtn();
+}
+function passUiBtn(){$('passBtn').classList.toggle('glowy',passClaimable()>0);}
+function passClaimAll(){
+  passSync();
+  let got2=[];
+  while(passC<passTierNow()){
+    const r=passReward(passC);
+    if(r.co)coins+=r.co;if(r.gm)gems+=r.gm;if(r.ch)chests+=r.ch;
+    got2.push(r.lb);
+    passC++;
+  }
+  if(!got2.length)return;
+  logEv('ps',got2.join(' · '));
+  save();refreshTro();
+  confetti(130);sfx.win();
+  showToast('🎫 '+tr('נאסף: ','Collected: ')+got2.join(' + '));
+  if(navigator.vibrate)navigator.vibrate([40,60,40]);
+  passUiBtn();
+  buildPass();
+}
+function buildPass(){
+  passSync();
+  const seasonNum=passN-PASS_BASE+1;
+  $('psSeason').textContent=tr('עונה ','Season ')+seasonNum+' · '+tr('נגמרת בעוד ','ends in ')+passDaysLeft()+tr(' ימים',' days');
+  const tier=passTierNow();
+  $('psTier').textContent=tr('דרגה ','Tier ')+tier+'/'+PASS_T;
+  $('psPts').textContent=(passP%PASS_COST)+'/'+PASS_COST+' 🎫';
+  $('psBar').style.width=(tier>=PASS_T?100:(passP%PASS_COST))+'%';
+  $('psClaim').style.display=passClaimable()>0?'block':'none';
+  const g=$('psTrack');g.innerHTML='';
+  for(let i=0;i<PASS_T;i++){
+    const r=passReward(i);
+    const row=document.createElement('div');
+    const st=i<passC?'done':(i<tier?'ready':'lock');
+    row.className='achRow'+(st!=='lock'?' got':'');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 12px'+(st==='ready'?';box-shadow:inset 0 0 0 2px #ffd257':'');
+    row.innerHTML='<div style="font-size:24px">'+r.ic+'</div>'+
+      '<div style="flex:1"><b>'+tr('דרגה ','Tier ')+(i+1)+'</b><br><small>'+r.lb+'</small></div>'+
+      '<div style="font-size:20px">'+(st==='done'?'✅':st==='ready'?'🎁':'🔒')+'</div>';
+    if(st==='ready')row.onclick=passClaimAll;
+    g.appendChild(row);
+  }
+  const target=g.children[Math.max(0,Math.min(PASS_T-1,tier))];
+  if(target)setTimeout(()=>{target.scrollIntoView({block:'center',behavior:'instant'});},30);
+}
+$('passBtn').onclick=()=>{
+  $('menuOv').classList.add('hidden');
+  $('passOv').classList.remove('hidden');
+  buildPass();syncLobbyUI();
+};
+$('psBack').onclick=()=>{
+  $('passOv').classList.add('hidden');
+  $('menuOv').classList.remove('hidden');
+  syncLobbyUI();
+};
+$('psClaim').onclick=passClaimAll;
+setTimeout(passUiBtn,1500);
 $('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה אוטומטית לכל השחקנים
   const url=($('admBackend').value||'').trim().replace(/\/+$/,'');
   if(!url){ // שדה ריק = ניתוק מהשרת
