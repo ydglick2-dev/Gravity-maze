@@ -159,6 +159,14 @@
   #hint { position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); left:0; right:0;
     text-align:center; color:#c8d2e0; font-size:13px; z-index:10; pointer-events:none;
     text-shadow:0 1px 4px rgba(0,0,0,.95); opacity:.92; padding:0 18px; }
+  .glowy { animation: glowy 2.2s ease-in-out infinite; }
+  @keyframes glowy {
+    0%,100% { box-shadow:0 0 0 rgba(245,197,24,0); }
+    50% { box-shadow:0 0 18px rgba(245,197,24,.55); }
+  }
+  @keyframes popIn { 0%{transform:scale(.4);opacity:0} 70%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
+  #doneOv h1, #doneOv #medalBig, #doneOv #starsBig { animation: popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
+  #doneOv #starsBig { animation-delay:.12s }
   #toast { position:fixed; top:28%; left:0; right:0; text-align:center; z-index:30; pointer-events:none;
     font-size:22px; font-weight:900; color:#ffe9b8; text-shadow:0 0 18px rgba(255,184,77,.8), 0 2px 6px #000;
     opacity:0; transition:opacity .3s; }
@@ -205,7 +213,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v52</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v53</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -272,6 +280,7 @@
   </div>
   <div class="row">
     <button class="btn sec" id="chestBtn" data-en="🎁 Chests">🎁 תיבות</button>
+    <button class="btn sec glowy" id="wheelBtn" data-en="🎡 Lucky Wheel">🎡 גלגל המזל</button>
     <button class="btn sec" id="skinBtn" data-en="🎨 Skins">🎨 סקינים</button>
   </div>
   <div class="row">
@@ -297,6 +306,17 @@
   </div>
 </div>
 
+<div class="overlay hidden" id="wheelOv">
+  <h1>🎡 <span data-en="Lucky Wheel">גלגל המזל</span></h1>
+  <p class="sub" id="wheelSub"></p>
+  <canvas id="wheelCv" width="300" height="300" style="max-width:78vw;max-height:78vw;filter:drop-shadow(0 8px 26px rgba(0,0,0,.55))"></canvas>
+  <div class="row">
+    <button class="btn" id="wheelSpin" data-en="🎡 SPIN!">🎡 סובב!</button>
+    <button class="btn sec" id="wheelBack" data-en="⬅ Menu">⬅ תפריט</button>
+  </div>
+  <p class="sub" id="wheelMsg" style="min-height:22px"></p>
+</div>
+<canvas id="cfx" style="display:none;position:fixed;inset:0;z-index:200;pointer-events:none"></canvas>
 <div class="overlay hidden" id="adminOv" style="z-index:55;background:rgba(8,10,18,.95)">
   <h1 data-en="🛠 Admin">🛠 אדמין</h1>
   <div id="admNet" style="font-size:12.5px;font-weight:800;color:#aeb8c8">🌍 …</div>
@@ -2599,7 +2619,7 @@ function drawBall(T){
 /* ============ ⚽ לובי תלת-ממד: מגרש כדורגל ============ */
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','wheelOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -3237,9 +3257,10 @@ function finishLevel(){
     running=true;
     const gw=P(L().goal);
     playWinFX(gw.x,gw.y,true);
-    startCine('win',()=>{running=false;$('doneOv').classList.remove('hidden');},1.9);
+    startCine('win',()=>{running=false;$('doneOv').classList.remove('hidden');confetti(110);},1.9);
   }else{
     $('doneOv').classList.remove('hidden');
+    confetti(90);
   }
 }
 function startRun(i){
@@ -3364,7 +3385,7 @@ function logEv(ty,a,b2){
   save();
   return e;
 }
-let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0;
+let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0,wheelD='';
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false,raceFrom=1,raceTo=5,duelFrom=1,duelTo=5,duelCur=1,duelOppLv=1,summonAuto=false;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
@@ -3393,7 +3414,7 @@ function saveBlob(){
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
     lg:gameLog.slice(0,30),
     cl:customLevels,
-    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG};
+    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD};
 }
 function save(){
   const st=store();
@@ -3411,7 +3432,7 @@ function load(){
 function applySave(d){
   try{
     unlocked=Math.min(LEVELS.length-1,d.un|0);
-    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';
+    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';
     skinOwned=Array.isArray(d.ow)?d.ow.filter(n=>n>=0&&n<SKINS.length):[0];
     if(!skinOwned.includes(0))skinOwned.unshift(0);
     skinSel=skinOwned.includes(d.sk|0)?(d.sk|0):0;
@@ -4782,6 +4803,7 @@ function logLine(e){
    case 'ch':return['🎁',tr('פתח תיבה','Opened a chest')];
    case 'rn':return['🏃',tr('שיא ריצה חדש: ','New run record: ')+v+tr(' מ׳',' m')];
    case 'ac':{const a=ACH.find(x=>x.id===v);return['🏅',tr('הישג: ','Achievement: ')+(a?tr(a.name,a.en?a.en[0]:a.name):'')];}
+   case 'wh':return['🎡',tr('גלגל המזל: זכה ב-','Lucky wheel: won ')+(v||'')];
   }
   return['•',String(t)];
 }
@@ -5375,7 +5397,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;
-  dailyLast='';dailyFail='';runBest=0;
+  dailyLast='';dailyFail='';runBest=0;wheelD='';
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
   stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];customLevels={};
@@ -5681,6 +5703,140 @@ $('edRestore').onclick=async()=>{
   $('edMsg').textContent='…';
   await admGive({clr:n-1},tr('החזרת שלב ','Restoring level ')+n+tr(' לרגיל',' to default'));
   $('edMsg').textContent=$('admMsg').textContent;
+};
+/* ✨ קונפטי — חגיגה קלה בקנבס ייעודי, נעצר לבד */
+let cfxRun=false;
+function confetti(n){
+  try{
+    if(MOBILE)n=Math.min(n,70);
+    const cv=$('cfx');
+    cv.width=innerWidth;cv.height=innerHeight;
+    cv.style.display='block';
+    const g=cv.getContext('2d');
+    const cols=['#f5c518','#ff5c8a','#4dd2ff','#7bffb2','#c48cff','#ffb26b'];
+    const ps=[];
+    for(let i=0;i<n;i++)ps.push({x:innerWidth*.5+(Math.random()-.5)*innerWidth*.7,y:-24-Math.random()*innerHeight*.35,
+      vx:(Math.random()-.5)*3.4,vy:2+Math.random()*3.6,w:4+Math.random()*5,a:Math.random()*6.3,va:(Math.random()-.5)*.34,c:cols[i%6]});
+    if(cfxRun){cfxRun=ps;return;}
+    cfxRun=ps;
+    let life=0;
+    const step=()=>{
+      const arr=cfxRun;life++;
+      g.clearRect(0,0,cv.width,cv.height);
+      for(let i=arr.length-1;i>=0;i--){
+        const p2=arr[i];
+        p2.x+=p2.vx;p2.y+=p2.vy;p2.vy+=.075;p2.a+=p2.va;
+        if(p2.y>cv.height+30){arr.splice(i,1);continue;}
+        g.save();g.translate(p2.x,p2.y);g.rotate(p2.a);
+        g.fillStyle=p2.c;g.fillRect(-p2.w/2,-p2.w/2,p2.w,p2.w*.62);
+        g.restore();
+      }
+      if(!arr.length||life>420){cfxRun=false;cv.style.display='none';return;}
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }catch(e){}
+}
+/* 🎡 גלגל המזל — סיבוב חינם פעם ביום, סיבוב נוסף ב-150 מטבעות */
+const WHEEL=[
+  {t:'co',v:50, c:'#2563eb',l:'🪙50'},
+  {t:'gm',v:6,  c:'#7c3aed',l:'💎6'},
+  {t:'co',v:120,c:'#0d9488',l:'🪙120'},
+  {t:'tro',v:5, c:'#d97706',l:'🏆5'},
+  {t:'co',v:30, c:'#334155',l:'🪙30'},
+  {t:'ch',v:1,  c:'#db2777',l:'🎁1'},
+  {t:'co',v:200,c:'#16a34a',l:'🪙200'},
+  {t:'jp',v:500,c:'#eab308',l:'⭐500'}];
+const WHEEL_W=[17,12,15,10,18,9,12,3];
+const SPIN_COST=150;
+let wheelAng=0,wheelBusy=false;
+const wheelFree=()=>wheelD!==new Date().toDateString();
+function drawWheel(){
+  const cv=$('wheelCv'),g=cv.getContext('2d');
+  const R=cv.width/2,seg=Math.PI*2/WHEEL.length;
+  g.clearRect(0,0,cv.width,cv.height);
+  g.save();g.translate(R,R);g.rotate(wheelAng);
+  for(let i=0;i<WHEEL.length;i++){
+    g.beginPath();g.moveTo(0,0);
+    g.arc(0,0,R-6,i*seg,(i+1)*seg);g.closePath();
+    g.fillStyle=WHEEL[i].c;g.fill();
+    g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=2;g.stroke();
+    g.save();g.rotate(i*seg+seg/2);
+    g.textAlign='center';g.textBaseline='middle';
+    g.font='700 21px system-ui';g.fillStyle='#fff';
+    g.fillText(WHEEL[i].l,R*.62,0);
+    g.restore();
+  }
+  g.restore();
+  g.beginPath();g.arc(R,R,26,0,7);g.fillStyle='#0f172a';g.fill();
+  g.strokeStyle='#f5c518';g.lineWidth=3;g.stroke();
+  g.font='20px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText('🎡',R,R+1);
+  g.beginPath();g.moveTo(R-13,8);g.lineTo(R+13,8);g.lineTo(R,34);g.closePath();
+  g.fillStyle='#f5c518';g.fill();g.strokeStyle='#0f172a';g.lineWidth=2;g.stroke();
+}
+function wheelUiSync(){
+  $('wheelSub').textContent=wheelFree()
+    ?tr('🎁 סיבוב חינם מחכה לך היום!','🎁 A free spin awaits you today!')
+    :tr('סיבוב נוסף: ','Extra spin: ')+SPIN_COST+' 🪙 ('+tr('יש לך ','you have ')+coins+')';
+  $('wheelSpin').textContent=wheelFree()?tr('🎡 סובב חינם!','🎡 Free spin!'):('🎡 '+tr('סובב','Spin')+' ('+SPIN_COST+'🪙)');
+  $('wheelBtn').classList.toggle('glowy',wheelFree());
+}
+$('wheelBtn').onclick=()=>{
+  $('menuOv').classList.add('hidden');
+  $('wheelOv').classList.remove('hidden');
+  $('wheelMsg').textContent='';
+  drawWheel();wheelUiSync();syncLobbyUI();
+};
+$('wheelBack').onclick=()=>{
+  if(wheelBusy)return;
+  $('wheelOv').classList.add('hidden');
+  $('menuOv').classList.remove('hidden');
+  syncLobbyUI();
+};
+$('wheelSpin').onclick=()=>{
+  if(wheelBusy)return;
+  const free=wheelFree();
+  if(!free&&coins<SPIN_COST){
+    $('wheelMsg').textContent=tr('אין מספיק מטבעות 🙈 (צריך ','Not enough coins 🙈 (need ')+SPIN_COST+')';
+    tone(180,.14,'sawtooth',.25);
+    return;
+  }
+  if(free)wheelD=new Date().toDateString();else coins-=SPIN_COST;
+  wheelBusy=true;$('wheelMsg').textContent='';
+  // בחירה משוקללת — הקופה הגדולה נדירה
+  let tw=0;for(const w of WHEEL_W)tw+=w;
+  let r=Math.random()*tw,pick=0;
+  for(let i=0;i<WHEEL_W.length;i++){r-=WHEEL_W[i];if(r<=0){pick=i;break;}}
+  const seg=Math.PI*2/WHEEL.length;
+  // המצביע למעלה (−90°): מסובבים כך שאמצע הפרוסה הנבחרת יעצור שם
+  const target=-Math.PI/2-(pick*seg+seg/2)+(Math.random()-.5)*seg*.5;
+  const from=wheelAng%(Math.PI*2);
+  const total=Math.PI*2*(4+(Math.random()*2|0))+((target-from)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+  const t0=performance.now(),dur=3600;
+  let lastSeg=-1;
+  const anim=now=>{
+    const k=Math.min(1,(now-t0)/dur);
+    const e=1-Math.pow(1-k,3);
+    wheelAng=from+total*e;
+    const cur=Math.floor(((-Math.PI/2-wheelAng)/seg%WHEEL.length+WHEEL.length))%WHEEL.length;
+    if(cur!==lastSeg){lastSeg=cur;tone(560+cur*22,.03,'square',.12);}
+    drawWheel();
+    if(k<1){requestAnimationFrame(anim);return;}
+    const p2=WHEEL[pick];
+    let msg='';
+    if(p2.t==='co'||p2.t==='jp'){coins+=p2.v;msg='+'+p2.v+' 🪙';}
+    else if(p2.t==='gm'){gems+=p2.v;msg='+'+p2.v+' 💎';}
+    else if(p2.t==='ch'){chests+=p2.v;msg='+'+p2.v+' 🎁';}
+    else if(p2.t==='tro'){addTro(p2.v);msg='+'+p2.v+' 🏆';}
+    logEv('wh',msg);
+    save();refreshTro();wheelUiSync();
+    $('wheelMsg').textContent=(p2.t==='jp'?tr('💥 הקופה הגדולה!!! ','💥 JACKPOT!!! '):tr('זכית: ','You won: '))+msg;
+    confetti(p2.t==='jp'?200:110);
+    sfx.win();
+    if(navigator.vibrate)navigator.vibrate(p2.t==='jp'?[60,60,60,60,120]:[40,70]);
+    wheelBusy=false;
+  };
+  requestAnimationFrame(anim);
 };
 $('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה אוטומטית לכל השחקנים
   const url=($('admBackend').value||'').trim().replace(/\/+$/,'');
