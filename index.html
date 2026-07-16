@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v71</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v72</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2432,12 +2432,12 @@ function rrc(c,x,y,w,h,rad){const q=Math.min(rad,w/2,h/2);c.beginPath();
 /* ---- ✨💀 אפקטי ניצחון ומוות — פריטים ---- */
 let wSel=0,dSel=0,wOw=[0],dOw=[0];
 const WFX=[
- {name:'קונפטי',en:'Confetti',icon:'🎊',price:0,rar:0},
+ {name:'גשם מטבעות',en:'Coin Rain',icon:'🪙',price:0,rar:0},
  {name:'זיקוקים',en:'Fireworks',icon:'🎆',price:250,rar:1},
- {name:'גשם כוכבים',en:'Star Rain',icon:'⭐',price:250,rar:1},
- {name:'גשם מטבעות',en:'Coin Rain',icon:'🪙',price:500,rar:2},
- {name:'לבבות',en:'Hearts',icon:'💛',price:900,rar:3},
- {name:'סופרנובה',en:'Supernova',icon:'🌟',price:1600,rar:4}
+ {name:'יונים',en:'Doves',icon:'🕊',price:250,rar:1},
+ {name:'סופרנובה',en:'Supernova',icon:'🌟',price:500,rar:2},
+ {name:'חור שחור',en:'Black Hole',icon:'🌌',price:900,rar:3},
+ {name:'גשם כוכבים',en:'Star Rain',icon:'⭐',price:1600,rar:4}
 ];
 const DFX=[
  {name:'שאיבה',en:'Vortex',icon:'🌀',price:0,rar:0},
@@ -3897,9 +3897,9 @@ SKINS.push(
      c.fillText(String((k*37)%10),Math.cos(a)*r*.55,Math.sin(a)*r*.55);}}}
 );
 WFX.push(
- {name:'לייזרים',en:'Lasers',icon:'🌈',price:400,rar:2},
+ {name:'לבבות',en:'Hearts',icon:'💜',price:400,rar:2},
  {name:'מטאורים',en:'Meteors',icon:'☄️',price:550,rar:2},
- {name:'יונים',en:'Doves',icon:'🕊️',price:750,rar:3});
+ {name:'לייזרים',en:'Lasers',icon:'🔴',price:750,rar:3});
 DFX.push(
  {name:'קרח',en:'Ice',icon:'🧊',price:400,rar:2},
  {name:'ברקים',en:'Bolts',icon:'⚡',price:550,rar:2},
