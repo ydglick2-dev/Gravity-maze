@@ -254,12 +254,13 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v68</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v69</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
       <div class="pill" id="lbChest">🎁 0</div>
       <div class="pill" id="lbGem">💎 0</div>
+      <div class="pill" id="lbGoals" style="display:none">⚽ 0</div>
       <div class="pill" id="lbOnline" style="display:none">🟢 0</div>
     </div>
   </div>
@@ -2040,6 +2041,10 @@ function physics(dt,t){
     const p=P(s);
     if(Math.hypot(ball.x-p.x,ball.y-p.y)<starR()+ball.r*.6){
       starGot[i]=true;sfx.star();comboN++;comboT=2.5;questAdd('star',1);updateHud();
+      shock(p.x,p.y,'rgba(255,214,90,.85)',md()*.22); // ⭐ הכוכב מרגיש כמו זכייה
+      emit(p.x,p.y,16,{color:['#ffd257','#fff3c0','#ffab3d'],sp:260,size:2.8,decay:1.7,gl:true});
+      flashW=Math.max(flashW,.14);
+      if(navigator.vibrate)navigator.vibrate(22);
       if(comboN>=3)showToast(tr('🔥 קומבו ×','🔥 Combo ×')+comboN+'!');
       emit(p.x,p.y,14,{color:['#ffe27a','#ffd257','#fff'],sp:120,size:3,decay:2.4,gl:true});
     }
@@ -2443,9 +2448,9 @@ const DFX=[
 ];
 /* ⚽ אפקטי GOAL! — מגיעים במתנה עם סקין שחקן כדורגל */
 /* 🎙 קריאת שער מפורסמת של השחקן שעל הכדור */
-function skinShout(){
+function skinShout(idx){
   try{
-    const sh=(SKINS[skinSel]||{}).shout;
+    const sh=(SKINS[idx===undefined?skinSel:idx]||{}).shout;
     if(!sh||!window.speechSynthesis)return;
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(sh);
@@ -2474,6 +2479,13 @@ function goalFxShow(kind){
 }
 function playWinFX(x,y,big){
   const k=big?2:1;
+  // 💥 בסיס עוצמתי לכל האפקטים: הבזק, רעידה, גלי הדף כפולים ורטט
+  flashW=Math.max(flashW,big?.5:.32);
+  shake=Math.max(shake,big?.7:.45);
+  shock(x,y,'rgba(255,255,255,.85)',md()*.3);
+  setTimeout(()=>shock(x,y,'rgba(255,214,90,.6)',md()*.42),120);
+  emit(x,y,20*k,{color:['#fff','#ffd98a'],sp:320,size:2.6,decay:1.5,gl:true});
+  if(navigator.vibrate)navigator.vibrate(big?[40,40,70]:[30,50]);
   switch(wSel){
    case GOAL_FX_A:
     goalFxShow('comic');
@@ -2516,6 +2528,13 @@ function playWinFX(x,y,big){
   }
 }
 function playDeathFX(x,y,T){
+  // 💔 בסיס דרמטי לכל אפקטי המוות: הבזק אדום, רעידה חזקה, גל כהה ורטט
+  flashR=Math.max(flashR,.5);
+  shake=Math.max(shake,.85);
+  shock(x,y,'rgba(255,60,60,.55)',md()*.36);
+  setTimeout(()=>shock(x,y,'rgba(0,0,0,.75)',md()*.5),90);
+  emit(x,y,14,{color:['#ff6b5c','#2a3040'],sp:240,size:2.6,decay:1.7});
+  if(navigator.vibrate)navigator.vibrate([70,40,110]);
   switch(dSel){
    case 1:
     shock(x,y,'rgba(255,140,80,.9)',md()*.3);
@@ -2899,6 +2918,7 @@ function lobbyFrame(dt,t){
   if(SB.z<1){
     if(Math.abs(SB.x)<2.7){ // ⚽ גוווול!
       LB.goals++;LB.glow=1;
+      try{const g2=$('lbGoals');g2.style.display='';g2.textContent='⚽ '+LB.goals;}catch(e){}
       showToast(tr('⚽ גוֹל! (','⚽ GOAL! (')+LB.goals+')');
       sfx.win();
       goalFxShow(LB.goals%2?'comic':'fly');
@@ -6338,6 +6358,7 @@ function showReveal(o,cb){
         landed=true;
         confetti(o.rar>=3?170:100);
         sfx.win();
+        if(o.kind==='skin')skinShout(o.idx); // 🎙 "אנקרה מסי!" כבר בחשיפה
         if(navigator.vibrate)navigator.vibrate(o.rar>=4?[50,60,50,60,110]:[35,60,35]);
         $('rvName').textContent=o.label;
         $('rvRar').textContent=tr(RAR[o.rar|0].n,RAR[o.rar|0].en)+(o.rar>=5?' 👑':o.rar>=4?' 🔥':'');
