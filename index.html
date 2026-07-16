@@ -134,8 +134,11 @@
     transform:rotateY(90deg) scale(.7); opacity:0; transition:transform .35s cubic-bezier(.2,1.4,.4,1), opacity .3s; }
   .dropCard.in { transform:rotateY(0) scale(1); opacity:1; }
   .dropCard .dIc { font-size:34px; line-height:1; }
-  .dropCard.r1 { box-shadow:inset 0 0 0 2px #7ae0ff, 0 0 14px rgba(122,224,255,.45); }
-  .dropCard.r2 { box-shadow:inset 0 0 0 2px #ffd257, 0 0 18px rgba(255,210,87,.55); }
+  .dropCard.r1 { box-shadow:inset 0 0 0 2px #2edd6f, 0 0 14px rgba(46,221,111,.45); }
+  .dropCard.r2 { box-shadow:inset 0 0 0 2px #4da2ff, 0 0 16px rgba(77,162,255,.5); }
+  .dropCard.r3 { box-shadow:inset 0 0 0 2px #b26aff, 0 0 18px rgba(178,106,255,.55); }
+  .dropCard.r4 { box-shadow:inset 0 0 0 2px #ff5a5a, 0 0 20px rgba(255,90,90,.6); }
+  .dropCard.r5 { box-shadow:inset 0 0 0 2px #ffd257, 0 0 24px rgba(255,210,87,.75); }
   @keyframes shakeC { 0%,100%{transform:rotate(0) scale(1)} 20%{transform:rotate(-9deg) scale(1.06)}
     40%{transform:rotate(9deg)} 60%{transform:rotate(-7deg) scale(1.12)} 80%{transform:rotate(6deg)} }
   #lobbyUI { position:fixed; inset:0; z-index:8; display:none; flex-direction:column;
@@ -213,7 +216,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v53</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v54</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -306,6 +309,13 @@
   </div>
 </div>
 
+<div id="revealOv" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(3,5,9,.96);flex-direction:column;align-items:center;justify-content:center;gap:6px">
+  <canvas id="rvCv" width="320" height="290" style="max-width:88vw"></canvas>
+  <h2 id="rvName" style="margin:0"></h2>
+  <div id="rvRar" style="font-weight:900;letter-spacing:1.5px;font-size:15px"></div>
+  <p id="rvStory" class="sub" style="max-width:310px;text-align:center;margin:4px 14px;min-height:34px"></p>
+  <p id="rvHint" class="sub" style="opacity:.7"></p>
+</div>
 <div class="overlay hidden" id="wheelOv">
   <h1>🎡 <span data-en="Lucky Wheel">גלגל המזל</span></h1>
   <p class="sub" id="wheelSub"></p>
@@ -473,6 +483,7 @@
   <div style="font-size:12.5px;color:#aeb8c8" data-en="Trophy road · a chest every 25🏆">מסלול גביעים · תיבה כל 25🏆</div>
   <div class="qBarWrap" style="width:230px"><div class="qBar" id="chestBar" style="width:0%"></div></div>
   <div id="chestCyc" style="font-size:12.5px;color:#aeb8c8"></div>
+  <div id="chestOdds" style="font-size:11px;color:#8d99aa;max-width:320px"></div>
   <div id="chestDw" style="font-size:12.5px;color:#ffd257;font-weight:800"></div>
   <button class="btn sec" id="chestBack" data-en="Back">חזרה</button>
 </div>
@@ -610,6 +621,7 @@
 
 <div class="overlay hidden" id="failOv">
   <div class="big">💔</div>
+  <canvas id="failPet" width="120" height="116" style="margin:-8px auto 0"></canvas>
   <h1 data-en="Out of Lives">נגמרו הפסילות</h1>
   <p class="sub" id="failText"></p>
   <div class="row">
@@ -623,6 +635,7 @@
   <div id="medalBig"></div>
   <h1 id="doneTitle"></h1>
   <div id="starsBig"></div>
+  <canvas id="winPet" width="120" height="116" style="margin:-4px auto 0"></canvas>
   <p class="sub" id="doneText"></p>
   <div class="row">
     <button class="btn" id="nextBtn" data-en="Continue">המשך</button>
@@ -2318,19 +2331,19 @@ function rrc(c,x,y,w,h,rad){const q=Math.min(rad,w/2,h/2);c.beginPath();
 let wSel=0,dSel=0,wOw=[0],dOw=[0];
 const WFX=[
  {name:'קונפטי',en:'Confetti',icon:'🎊',price:0,rar:0},
- {name:'זיקוקים',en:'Fireworks',icon:'🎆',price:180,rar:1},
- {name:'גשם כוכבים',en:'Star Rain',icon:'⭐',price:220,rar:1},
- {name:'גשם מטבעות',en:'Coin Rain',icon:'🪙',price:260,rar:1},
- {name:'לבבות',en:'Hearts',icon:'💛',price:300,rar:2},
- {name:'סופרנובה',en:'Supernova',icon:'🌟',price:420,rar:2}
+ {name:'זיקוקים',en:'Fireworks',icon:'🎆',price:250,rar:1},
+ {name:'גשם כוכבים',en:'Star Rain',icon:'⭐',price:250,rar:1},
+ {name:'גשם מטבעות',en:'Coin Rain',icon:'🪙',price:500,rar:2},
+ {name:'לבבות',en:'Hearts',icon:'💛',price:900,rar:3},
+ {name:'סופרנובה',en:'Supernova',icon:'🌟',price:1600,rar:4}
 ];
 const DFX=[
  {name:'שאיבה',en:'Vortex',icon:'🌀',price:0,rar:0},
- {name:'פיצוץ',en:'Explosion',icon:'💥',price:160,rar:0},
- {name:'ברק',en:'Lightning',icon:'⚡',price:240,rar:1},
- {name:'קרח נשבר',en:'Ice Shatter',icon:'❄️',price:240,rar:1},
- {name:'להבות',en:'Flames',icon:'🔥',price:320,rar:1},
- {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:420,rar:2}
+ {name:'פיצוץ',en:'Explosion',icon:'💥',price:220,rar:1},
+ {name:'ברק',en:'Lightning',icon:'⚡',price:450,rar:2},
+ {name:'קרח נשבר',en:'Ice Shatter',icon:'❄️',price:450,rar:2},
+ {name:'להבות',en:'Flames',icon:'🔥',price:850,rar:3},
+ {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:1500,rar:4}
 ];
 function playWinFX(x,y,big){
   const k=big?2:1;
@@ -2431,14 +2444,14 @@ const SKINS=[
    c.beginPath();c.arc(-r*1.15,0,r*.95,0,TAU);c.stroke();
    c.beginPath();c.arc(r*1.15,0,r*.95,0,TAU);c.stroke();
    c.restore();skShade(c,r);}},
- {name:'טניס',en:'Tennis',price:150,rar:0,draw:(c,r,rot)=>{
+ {name:'טניס',en:'Tennis',price:250,rar:1,draw:(c,r,rot)=>{
    c.fillStyle='#cfe23a';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.7);
    c.strokeStyle='#f8f8f0';c.lineWidth=r*.13;
    c.beginPath();c.arc(-r*1.05,0,r*1.05,-.9,.9);c.stroke();
    c.beginPath();c.arc(r*1.05,0,r*1.05,Math.PI-.9,Math.PI+.9);c.stroke();
    c.restore();skShade(c,r);}},
- {name:'ביליארד 8',en:'8-Ball',price:200,rar:1,draw:(c,r,rot)=>{
+ {name:'ביליארד 8',en:'8-Ball',price:300,rar:1,draw:(c,r,rot)=>{
    c.fillStyle='#101216';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.5);
    c.beginPath();c.arc(0,-r*.13,r*.4,0,TAU);c.fillStyle='#f2f2ee';c.fill();
@@ -2446,7 +2459,7 @@ const SKINS=[
    c.textAlign='center';c.textBaseline='middle';
    c.fillText('8',0,-r*.11);
    c.restore();skShade(c,r);}},
- {name:'לבה',en:'Lava',price:250,rar:1,draw:(c,r,rot)=>{
+ {name:'לבה',en:'Lava',price:500,rar:2,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r);
    g.addColorStop(0,'#ffd23c');g.addColorStop(.45,'#ff7a2a');g.addColorStop(1,'#5a130a');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2457,7 +2470,7 @@ const SKINS=[
      c.lineTo(Math.cos(a+.5)*r*.6,Math.sin(a+.5)*r*.6);
      c.lineTo(Math.cos(a+.3)*r*.95,Math.sin(a+.3)*r*.95);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'קרח',en:'Ice',price:250,rar:1,draw:(c,r,rot)=>{
+ {name:'קרח',en:'Ice',price:500,rar:2,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.35,r*.1,0,0,r);
    g.addColorStop(0,'#eafaff');g.addColorStop(.5,'#9fd8f2');g.addColorStop(1,'#3c85b2');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2467,7 +2480,7 @@ const SKINS=[
      c.beginPath();c.moveTo(Math.cos(a)*r,Math.sin(a)*r);
      c.lineTo(-Math.cos(a)*r,-Math.sin(a)*r);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'קול 😎',en:'Cool 😎',price:300,rar:1,draw:(c,r,rot)=>{
+ {name:'קול 😎',en:'Cool 😎',price:550,rar:2,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.35,r*.1,0,0,r);
    g.addColorStop(0,'#ffe873');g.addColorStop(1,'#f2b31e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2479,7 +2492,7 @@ const SKINS=[
    c.strokeStyle='#16181c';c.lineWidth=r*.11;c.lineCap='round';
    c.beginPath();c.arc(0,r*.12,r*.5,.35,Math.PI-.35);c.stroke();
    c.restore();skShade(c,r);}},
- {name:'זהב',en:'Gold',price:400,rar:2,draw:(c,r,rot)=>{
+ {name:'זהב',en:'Gold',price:1000,rar:3,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.4,-r*.45,r*.08,0,0,r*1.1);
    g.addColorStop(0,'#fffbe0');g.addColorStop(.35,'#ffd95e');g.addColorStop(.75,'#d69a1e');g.addColorStop(1,'#7a520c');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2492,7 +2505,7 @@ const SKINS=[
    c.strokeStyle='#1d5c26';c.lineWidth=r*.16;
    for(let k=0;k<4;k++){c.beginPath();c.arc(-r*1.3,0,r*(1.1+k*.35),-.7,.7);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'דונאט',en:'Donut',price:150,rar:0,draw:(c,r,rot)=>{
+ {name:'דונאט',en:'Donut',price:250,rar:1,draw:(c,r,rot)=>{
    c.fillStyle='#e8a25c';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.6);
    c.beginPath();c.arc(0,0,r*.72,0,TAU);c.fillStyle='#ff8ac2';c.fill();
@@ -2502,7 +2515,7 @@ const SKINS=[
      c.save();c.translate(Math.cos(a)*r*.5,Math.sin(a)*r*.5);c.rotate(a);
      c.fillStyle=cols[k%4];c.fillRect(-r*.09,-r*.03,r*.18,r*.06);c.restore();}
    c.restore();skShade(c,r);}},
- {name:'כדור הארץ',en:'Earth',price:200,rar:1,draw:(c,r,rot)=>{
+ {name:'כדור הארץ',en:'Earth',price:300,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.2,0,0,r);
    g.addColorStop(0,'#4aa8e8');g.addColorStop(1,'#1a5c9e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2511,7 +2524,7 @@ const SKINS=[
    c.beginPath();c.ellipse(r*.4,r*.3,r*.3,r*.4,.4,0,TAU);c.fill();
    c.beginPath();c.ellipse(r*.1,-r*.55,r*.2,r*.14,0,0,TAU);c.fill();
    c.restore();skShade(c,r);}},
- {name:'ירח',en:'Moon',price:180,rar:1,draw:(c,r,rot)=>{
+ {name:'ירח',en:'Moon',price:300,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.2,0,0,r);
    g.addColorStop(0,'#e8e8f0');g.addColorStop(1,'#9a9ab0');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2519,7 +2532,7 @@ const SKINS=[
    for(const pp of [[-.35,-.2,.2],[.3,.15,.28],[-.1,.5,.15],[.45,-.45,.13],[-.55,.3,.11]]){
      c.beginPath();c.arc(pp[0]*r,pp[1]*r,pp[2]*r,0,TAU);c.fill();}
    c.restore();skShade(c,r);}},
- {name:'עין',en:'Eye',price:250,rar:1,draw:(c,r,rot)=>{
+ {name:'עין',en:'Eye',price:550,rar:2,draw:(c,r,rot)=>{
    c.fillStyle='#f2f0e8';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(Math.sin(rot*.5)*.3);
    c.beginPath();c.arc(0,0,r*.52,0,TAU);
@@ -2533,7 +2546,7 @@ const SKINS=[
      c.beginPath();c.moveTo(Math.cos(a)*r*.6,Math.sin(a)*r*.6);
      c.lineTo(Math.cos(a)*r*.95,Math.sin(a)*r*.95);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'כדור חוף',en:'Beach Ball',price:160,rar:0,draw:(c,r,rot)=>{
+ {name:'כדור חוף',en:'Beach Ball',price:250,rar:1,draw:(c,r,rot)=>{
    c.save();c.rotate(rot*.7);
    const cols=['#ff5c5c','#fff','#ffd23c','#fff','#4aa8e8','#fff'];
    for(let k=0;k<6;k++){
@@ -2541,7 +2554,7 @@ const SKINS=[
      c.fillStyle=cols[k];c.fill();}
    c.beginPath();c.arc(0,0,r*.16,0,TAU);c.fillStyle='#fff';c.fill();
    c.restore();skShade(c,r);}},
- {name:'דיסקו',en:'Disco',price:350,rar:2,draw:(c,r,rot)=>{
+ {name:'דיסקו',en:'Disco',price:900,rar:3,draw:(c,r,rot)=>{
    c.fillStyle='#8a8a9a';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.6);
    for(let gy=-3;gy<=3;gy++)for(let gx=-3;gx<=3;gx++){
@@ -2550,7 +2563,7 @@ const SKINS=[
      c.fillStyle=['#ffd6e8','#d6f0ff','#fff6c8','#e0ffd6','#eed6ff'][hue];
      c.fillRect(gx*r*.3-r*.12,gy*r*.3-r*.12,r*.24,r*.24);}
    c.restore();skShade(c,r);}},
- {name:'פצצה',en:'Bomb',price:300,rar:1,draw:(c,r,rot)=>{
+ {name:'פצצה',en:'Bomb',price:550,rar:2,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r);
    g.addColorStop(0,'#4a4a56');g.addColorStop(1,'#101216');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2561,7 +2574,7 @@ const SKINS=[
    c.fillStyle='rgba(255,'+((150+fl*100)|0)+',60,'+fl+')';
    c.beginPath();c.arc(r*.85,-r*.8,r*.14*fl+r*.06,0,TAU);c.fill();
    c.restore();skShade(c,r);}},
- {name:'דלעת',en:'Pumpkin',price:220,rar:1,draw:(c,r,rot)=>{
+ {name:'דלעת',en:'Pumpkin',price:500,rar:2,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.2,0,0,r);
    g.addColorStop(0,'#ffa23c');g.addColorStop(1,'#c9641e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -2575,14 +2588,14 @@ const SKINS=[
    for(let k=0;k<=6;k++)c.lineTo(-r*.4+k*r*.133,r*.25+(k%2?r*.14:0));
    c.lineTo(r*.4,r*.42);c.lineTo(-r*.4,r*.42);c.closePath();c.fill();
    c.restore();skShade(c,r);}},
- {name:'קשת בענן',en:'Rainbow',price:450,rar:2,draw:(c,r,rot)=>{
+ {name:'קשת בענן',en:'Rainbow',price:1100,rar:3,draw:(c,r,rot)=>{
    c.save();c.rotate(rot*.5);
    const cols=['#ff5c5c','#ffa23c','#ffe45c','#5cd65c','#4aa8e8','#a85ce8'];
    for(let k=0;k<6;k++){
      c.strokeStyle=cols[k];c.lineWidth=r*.19;
      c.beginPath();c.arc(0,0,r*(1.05-k*.17),0,TAU);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'גלקסיה',en:'Galaxy',price:500,rar:2,draw:(c,r,rot)=>{
+ {name:'גלקסיה',en:'Galaxy',price:1800,rar:4,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r);
    g.addColorStop(0,'#5a3ba8');g.addColorStop(.6,'#241452');g.addColorStop(1,'#0a0620');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3414,7 +3427,7 @@ function saveBlob(){
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
     lg:gameLog.slice(0,30),
     cl:customLevels,
-    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD};
+    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity};
 }
 function save(){
   const st=store();
@@ -3432,7 +3445,7 @@ function load(){
 function applySave(d){
   try{
     unlocked=Math.min(LEVELS.length-1,d.un|0);
-    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';
+    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';pity=d.py|0;
     skinOwned=Array.isArray(d.ow)?d.ow.filter(n=>n>=0&&n<SKINS.length):[0];
     if(!skinOwned.includes(0))skinOwned.unshift(0);
     skinSel=skinOwned.includes(d.sk|0)?(d.sk|0):0;
@@ -3524,7 +3537,7 @@ const POWSKINS=[
    c.beginPath();c.moveTo(0,-r*.55);c.lineTo(0,r*.55);c.stroke();}}
 ];
 SKINS.push(
- {name:'לבה',en:'Magma',price:350,rar:1,draw:(c,r,rot,T)=>{
+ {name:'לבה',en:'Magma',price:900,rar:3,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r*1.1);
    g.addColorStop(0,'#ffd76b');g.addColorStop(.5,'#f5541f');g.addColorStop(1,'#5c0e0e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3532,21 +3545,21 @@ SKINS.push(
    for(let k=0;k<4;k++){const a=rot*.5+k*1.57;
      c.beginPath();c.moveTo(Math.cos(a)*r*.2,Math.sin(a)*r*.2);
      c.lineTo(Math.cos(a+.5)*r*.75,Math.sin(a+.5)*r*.75);c.stroke();}}},
- {name:'קרח',en:'Frost',price:350,rar:1,draw:(c,r,rot,T)=>{
+ {name:'קרח',en:'Frost',price:900,rar:3,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.05,0,0,r*1.1);
    g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#9fdcff');g.addColorStop(1,'#123a5e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
    c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=r*.07;
    for(let k=0;k<6;k++){const a=rot*.3+k*1.047;
      c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*r*.7,Math.sin(a)*r*.7);c.stroke();}}},
- {name:'ג׳ונגל',en:'Jungle',price:450,rar:1,draw:(c,r,rot,T)=>{
+ {name:'ג׳ונגל',en:'Jungle',price:1000,rar:3,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(-r*.2,-r*.4,r*.1,0,0,r*1.05);
    g.addColorStop(0,'#d9ff9e');g.addColorStop(.55,'#3f9b3f');g.addColorStop(1,'#0d3311');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
    c.fillStyle='rgba(20,60,20,.55)';
    for(let k=0;k<5;k++){const a=rot*.4+k*1.256;
      c.beginPath();c.ellipse(Math.cos(a)*r*.45,Math.sin(a)*r*.45,r*.2,r*.09,a,0,TAU);c.fill();}}},
- {name:'נחש',en:'Snake',price:600,rar:2,draw:(c,r,rot,T)=>{
+ {name:'נחש',en:'Snake',price:1800,rar:4,draw:(c,r,rot,T)=>{
    const g=c.createRadialGradient(0,0,r*.1,0,0,r*1.1);
    g.addColorStop(0,'#e8ffb0');g.addColorStop(.5,'#7ab648');g.addColorStop(1,'#243d0e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3555,13 +3568,13 @@ SKINS.push(
    for(let k=0;k<=20;k++){const t2=k/20*TAU;
      c.lineTo(Math.cos(t2+rot)*r*(.3+.25*Math.sin(t2*3)),Math.sin(t2+rot)*r*(.3+.25*Math.sin(t2*3)));}
    c.stroke();}},
- {name:'שקיעה',en:'Sunset',price:600,rar:2,draw:(c,r,rot,T)=>{
+ {name:'שקיעה',en:'Sunset',price:1800,rar:4,draw:(c,r,rot,T)=>{
    const g=c.createLinearGradient(0,-r,0,r);
    g.addColorStop(0,'#ffd166');g.addColorStop(.5,'#ef6c57');g.addColorStop(1,'#5b2a86');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
    c.fillStyle='rgba(255,235,170,.9)';
    c.beginPath();c.arc(0,-r*.15,r*.28,0,TAU);c.fill();}},
- {name:'מטריקס',en:'Matrix',price:900,rar:2,draw:(c,r,rot,T)=>{
+ {name:'מטריקס',en:'Matrix',price:3000,rar:5,draw:(c,r,rot,T)=>{
    c.fillStyle='#02120a';c.fillRect(-r,-r,r*2,r*2);
    c.fillStyle='rgba(60,255,140,.85)';c.font='bold '+(r*.34)+'px monospace';
    c.textAlign='center';c.textBaseline='middle';
@@ -4410,15 +4423,20 @@ function buildSkins(){
       ic.textContent=s.icon;card.appendChild(ic);
     }
     const nm=document.createElement('div');nm.textContent=tr(s.name,s.en||s.name);card.appendChild(nm);
+    const rr=document.createElement('div');
+    rr.textContent=tr(RAR[s.rar|0].n,RAR[s.rar|0].en);
+    rr.style.cssText='font-size:10px;font-weight:900;letter-spacing:.5px;color:'+RAR[s.rar|0].c;
+    card.appendChild(rr);
     const pr=document.createElement('div');pr.className='skPrice';
-    pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select'):s.price+' 🪙 '+['','◆','★'][s.rar||0]);
+    pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select'):s.price+' 🪙');
     card.appendChild(pr);
     card.onclick=()=>{
       if(owned){cat.setSel(i);save();buildSkins();showToast(tr(s.name,s.en||s.name)+' ✓');return;}
       if(coins>=s.price){
         coins-=s.price;cat.ow.push(i);cat.setSel(i);
-        checkAch();save();refreshTro();buildSkins();
-        showToast('🎉 '+tr(s.name,s.en||s.name)+tr(' נרכש!',' purchased!'));sfx.key();
+        checkAch();save();refreshTro();buildSkins();sfx.key();
+        if(shopTab==='skin')showReveal({kind:'skin',idx:i,rar:s.rar|0,label:tr(s.name,s.en||s.name),story:loreOf(i)});
+        else showReveal({kind:'fx',icon:s.icon,rar:s.rar|0,label:tr(s.name,s.en||s.name)});
       }else showToast(tr('חסרים ','Missing ')+(s.price-coins)+tr('🪙 — פתחו תיבות!','🪙 — open chests!'));
     };
     g.appendChild(card);
@@ -4436,27 +4454,52 @@ function pickUnowned(cat,ow){
   for(;idx<w.length-1&&pick>=w[idx];idx++)pick-=w[idx];
   return locked[idx].i;
 }
+/* 🎁 איזון תיבות בסגנון בראול סטארס: סיכוי לפריט לפי נדירות + "מזל" שגדל
+   בכל תיבה בלי פריט (Pity) ומתאפס כשנופל פריט — בדיוק כמו Luck Value. */
+const DROP_PCT=[[5,.35],[4,.9],[3,2.2],[2,4.5],[1,9]]; // [נדירות, אחוז לגלגול]
+let pity=0;
+function grantTier(t){
+  // אוסף מועמדים בנדירות המבוקשת; אם אין — מטפסים למעלה ואז יורדים
+  const order=[t];
+  for(let up=t+1;up<=5;up++)order.push(up);
+  for(let dn=t-1;dn>=1;dn--)order.push(dn);
+  for(const tier of order){
+    const cands=[];
+    SKINS.forEach((it,i)=>{if((it.rar|0)===tier&&!it.pow&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
+    WFX.forEach((it,i)=>{if((it.rar|0)===tier&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
+    DFX.forEach((it,i)=>{if((it.rar|0)===tier&&!dOw.includes(i))cands.push({k:'dfx',i,it});});
+    if(!cands.length)continue;
+    const c=cands[(Math.random()*cands.length)|0];
+    if(c.k==='skin'){
+      skinOwned.push(c.i);
+      return {icon:'🎨',label:tr(c.it.name,c.it.en||c.it.name),rar:tier,
+        rv:{kind:'skin',idx:c.i,rar:tier,label:tr(c.it.name,c.it.en||c.it.name),story:loreOf(c.i)}};
+    }
+    if(c.k==='wfx')wOw.push(c.i);else dOw.push(c.i);
+    return {icon:c.it.icon,label:(c.k==='wfx'?tr('ניצחון: ','Victory: '):tr('מוות: ','Death: '))+tr(c.it.name,c.it.en||c.it.name),rar:tier,
+      rv:{kind:'fx',icon:c.it.icon,rar:tier,label:tr(c.it.name,c.it.en||c.it.name)}};
+  }
+  return null;
+}
 function rollChest(){
   const drops=[];
   const n=30+((Math.random()*50)|0);
   addCoins(n);drops.push({icon:'🪙',label:'+'+n,rar:0});
+  if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
+  let gotItem=false;
   for(let s2=0;s2<2;s2++){
-    const r=Math.random();
-    if(r<.12){
-      const pk=pickUnowned(SKINS,skinOwned);
-      if(pk>=0){skinOwned.push(pk);drops.push({icon:'🎨',label:tr(SKINS[pk].name,SKINS[pk].en||SKINS[pk].name),rar:SKINS[pk].rar||0});continue;}
+    const luck=1+pity*.35;
+    const r=Math.random()*100;
+    let acc=0,hit=0;
+    for(const[tier,pc] of DROP_PCT){acc+=pc*luck;if(r<acc){hit=tier;break;}}
+    if(hit){
+      const d=grantTier(hit);
+      if(d){drops.push(d);gotItem=true;continue;}
     }
-    if(r<.22){
-      const pk=pickUnowned(WFX,wOw);
-      if(pk>=0){wOw.push(pk);drops.push({icon:WFX[pk].icon,label:tr('ניצחון: ','Victory: ')+tr(WFX[pk].name,WFX[pk].en||WFX[pk].name),rar:WFX[pk].rar});continue;}
-    }
-    if(r<.32){
-      const pk=pickUnowned(DFX,dOw);
-      if(pk>=0){dOw.push(pk);drops.push({icon:DFX[pk].icon,label:tr('מוות: ','Death: ')+tr(DFX[pk].name,DFX[pk].en||DFX[pk].name),rar:DFX[pk].rar});continue;}
-    }
-    const big=r<.5, m=big?(120+((Math.random()*140)|0)):(40+((Math.random()*60)|0));
+    const big=Math.random()<.35, m=big?(120+((Math.random()*140)|0)):(40+((Math.random()*60)|0));
     addCoins(m);drops.push({icon:big?'💰':'🪙',label:'+'+m,rar:big?1:0});
   }
+  pity=gotItem?0:pity+1;
   return drops;
 }
 /* ---- 🎁 אנימציית תיבה תלת-ממדית (crate.glb) + זוהר + סאונד ---- */
@@ -4661,18 +4704,18 @@ function megaReveal(drops){
       chestBusy=false;
       return;
     }
-    const d=drops[i],ic=$('prizeIc');
+    const d=drops[i];
+    if(d.rv){showReveal(d.rv,next);return;} // 🎊 פריט: חשיפה מלאה בסגנון בראול
+    const ic=$('prizeIc');
     ic.textContent=d.icon;
-    ic.style.filter=d.rar===2?'drop-shadow(0 0 28px rgba(255,210,87,.95))'
-      :d.rar===1?'drop-shadow(0 0 22px rgba(122,224,255,.85))'
-      :'drop-shadow(0 0 12px rgba(255,255,255,.4))';
+    ic.style.filter='drop-shadow(0 0 '+(12+(d.rar|0)*4)+'px '+(RAR[d.rar|0]||RAR[0]).c+')';
     ic.style.animation='none';void ic.offsetWidth;
     ic.style.animation='popIn .45s cubic-bezier(.2,1.6,.4,1)';
     $('prizeLb').textContent=d.label;
     $('prizeHint').textContent=(i<drops.length-1)?tr('הקש לפרס הבא · ','Tap for next prize · ')+(i+1)+'/'+drops.length:tr('הקש לסיום','Tap to finish');
     tone(520+i*150+d.rar*160,.16,'sine',.3);
-    if(d.rar===2){sfx.win();flashW=Math.max(flashW,.4);}
-    else if(d.rar===1)sfx.key();
+    if(d.rar>=3){sfx.win();flashW=Math.max(flashW,.4);}
+    else if(d.rar>=1)sfx.key();
   };
   st.onclick=next;
   next();
@@ -4684,6 +4727,7 @@ $('chestBtn').onclick=()=>{
   $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
   $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
   $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
+  $('chestOdds').textContent=tr('סיכויי פריט: ','Item odds: ')+'🟢9% · 🔵4.5% · 🟣2.2% · 🔴0.9% · 🟡0.35%'+tr(' · מזל +35% לכל תיבה בלי פריט','· luck +35% per itemless box')+(pity?tr(' (מזל כרגע: ×','(current luck: ×')+(1+pity*.35).toFixed(2)+')':'');
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
@@ -5397,7 +5441,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;
-  dailyLast='';dailyFail='';runBest=0;wheelD='';
+  dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
   stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];customLevels={};
@@ -5704,6 +5748,174 @@ $('edRestore').onclick=async()=>{
   await admGive({clr:n-1},tr('החזרת שלב ','Restoring level ')+n+tr(' לרגיל',' to default'));
   $('edMsg').textContent=$('admMsg').textContent;
 };
+/* 🏅 נדירויות בסגנון בראול סטארס */
+const RAR=[
+ {n:'רגיל',en:'Common',c:'#9aa7b5'},
+ {n:'נדיר',en:'Rare',c:'#2edd6f'},
+ {n:'נדיר במיוחד',en:'Super Rare',c:'#4da2ff'},
+ {n:'אדיר',en:'Epic',c:'#b26aff'},
+ {n:'מדהים',en:'Mythic',c:'#ff5a5a'},
+ {n:'אגדי',en:'Legendary',c:'#ffd257'}];
+/* 📜 סיפור רקע לכל סקין (לפי סדר SKINS) */
+const SKIN_LORE=[
+ ['נוצק במפעל הכדורים הראשון. פשוט, קשוח, בלתי שביר — הוותיק של המבוך.','Forged in the first ball factory. Simple, tough, unbreakable — the maze veteran.'],
+ ['ברח מגמר המונדיאל שנייה לפני הפנדל. מאז הוא מחפש שער בין הקירות.','Escaped the World Cup final a second before the penalty. Now it hunts goals between walls.'],
+ ['קפץ מהסל גבוה מדי ונחת במבוך. עדיין סופר את הקפיצות שלו.','Bounced too high out of the hoop and landed in the maze. Still counting its dunks.'],
+ ['הוקפץ 10,000 פעם בווימבלדון עד שנמאס לו. עכשיו הוא מקפיץ את עצמו.','Smashed 10,000 times at Wimbledon until it had enough. Now it bounces itself.'],
+ ['יודע את העתיד, אבל מסרב לגלות. תשאלו אותו — "נסו שוב מאוחר יותר".','Knows the future but won\'t tell. Ask it — "try again later".'],
+ ['נולד בלב הר געש. הקירות נמסים מרוב קנאה כשהוא עובר.','Born in a volcano\'s heart. Walls melt with envy as it rolls by.'],
+ ['קפא באנטארקטיקה 3,000 שנה. הפשיר רק כדי לשחק.','Frozen in Antarctica for 3,000 years. Thawed just to play.'],
+ ['אף פעם לא מוריד את המשקפיים. אפילו בחושך. במיוחד בחושך.','Never takes the shades off. Even in the dark. Especially in the dark.'],
+ ['נגנב מכספת מלכותית. עכשיו כולם רודפים אחריו — אבל הוא מהיר יותר.','Stolen from a royal vault. Everyone chases it — but it rolls faster.'],
+ ['הפרי היחיד שברח מסלט הפירות. מתגלגל מתוק ובורח מהכפית.','The only fruit that escaped the salad. Rolls sweet, dodges the spoon.'],
+ ['נמלט מהמאפייה עם החור שלם. אל תלקקו את המסך.','Fled the bakery with its hole intact. Don\'t lick the screen.'],
+ ['הפלנטה היחידה שהסכימה להצטמצם בשביל משחק טוב.','The only planet willing to shrink for a good game.'],
+ ['ירד מהשמיים כי קינא בכדורים. משאיר אבק כוכבים בכל פנייה.','Came down from the sky, jealous of balls. Leaves stardust at every turn.'],
+ ['רואה הכול. את הכוכבים, את החורים — וגם את הטעויות שלכם.','Sees everything. The stars, the holes — and your mistakes.'],
+ ['ברח מחוף הים באוגוסט. שונא מלח, אוהב מבוכים.','Escaped the beach in August. Hates salt, loves mazes.'],
+ ['רוקד מאז שנות ה-70 ולא מתעייף. הקירות הם רחבת הריקודים שלו.','Dancing since the 70s, never tired. The walls are its dance floor.'],
+ ['הפתיל דולק כבר שנים — אף אחד לא יודע מתי. תתגלגלו מהר.','The fuse has burned for years — nobody knows till when. Roll fast.'],
+ ['גולף בליל כל האורות. בפנים דולק נר שאף רוח לא כיבתה.','Carved on Halloween night. Inside burns a candle no wind ever killed.'],
+ ['נולד אחרי הסופה הגדולה. מי שנוגע בו מקבל יום של מזל.','Born after the great storm. One touch grants a lucky day.'],
+ ['בלע גלקסיה שלמה בטעות. עכשיו כוכבים מסתחררים בבטן שלו.','Swallowed a galaxy by accident. Now stars swirl in its belly.'],
+ ['אחיו הגדול של כדור הלבה. איפה שהוא עובר — האדמה רועדת.','Lava Ball\'s big brother. The ground trembles where it rolls.'],
+ ['מלך הקרח בכבודו ובעצמו. הבל הפה שלו מקפיא חורים.','The Ice King himself. Its breath freezes holes shut.'],
+ ['גדל בג׳ונגל בין הקופים. יודע להתגלגל בין עצים בעיניים עצומות.','Raised in the jungle among monkeys. Rolls between trees blindfolded.'],
+ ['הנחש היחיד שהתגלגל לצורת כדור ונשאר ככה. שששש...','The only snake that curled into a ball and stayed. Ssssh...'],
+ ['גנב את הצבעים של השקיעה האחרונה של הקיץ. יפה מדי בשביל להפסיד.','Stole the colors of summer\'s last sunset. Too beautiful to lose.'],
+ ['ברח מתוך המחשב. רואה את הקוד של המבוך — ואת כל הקיצורים.','Escaped from inside the computer. Sees the maze\'s code — and every shortcut.'],
+ ['נשבע להגן על כל כדור במבוך. החור הראשון — עליו.','Swore to protect every ball in the maze. The first hole is on him.'],
+ ['לגם בטעות שיקוי זמן. מאז — העולם רץ, והוא צועד בנחת.','Accidentally sipped a time potion. The world rushes; it strolls.'],
+ ['רוח של כדור מהעולם הבא. קירות? הוא כבר לא מרגיש אותם.','A ball\'s ghost from the other side. Walls? It barely feels them anymore.'],
+ ['התגלגל פעם דרך בנק. יצא מהצד השני — כפול.','Once rolled through a bank. Came out the other side — doubled.']];
+function loreOf(i){const l=SKIN_LORE[i];return l?tr(l[0],l[1]):'';}
+/* 🐣 היצור: הכדור נפתח לחיה חמודה — עיניים, גבות ופה לפי מצב רוח */
+function drawCreature(g,cx,cy,R,idx,mood,t){
+  g.save();g.translate(cx,cy);
+  const sad=mood==='sad';
+  g.translate(0,Math.sin(t*3)*R*.06*(sad?.35:1));
+  const sq=1+Math.sin(t*6)*.035*(sad?.4:1);
+  g.scale(1/sq,sq);
+  g.beginPath();g.arc(0,0,R,0,TAU);g.save();g.clip();
+  try{(SKINS[idx]||SKINS[0]).draw(g,R,t*.8,THEMES[0]);}catch(e){g.fillStyle='#78848f';g.fillRect(-R,-R,R*2,R*2);}
+  g.restore();
+  g.lineWidth=R*.05;g.strokeStyle='rgba(0,0,0,.25)';
+  g.beginPath();g.arc(0,0,R,0,TAU);g.stroke();
+  const blink=(Math.sin(t*1.9)>.96)?.12:1;
+  const ey=sad?-R*.06:-R*.16;
+  for(const sd of[-1,1]){
+    g.beginPath();g.ellipse(sd*R*.33,ey,R*.155,R*.19*blink,0,0,TAU);
+    g.fillStyle='#fff';g.fill();
+    g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=R*.02;g.stroke();
+    g.beginPath();g.arc(sd*R*.33+Math.sin(t*.9)*R*.035,ey+(sad?R*.05:R*.01),R*.07*blink+.001,0,TAU);
+    g.fillStyle='#161d28';g.fill();
+    // גבות
+    g.beginPath();g.lineWidth=R*.05;g.strokeStyle='#161d28';
+    if(sad){g.moveTo(sd*R*.18,ey-R*.24);g.lineTo(sd*R*.48,ey-R*.15);}
+    else{g.moveTo(sd*R*.18,ey-R*.28);g.lineTo(sd*R*.48,ey-R*.31);}
+    g.stroke();
+  }
+  g.beginPath();g.lineWidth=R*.055;g.strokeStyle='#161d28';g.lineCap='round';
+  if(sad)g.arc(0,R*.48,R*.17,Math.PI*1.18,Math.PI*1.82);
+  else g.arc(0,R*.2,R*.22,Math.PI*.16,Math.PI*.84);
+  g.stroke();
+  if(!sad&&Math.sin(t*2.6)>.5){ // לחיים שמחות
+    for(const sd of[-1,1]){g.beginPath();g.arc(sd*R*.5,R*.08,R*.08,0,TAU);g.fillStyle='rgba(255,120,140,.4)';g.fill();}
+  }
+  g.restore();
+}
+/* 🎊 חשיפת פריט בסגנון בראול סטארס: קרני אור בצבע הנדירות, כדור רוטט —
+   ובסוף הסיבוב נפתח ליצור חי. */
+let rvAnim=0;
+function showReveal(o,cb){
+  const ov=$('revealOv');
+  ov.style.display='flex';
+  const col=(RAR[o.rar|0]||RAR[1]).c;
+  $('rvName').textContent='';$('rvRar').textContent='';$('rvStory').textContent='';
+  $('rvHint').textContent='';$('rvRar').style.color=col;
+  const cv=$('rvCv'),g=cv.getContext('2d');
+  const t0=performance.now();
+  let landed=false;
+  cancelAnimationFrame(rvAnim);
+  const loop=now=>{
+    const t=(now-t0)/1000;
+    g.clearRect(0,0,cv.width,cv.height);
+    const cx=cv.width/2,cy=cv.height/2;
+    g.save();g.translate(cx,cy);g.rotate(t*.65);
+    for(let i2=0;i2<12;i2++){
+      g.rotate(Math.PI/6);
+      g.globalAlpha=.09+.05*Math.sin(t*2+i2);
+      g.fillStyle=col;
+      g.beginPath();g.moveTo(0,0);g.arc(0,0,210,-.13,.13);g.closePath();g.fill();
+    }
+    g.restore();g.globalAlpha=1;
+    const P1=1.05,P2=1.75;
+    if(t<P1){ // הכדור מגיע מסתובב
+      const k=t/P1,e=1-Math.pow(1-k,3);
+      const R=14+96*e;
+      g.save();g.translate(cx,cy);g.rotate(t*9*(1-e*.85));
+      g.beginPath();g.arc(0,0,R,0,TAU);g.save();g.clip();
+      if(o.kind==='skin'){try{SKINS[o.idx].draw(g,R,t*4,THEMES[0]);}catch(e2){}}
+      else{g.fillStyle='#111826';g.fillRect(-R,-R,R*2,R*2);}
+      g.restore();g.restore();
+      if(o.kind==='fx'){g.font=(R*1.1|0)+'px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(o.icon,cx,cy);}
+    }else if(t<P2){ // רעד ובניית זוהר
+      const sh=(t-P1)/(P2-P1);
+      const ox=(Math.random()-.5)*10*sh,oy=(Math.random()-.5)*10*sh;
+      g.save();g.shadowColor=col;g.shadowBlur=10+50*sh;g.translate(cx+ox,cy+oy);
+      g.beginPath();g.arc(0,0,110,0,TAU);g.save();g.clip();
+      if(o.kind==='skin'){try{SKINS[o.idx].draw(g,110,t,THEMES[0]);}catch(e2){}}
+      else{g.fillStyle='#111826';g.fillRect(-110,-110,220,220);}
+      g.restore();g.restore();
+      if(o.kind==='fx'){g.font='120px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText(o.icon,cx+ox,cy+oy);}
+      if(((t*14)|0)%2===0)tone(300+sh*500,.03,'square',.1);
+    }else{ // 💥 נפתח ליצור!
+      if(!landed){
+        landed=true;
+        confetti(o.rar>=3?170:100);
+        sfx.win();
+        if(navigator.vibrate)navigator.vibrate(o.rar>=4?[50,60,50,60,110]:[35,60,35]);
+        $('rvName').textContent=o.label;
+        $('rvRar').textContent=tr(RAR[o.rar|0].n,RAR[o.rar|0].en)+(o.rar>=5?' 👑':o.rar>=4?' 🔥':'');
+        $('rvStory').textContent=o.story||'';
+        $('rvHint').textContent=tr('הקש להמשך','Tap to continue');
+      }
+      const tt=t-P2;
+      const pop=1+Math.max(0,.25-tt)*2.2;
+      g.save();g.translate(cx,cy);g.scale(pop,pop);g.translate(-cx,-cy);
+      if(o.kind==='skin')drawCreature(g,cx,cy,96,o.idx,'happy',t);
+      else{
+        g.font='130px system-ui';g.textAlign='center';g.textBaseline='middle';
+        g.shadowColor=col;g.shadowBlur=34;
+        g.fillText(o.icon,cx,cy+Math.sin(t*3)*6);
+      }
+      g.restore();
+    }
+    rvAnim=requestAnimationFrame(loop);
+  };
+  rvAnim=requestAnimationFrame(loop);
+  ov.onclick=()=>{
+    if(performance.now()-t0<2100)return; // שלא ידלגו על הרגע הגדול בטעות
+    cancelAnimationFrame(rvAnim);
+    ov.style.display='none';ov.onclick=null;
+    if(cb)cb();
+  };
+}
+/* 🐾 היצור מלווה גם את מסכי הניצחון וההפסד */
+(function petLoop(){
+  requestAnimationFrame(petLoop);
+  const t=performance.now()/1000;
+  try{
+    if(!$('doneOv').classList.contains('hidden')){
+      const c=$('winPet'),g=c.getContext('2d');
+      g.clearRect(0,0,c.width,c.height);drawCreature(g,60,60,42,skinSel,'happy',t);
+    }
+    if(!$('failOv').classList.contains('hidden')){
+      const c=$('failPet'),g=c.getContext('2d');
+      g.clearRect(0,0,c.width,c.height);drawCreature(g,60,60,42,skinSel,'sad',t);
+    }
+  }catch(e){}
+})();
 /* ✨ קונפטי — חגיגה קלה בקנבס ייעודי, נעצר לבד */
 let cfxRun=false;
 function confetti(n){
@@ -5741,13 +5953,13 @@ function confetti(n){
 const WHEEL=[
   {t:'co',v:50, c:'#2563eb',l:'🪙50'},
   {t:'gm',v:6,  c:'#7c3aed',l:'💎6'},
-  {t:'co',v:120,c:'#0d9488',l:'🪙120'},
+  {t:'sk',v:0,  c:'#0d9488',l:'🎨?'},
   {t:'tro',v:5, c:'#d97706',l:'🏆5'},
   {t:'co',v:30, c:'#334155',l:'🪙30'},
   {t:'ch',v:1,  c:'#db2777',l:'🎁1'},
   {t:'co',v:200,c:'#16a34a',l:'🪙200'},
   {t:'jp',v:500,c:'#eab308',l:'⭐500'}];
-const WHEEL_W=[17,12,15,10,18,9,12,3];
+const WHEEL_W=[18,12,8,11,20,9,15,3];
 const SPIN_COST=150;
 let wheelAng=0,wheelBusy=false;
 const wheelFree=()=>wheelD!==new Date().toDateString();
@@ -5823,8 +6035,20 @@ $('wheelSpin').onclick=()=>{
     drawWheel();
     if(k<1){requestAnimationFrame(anim);return;}
     const p2=WHEEL[pick];
-    let msg='';
-    if(p2.t==='co'||p2.t==='jp'){coins+=p2.v;msg='+'+p2.v+' 🪙';}
+    let msg='',rvAfter=null;
+    if(p2.t==='sk'){ // 🎨 סקין מהגלגל: נדיר — ו-0.5% שדרוג לסקין אדיר!
+      const epic=Math.random()<.005;
+      let pool=[];
+      SKINS.forEach((it,i2)=>{if((it.rar|0)===(epic?3:1)&&!it.pow&&!skinOwned.includes(i2))pool.push(i2);});
+      if(!pool.length&&epic)SKINS.forEach((it,i2)=>{if((it.rar|0)===1&&!it.pow&&!skinOwned.includes(i2))pool.push(i2);});
+      if(pool.length){
+        const idx=pool[(Math.random()*pool.length)|0];
+        skinOwned.push(idx);
+        msg=tr(SKINS[idx].name,SKINS[idx].en||SKINS[idx].name)+' 🎨';
+        rvAfter={kind:'skin',idx,rar:SKINS[idx].rar|0,label:tr(SKINS[idx].name,SKINS[idx].en||SKINS[idx].name),story:loreOf(idx)};
+      }else{coins+=150;msg='+150 🪙';}
+    }
+    else if(p2.t==='co'||p2.t==='jp'){coins+=p2.v;msg='+'+p2.v+' 🪙';}
     else if(p2.t==='gm'){gems+=p2.v;msg='+'+p2.v+' 💎';}
     else if(p2.t==='ch'){chests+=p2.v;msg='+'+p2.v+' 🎁';}
     else if(p2.t==='tro'){addTro(p2.v);msg='+'+p2.v+' 🏆';}
@@ -5835,6 +6059,7 @@ $('wheelSpin').onclick=()=>{
     sfx.win();
     if(navigator.vibrate)navigator.vibrate(p2.t==='jp'?[60,60,60,60,120]:[40,70]);
     wheelBusy=false;
+    if(rvAfter)setTimeout(()=>showReveal(rvAfter),450);
   };
   requestAnimationFrame(anim);
 };
