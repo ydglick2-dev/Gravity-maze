@@ -204,6 +204,7 @@
     50% { box-shadow:0 0 18px rgba(245,197,24,.55); }
   }
   @keyframes popIn { 0%{transform:scale(.4);opacity:0} 70%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
+  @keyframes goalFly { 0%{transform:translate(140px,180px) rotate(0)} 100%{transform:translate(0,0) rotate(-380deg)} }
   #doneOv h1, #doneOv #medalBig, #doneOv #starsBig { animation: popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
   #doneOv #starsBig { animation-delay:.12s }
   #toast { position:fixed; top:28%; left:0; right:0; text-align:center; z-index:30; pointer-events:none;
@@ -253,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v66</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v67</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2440,9 +2441,37 @@ const DFX=[
  {name:'להבות',en:'Flames',icon:'🔥',price:850,rar:3},
  {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:1500,rar:4}
 ];
+/* ⚽ אפקטי GOAL! — מגיעים במתנה עם סקין שחקן כדורגל */
+function goalFxShow(kind){
+  try{
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:45;pointer-events:none;display:flex;align-items:center;justify-content:center;overflow:hidden';
+    d.dir='ltr';
+    if(kind==='comic'){
+      d.innerHTML='<div style="transform:rotate(-6deg)"><div style="direction:ltr;font-size:74px;font-weight:900;font-style:italic;letter-spacing:2px;color:#ffd24d;-webkit-text-stroke:4px #f07018;text-shadow:8px 10px 0 rgba(0,0,0,.85);animation:popIn .5s cubic-bezier(.2,1.7,.4,1) both">GOAL!</div></div>';
+    }else{
+      d.innerHTML='<div style="position:relative;transform:rotate(-24deg)">'+
+        '<div style="direction:ltr;font-size:56px;font-weight:900;font-style:italic;color:#7ea6e8;-webkit-text-stroke:2px #ffd24d;animation:popIn .45s cubic-bezier(.2,1.7,.4,1) both">GOALL</div>'+
+        '<div style="position:absolute;top:-46px;right:-52px;font-size:52px;animation:goalFly 1.5s ease-out both">⚽</div></div>';
+    }
+    document.body.appendChild(d);
+    tone(392,.12,'square',.3);setTimeout(()=>tone(523,.12,'square',.3),120);
+    setTimeout(()=>tone(659,.3,'square',.35),240);
+    setTimeout(()=>{d.style.transition='opacity .4s';d.style.opacity='0';},1400);
+    setTimeout(()=>d.remove(),1900);
+  }catch(e){}
+}
 function playWinFX(x,y,big){
   const k=big?2:1;
   switch(wSel){
+   case GOAL_FX_A:
+    goalFxShow('comic');
+    emit(x,y,26,{color:['#ffd24d','#f07018','#fff'],sp:220,size:3.4,decay:1.4,gl:true});
+    break;
+   case GOAL_FX_B:
+    goalFxShow('fly');
+    emit(x,y,22,{color:['#7ea6e8','#ffd24d','#fff'],sp:200,size:3.2,decay:1.4,gl:true});
+    break;
    case 1:
     for(let i=0;i<3*k;i++)setTimeout(()=>{
       const fx=x+(Math.random()-.5)*board.w*.5,fy=y+(Math.random()-.5)*120;
@@ -3731,6 +3760,20 @@ function pushFaceSkin(nm,en,img,rar){
     c.beginPath();c.arc(0,0,r*.96,0,TAU);c.stroke();
   }});
 }
+const GOAL_FX_A=WFX.length;
+WFX.push({name:'GOAL! קומיקס',en:'GOAL! Comic',icon:'🥅',price:0,rar:4,fs:1});
+const GOAL_FX_B=WFX.length;
+WFX.push({name:'גולללל מעופף',en:'Flying Goalll',icon:'⚽',price:0,rar:4,fs:1});
+/* ⚽ קיבלת סקין שחקן? מקבל גם אחד מאפקטי ה-GOAL במתנה */
+function grantGoalFx(){
+  const pool=[GOAL_FX_A,GOAL_FX_B].filter(i=>!wOw.includes(i));
+  if(!pool.length)return null;
+  const idx=pool[(Math.random()*pool.length)|0];
+  wOw.push(idx);
+  return {icon:WFX[idx].icon,label:tr('ניצחון: ','Victory: ')+tr(WFX[idx].name,WFX[idx].en),rar:4,
+    rv:{kind:'fx',icon:WFX[idx].icon,rar:4,label:tr(WFX[idx].name,WFX[idx].en),
+        story:tr('אפקט ניצחון במתנה עם סקין השחקן! נבחר בחנות בלשונית אפקט ניצחון.','A free victory effect with your player skin!')}};
+}
 pushFaceSkin('רונאלדו','Ronaldo','ronaldo.png',5);
 pushFaceSkin('נוימאר','Neymar','neymar.png',4);
 pushFaceSkin('אמבפה','Mbappé','mbappe.png',4);
@@ -4587,11 +4630,13 @@ function buildSkins(){
     const pr=document.createElement('div');pr.className='skPrice';
     pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select')
       :(s.wc?('🏆 '+Math.min(wcCups,s.wc)+'/'+s.wc+' '+tr('גביעי מונדיאל','World Cups'))
-      :(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙')));
+      :(s.fs?tr('⚽ מגיע עם סקין שחקן','⚽ Comes with a player skin')
+      :(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙'))));
     card.appendChild(pr);
     card.onclick=()=>{
       if(owned){cat.setSel(i);save();buildSkins();showToast(tr(s.name,s.en||s.name)+' ✓');return;}
       if(s.wc&&!owned)return showToast(tr('🏆 מסי נפתח עם 3 גביעי מונדיאל — תיבת מונדיאל בכל שלב 50!','🏆 Messi unlocks with 3 World Cups — a box every 50 levels!'));
+      if(s.fs&&!owned)return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));
       if((s.rar|0)>=4&&!s.pow)return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));
       if(coins>=s.price){
         coins-=s.price;cat.ow.push(i);cat.setSel(i);
@@ -4627,14 +4672,16 @@ function grantTier(t){
   for(const tier of order){
     const cands=[];
     SKINS.forEach((it,i)=>{if((it.rar|0)===tier&&!it.pow&&!it.wc&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
-    WFX.forEach((it,i)=>{if((it.rar|0)===tier&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
+    WFX.forEach((it,i)=>{if((it.rar|0)===tier&&!it.fs&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
     DFX.forEach((it,i)=>{if((it.rar|0)===tier&&!dOw.includes(i))cands.push({k:'dfx',i,it});});
     if(!cands.length)continue;
     const c=cands[(Math.random()*cands.length)|0];
     if(c.k==='skin'){
       skinOwned.push(c.i);
-      return {icon:'🎨',label:tr(c.it.name,c.it.en||c.it.name),rar:tier,
+      const drop={icon:'🎨',label:tr(c.it.name,c.it.en||c.it.name),rar:tier,
         rv:{kind:'skin',idx:c.i,rar:tier,label:tr(c.it.name,c.it.en||c.it.name),story:loreOf(c.i)}};
+      if(c.it.face){const gfx=grantGoalFx();if(gfx)drop._extra=gfx;} // ⚽ +אפקט GOAL במתנה
+      return drop;
     }
     if(c.k==='wfx')wOw.push(c.i);else dOw.push(c.i);
     return {icon:c.it.icon,label:(c.k==='wfx'?tr('ניצחון: ','Victory: '):tr('מוות: ','Death: '))+tr(c.it.name,c.it.en||c.it.name),rar:tier,
@@ -4656,7 +4703,7 @@ function rollChest(){
     for(const[tier,pc] of DROP_PCT){acc+=pc*luck;if(r<acc){hit=tier;break;}}
     if(hit){
       const d=grantTier(hit);
-      if(d){drops.push(d);gotItem=true;continue;}
+      if(d){drops.push(d);if(d._extra)drops.push(d._extra);gotItem=true;continue;}
     }
     if(coinCap>=5){
       const m=Math.min(coinCap,5+((Math.random()*9)|0));
@@ -4694,7 +4741,10 @@ function checkMessi(){
   if(wcCups>=3&&!skinOwned.includes(MESSI_IDX)){
     skinOwned.push(MESSI_IDX);
     save();
-    setTimeout(()=>showReveal({kind:'skin',idx:MESSI_IDX,rar:5,label:tr('ליאו מסי','Leo Messi'),story:loreOf(MESSI_IDX)}),500);
+    setTimeout(()=>showReveal({kind:'skin',idx:MESSI_IDX,rar:5,label:tr('ליאו מסי','Leo Messi'),story:loreOf(MESSI_IDX)},()=>{
+      const gfx=grantGoalFx();
+      if(gfx){save();setTimeout(()=>showReveal(gfx.rv),400);}
+    }),500);
   }
 }
 function openChest(){
