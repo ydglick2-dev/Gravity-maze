@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v74</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v75</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -469,6 +469,10 @@
   <div class="row">
     <button class="btn sec" id="admUnlock" data-en="🔓 All levels">🔓 כל השלבים</button>
     <button class="btn sec" id="admSkins" data-en="🎨 All skins">🎨 כל הסקינים</button>
+  </div>
+  <div class="row">
+    <select class="tin" id="admSkinSel" style="max-width:180px"></select>
+    <button class="btn sec" id="admGiveSkin" data-en="🎨 Give this skin">🎨 תן סקין</button>
   </div>
   <div class="row">
     <input class="tin" id="admLevelDown" type="number" min="1" max="1000" value="10" style="max-width:100px">
@@ -3550,6 +3554,8 @@ function finishLevel(){
   const _ns=Math.max(0,got-(s.estars|0));
   eStars+=_ns;s.estars=(s.estars|0)+_ns;
   s.done=true;s.stars=Math.max(s.stars,got);
+  // ⏱ זמן-שיא נרשם לכל סיום אמיתי — כולל בדו-קרב (זה מקור האמת של "הושג באמת")
+  if(!s.best||lvTime<s.best)s.best=lvTime;
   if(troGain)addTro(troGain);
   const _le=logEv((levelIdx+1)%10===0?'bs':'lv',levelIdx+1,got);
   recStop(true,levelIdx+1,id=>{if(id){_le[4]=id;save();}});
@@ -3578,7 +3584,6 @@ function finishLevel(){
     const db=gLoadDB(),old=db[gk];
     if(!old||Math.round(lvTime*10)<old.t){db[gk]={t:Math.round(lvTime*10),p:gPack(ghostRec)};gSaveDB();}
   }
-  if(!s.best||lvTime<s.best)s.best=lvTime;
   const medal=medalFor(levelIdx,lvTime);
   const last=levelIdx+1>=LEVELS.length;
   $('medalBig').textContent=last?'🏆':medal;
@@ -3791,6 +3796,7 @@ function applySave(d){
     runBest=d.rb|0;
     if(d.co===undefined){ // מיגרציה: כלכלה ישנה → מטבעות
       coins=(d.tro|0)*8;gems=0;troLife=d.tro|0;troClaimed=(troLife/25)|0;chests=1;
+      eTro=troLife;eCo=coins; // ותיקים לא מוצגים כ-🏆0 בפרופיל/טבלאות
     }else{
       coins=d.co|0;gems=d.gm|0;troLife=d.tl|0;chests=d.ch|0;troClaimed=d.tc|0;
       eTro=d.et===undefined?(d.tl|0):(d.et|0); // שמירות ישנות: קירוב לפי גביעי-חיים
@@ -3813,15 +3819,16 @@ function applySave(d){
     friends=Array.isArray(d.fr)?d.fr.filter(x=>typeof x==='string').slice(0,50):[];
     gameLog=Array.isArray(d.lg)?d.lg.slice(0,30):[];
     customLevels=(d.cl&&typeof d.cl==='object'&&!Array.isArray(d.cl))?d.cl:{};
-    (d.s||[]).forEach((a,i)=>{if(!session[i])return;
+    (d.s||[]).forEach((a,i)=>{if(!session[i]||!Array.isArray(a))return;
       session[i].done=!!a[0];session[i].stars=a[1]|0;session[i].best=(a[2]|0)/10;
-      session[i].edone=a.length>3?!!a[3]:!!a[0]; // שמירות ישנות: קירוב לפי המצב הקיים
-      session[i].estars=a.length>4?a[4]|0:a[1]|0;});
-    if(d.edn===undefined){ // מכאן והלאה נספר רק משחק אמיתי
+      // שלב אמיתי = יש לו זמן-שיא. מרפא גם שמירות ישנות וגם כאלה שנופחו בעבר.
+      session[i].edone=!!a[0]&&(a[2]|0)>0;
+      session[i].estars=(a[2]|0)>0?(a.length>4?a[4]|0:a[1]|0):0;});
+    { // המונים תמיד נגזרים מהדגלים — ריפוי עצמי בכל טעינה
       let _ed=0,_es=0;
       session.forEach(s2=>{if(s2.edone)_ed++;_es+=s2.estars|0;});
       eDone=_ed;eStars=_es;
-    }else{eDone=d.edn|0;eStars=d.esn|0;}
+    }
     if(d.sens)SENS=d.sens/100;
     muted=!!d.mut;
     if(typeof d.nb==='number')neutB=d.nb;
@@ -3977,12 +3984,12 @@ WFX.push({name:'GOAL! קומיקס',en:'GOAL! Comic',icon:'🥅',price:0,rar:4,f
 const GOAL_FX_B=WFX.length;
 WFX.push({name:'גולללל מעופף',en:'Flying Goalll',icon:'⚽',price:0,rar:4,fs:1});
 /* ⚽ קיבלת סקין שחקן? מקבל גם אחד מאפקטי ה-GOAL במתנה */
-function grantGoalFx(){
+function grantGoalFx(noSelect){
   const pool=[GOAL_FX_A,GOAL_FX_B].filter(i=>!wOw.includes(i));
   if(!pool.length)return null;
   const idx=pool[(Math.random()*pool.length)|0];
   wOw.push(idx);
-  wSel=idx; // ⚽ נבחר אוטומטית — הניצחון הבא כבר עם GOAL!
+  if(!noSelect)wSel=idx; // ⚽ נבחר אוטומטית — הניצחון הבא כבר עם GOAL!
   return {icon:WFX[idx].icon,label:tr('ניצחון: ','Victory: ')+tr(WFX[idx].name,WFX[idx].en),rar:4,
     rv:{kind:'fx',icon:WFX[idx].icon,rar:4,label:tr(WFX[idx].name,WFX[idx].en),
         story:tr('אפקט ניצחון במתנה עם סקין השחקן! נבחר בחנות בלשונית אפקט ניצחון.','A free victory effect with your player skin!')}};
@@ -5352,21 +5359,28 @@ $('boardBtn').onclick=async()=>{
 $('boardBack').onclick=()=>{$('boardOv').classList.add('hidden');$('menuOv').classList.remove('hidden');};
 /* ============ 👥 חברים + 🏆 טבלאות (מבוסס על ענן המשתמשים) ============ */
 let regCache=null,regCacheAt=0;
-async function regCached(){
-  if(regCache&&Date.now()-regCacheAt<30000)return regCache;
+async function regCached(fresh){ // fresh=true — עוקף את מטמון 30 השניות
+  if(!fresh&&regCache&&Date.now()-regCacheAt<30000)return regCache;
   const d=await regFetch();
   if(d){regCache=d;regCacheAt=Date.now();}
   return d;
 }
 const esc=s=>String(s).replace(/</g,'&lt;');
 function statsOf(sv,name){
-  let done=0,stars=0;
-  if(sv&&Array.isArray(sv.s))for(const a of sv.s){if(a[0])done++;stars+=a[1]|0;}
+  let done=0,stars=0,doneR=0,starsR=0;
+  if(sv&&Array.isArray(sv.s))for(const a of sv.s){
+    if(!Array.isArray(a))continue; // רשומות פגומות מענן ישן לא מפילות את הטבלה
+    if(a[0])done++;stars+=a[1]|0;
+    // ✅⭐ אמיתי בלבד: שלב שהושלם במשחק תמיד קיבל זמן-שיא (a[2]) באותו רגע;
+    // סימון של אדמין — לא. לכן זמן-השיא הוא מקור האמת, לכל שמירה מכל גרסה.
+    const played=(a[2]|0)>0;
+    if(a[0]&&played)doneR++;
+    if(played)starsR+=(a.length>4?a[4]|0:a[1]|0); // a[4] = כוכבים שהושגו בפועל (v75+)
+  }
   return {name,tro:sv?sv.tro|0:0,co:sv?sv.co|0:0,
     et:sv?(sv.et===undefined?(sv.tl|0):(sv.et|0)):0, // הישגים אמיתיים בלבד
     ec:sv?(sv.ec===undefined?(sv.co|0):(sv.ec|0)):0,
-    edone:sv?(sv.edn===undefined?done:Math.min(sv.edn|0,done)):0, // ✅⭐ בלי מתנות אדמין, ולעולם לא יותר מהמצב הנוכחי
-    estars:sv?(sv.esn===undefined?stars:Math.min(sv.esn|0,stars)):0,
+    edone:doneR,estars:starsR,
     done,stars,has:!!sv};
 }
 function myLiveStats(){
@@ -5393,7 +5407,7 @@ async function buildFriends(){
     inner.style.cursor='pointer';
     inner.style.display='flex';inner.style.alignItems='center';inner.style.gap='10px';
     inner.innerHTML=avHTML(n,40)+'<div><b>'+esc(n)+' ▸</b><br><small>'+
-      (rec?('🏆 '+s.tro+' · 🪙 '+s.co+' · ✅ '+s.done+'/100 · ⭐ '+s.stars)
+      (rec?('🏆 '+(s.et||0)+' · 🪙 '+(s.ec||0)+' · ✅ '+(s.edone||0)+'/100 · ⭐ '+(s.estars||0))
           :tr('עוד לא סנכרן לענן','no cloud data yet'))+'</small></div>';
     inner.onclick=()=>showProfile(n,rec&&rec.sv,false); // 📖 כניסה לפרופיל וליומן
     row.appendChild(inner);
@@ -5451,7 +5465,8 @@ function logLine(e){
 function showProfile(name,sv,live){
   $('pfName').textContent='👤 '+esc(name);
   const s=live?myLiveStats():statsOf(sv,name);
-  $('pfStats').textContent='🏆 '+s.tro+' · 🪙 '+s.co+' · ✅ '+s.done+'/100 · ⭐ '+s.stars;
+  // 👤 בפרופיל מציגים רק הישגים אמיתיים — בלי מתנות אדמין (כמו בטבלאות)
+  $('pfStats').textContent='🏆 '+(s.et||0)+' · 🪙 '+(s.ec||0)+' · ✅ '+(s.edone||0)+'/100 · ⭐ '+(s.estars||0);
   const g=$('pfLog');g.innerHTML='';
   const lg=live?gameLog:((sv&&Array.isArray(sv.lg))?sv.lg:[]);
   if(!lg.length)g.innerHTML='<div style="color:#aeb8c8">'+tr('אין עדיין רישומים ביומן','No journal entries yet')+'</div>';
@@ -5477,15 +5492,17 @@ $('friendsBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('friendsOv').
 $('frBack').onclick=()=>{$('friendsOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 /* ---- טבלאות: עולמי / חברים × גביעים / מטבעות / שלבים / כוכבים ---- */
 let tbScope='world',tbMetric='tro';
-async function buildTables(){
+async function buildTables(fresh){
   $('tbWorld').className='chip'+(tbScope==='world'?' on':'');
   $('tbFriends').className='chip'+(tbScope==='fr'?' on':'');
   const mk={tro:'tbTro',co:'tbCoin',lvl:'tbLvl',star:'tbStar'};
   for(const k in mk)$(mk[k]).className='chip'+(tbMetric===k?' on':'');
   const g=$('tbList');
-  g.innerHTML='<div style="color:#aeb8c8">'+tr('טוען…','Loading…')+'</div>';
-  const d=await regCached();
-  if(!d){g.innerHTML='<div style="color:#aeb8c8">'+tr('הטבלאות דורשות אינטרנט','Leaderboards need internet')+'</div>';return;}
+  // ברענון רקע לא מוחקים את הרשימה הקיימת — בלי הבהוב ובלי איבוד גלילה
+  const hadRows=!!g.querySelector('.achRow');
+  if(!hadRows)g.innerHTML='<div style="color:#aeb8c8">'+tr('טוען…','Loading…')+'</div>';
+  const d=await regCached(fresh);
+  if(!d){if(!hadRows)g.innerHTML='<div style="color:#aeb8c8">'+tr('הטבלאות דורשות אינטרנט','Leaderboards need internet')+'</div>';return;}
   const me=myLiveStats();
   let rows=Object.keys(d.users).map(n=>
     (curUser&&n===curUser)?Object.assign(statsOf(d.users[n].sv,n),me,{name:n}):statsOf(d.users[n].sv,n));
@@ -5495,6 +5512,7 @@ async function buildTables(){
   const IC={tro:'🏆',co:'🪙',lvl:'✅',star:'⭐'}[tbMetric];
   rows.sort((a,b)=>V(b)-V(a));
   rows=rows.slice(0,30);
+  const _sc=g.scrollTop; // שומרים את הגלילה ברענון רקע
   g.innerHTML='';
   if(!rows.length){g.innerHTML='<div style="color:#aeb8c8">'+tr('אין נתונים עדיין','No data yet')+'</div>';return;}
   rows.forEach((r,i)=>{
@@ -5507,6 +5525,7 @@ async function buildTables(){
       '</small></div><span class="skPrice" style="color:#ffd257;font-weight:900">'+IC+' '+V(r)+'</span>';
     g.appendChild(row);
   });
+  g.scrollTop=_sc;
 }
 /* 🚫 אכיפת באן תוך כדי משחק/לובי */
 function enforceBan(b){
@@ -5671,7 +5690,9 @@ async function buildWatch(){
 $('watchRefresh').onclick=buildWatch;
 setInterval(()=>{if(!$('watchOv').classList.contains('hidden')&&!document.hidden)buildWatch();},15000);
 $('watchBack').onclick=()=>{$('watchOv').classList.add('hidden');$('adminOv').classList.remove('hidden');};
-$('tablesBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('tablesOv').classList.remove('hidden');buildTables();};
+$('tablesBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('tablesOv').classList.remove('hidden');buildTables(true);};
+/* 🔄 הטבלה חיה: מתרעננת מהשרת כל 20 שניות כל עוד היא פתוחה */
+setInterval(()=>{try{if(!$('tablesOv').classList.contains('hidden')&&!document.hidden)buildTables(true);}catch(e){}},20000);
 $('tbBack').onclick=()=>{$('tablesOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('tbWorld').onclick=()=>{tbScope='world';buildTables();};
 $('tbFriends').onclick=()=>{tbScope='fr';buildTables();};
@@ -5702,11 +5723,49 @@ if('serviceWorker' in navigator){
     }catch(e){}
   });
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
-    if(swRefreshed)return;swRefreshed=true;location.reload();
+    // רענון רק ברגע בטוח — גם כשה-SW הוחלף מטאב אחר (clients.claim תופס את כולם)
+    if(swRefreshed)return;
+    if(updSafe()){swRefreshed=true;location.reload();}
+    else updReloadPending=true; // נרענן כשנחזור ללובי
   });
+  setInterval(()=>{
+    if(updReloadPending&&!swRefreshed&&updSafe()){swRefreshed=true;location.reload();}
+  },5000);
 }
-function promptUpdate(sw){waitingSW=sw;$('updBtn').style.display='block';}
+function promptUpdate(sw){waitingSW=sw;$('updBtn').style.display='block';tryAutoUpdate();}
 $('updBtn').onclick=()=>{if(waitingSW)waitingSW.postMessage('SKIP_WAITING');};
+/* 🔄 עדכון אוטומטי: לא מחכים ללחיצה — הגרסה החדשה נכנסת לבד ברגע בטוח */
+let updReloadPending=false;
+function updSafe(){return !running&&!duelLive&&!chestBusy&&!conn;} // conn = חיבור מרוץ חי
+function tryAutoUpdate(){
+  if(!waitingSW||!updSafe())return;
+  const sw=waitingSW;waitingSW=null;
+  showToast(tr('🔄 מתקין גרסה חדשה…','🔄 Installing update…'));
+  setTimeout(()=>{ // בדיקה חוזרת ברגע הירי — אולי בינתיים נכנסנו לשלב
+    if(!updSafe()){waitingSW=sw;return;} // נחזור לנסות מהאינטרוול
+    try{sw.postMessage('SKIP_WAITING');}catch(e){} // → controllerchange (שומר בעצמו על רגע בטוח)
+  },700);
+}
+setInterval(tryAutoUpdate,15000); // אם היינו באמצע שלב — ננסה שוב כשנחזור ללובי
+/* בדיקת גרסה יזומה — גם כשהאפליקציה נשארת פתוחה ימים (אייפון במסך הבית):
+   כל חזרה לאפליקציה + כל 4 דקות בודקים אם יש גרסה חדשה בשרת */
+async function checkAppUpdate(){
+  try{const rg=await navigator.serviceWorker.getRegistration();if(rg)rg.update();}catch(e){}
+  try{ // גיבוי לסביבות בלי Service Worker: השוואת גרסה ורענון
+    if('serviceWorker' in navigator&&navigator.serviceWorker.controller)return; // ה-SW מטפל
+    const mine=((($('lbTitle')||{}).textContent||'').match(/v(\d+)/)||[])[1]|0;
+    if(!mine)return;
+    const r=await fetch('sw.js?u='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const srv=(((await r.text()).match(/maze-ultra-v(\d+)/))||[])[1]|0;
+    if(srv>mine&&updSafe()){
+      showToast(tr('🔄 גרסה חדשה — מתעדכן…','🔄 New version — updating…'));
+      setTimeout(()=>{if(updSafe())location.reload();},900); // בדיקה חוזרת ברגע הירי
+    }
+  }catch(e){}
+}
+setInterval(checkAppUpdate,240000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkAppUpdate,1500);});
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();deferredPrompt=e;
@@ -6080,6 +6139,12 @@ function applyGift(g,target){
     if(g.un)unlocked=LEVELS.length-1;
     if(g.unl)unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,(g.unl|0)-1));
     if(g.sk)skinOwned=SKINS.map((_,i)=>i);
+    if(Array.isArray(g.ski))g.ski.forEach(ix=>{ // 🎨 סקין ספציפי מהאדמין
+      ix|=0;const sk2=SKINS[ix];
+      if(!sk2||skinOwned.includes(ix))return;
+      skinOwned.push(ix);
+      if(sk2.face||sk2.wc)grantGoalFx(true); // סקין שחקן — גם אפקט GOAL כמו בתיבה (בלי לדרוס את האפקט שנבחר)
+    });
     if(g.st)session.forEach(s=>{s.done=true;s.stars=3;});
     try{checkAch();}catch(e){}
     return true;
@@ -6102,10 +6167,23 @@ function applyGift(g,target){
   if(g.un)d.un=LEVELS.length-1;
   if(g.unl)d.un=Math.max(d.un|0,Math.min(LEVELS.length-1,(g.unl|0)-1));
   if(g.sk)d.ow=SKINS.map((_,i)=>i);
+  if(Array.isArray(g.ski)){
+    d.ow=Array.isArray(d.ow)?d.ow:[0];
+    g.ski.forEach(ix=>{
+      ix|=0;const sk2=SKINS[ix];
+      if(!sk2||d.ow.includes(ix))return;
+      d.ow.push(ix);
+      if(sk2.face||sk2.wc){ // גם כאן: סקין שחקן מביא אפקט GOAL, כמו במסלול הרגיל
+        d.wo=Array.isArray(d.wo)&&d.wo.length?d.wo:[0];
+        const _p=[GOAL_FX_A,GOAL_FX_B].filter(i2=>!d.wo.includes(i2));
+        if(_p.length)d.wo.push(_p[(Math.random()*_p.length)|0]);
+      }
+    });
+  }
   if(g.st){ // לפני הניפוח: מקבעים את המונים האמיתיים, שהטבלאות ימשיכו להציג רק משחק אמיתי
-    if(d.edn===undefined){let _ed=0,_es=0;(d.s||[]).forEach(a=>{if(a&&a[0])_ed++;_es+=(a&&a[1])|0;});d.edn=_ed;d.esn=_es;}
+    if(d.edn===undefined){let _ed=0,_es=0;(d.s||[]).forEach(a=>{if(a&&a[0]&&(a[2]|0)>0){_ed++;_es+=a[1]|0;}});d.edn=_ed;d.esn=_es;}
     d.s=LEVELS.map((_,i)=>{const a=(d.s&&d.s[i])||[0,0,0];
-      return[1,3,a[2]||0,a.length>3?a[3]:(a[0]?1:0),a.length>4?a[4]|0:a[1]|0];});
+      return[1,3,a[2]||0,a.length>3?a[3]:(a[0]&&(a[2]|0)>0?1:0),a.length>4?a[4]|0:((a[2]|0)>0?a[1]|0:0)];});
   }
   try{st.setItem('mazeU_'+target,JSON.stringify(d));return true;}catch(e){return false;}
 }
@@ -6164,6 +6242,7 @@ async function admGive(g,label){
   if(g.dco)q.dco=(q.dco|0)+(g.dco|0);
   if(g.dgm)q.dgm=(q.dgm|0)+(g.dgm|0);
   if(g.un)q.un=1;if(g.sk)q.sk=1;if(g.st)q.st=1;
+  if(Array.isArray(g.ski))q.ski=[...new Set([...(Array.isArray(q.ski)?q.ski:[]),...g.ski.map(n=>n|0)])].slice(0,64);
   if(g.unl)q.unl=Math.max(q.unl|0,g.unl|0);
   if(g.dnl)q.dnl=g.dnl|0;
   if(g.clv)q.clv=g.clv;
@@ -7157,6 +7236,14 @@ $('adminBtn').onclick=async()=>{
   // 🌍 אבחון חיבור לענן — כדי שיהיה ברור מיד אם שירות הרישום נפל
   $('admBackend').value=BACKEND;
   try{admSeaCur();}catch(e){}
+  try{ // 🎨 רשימת הסקינים לבחירה — נבנית פעם אחת
+    const sel=$('admSkinSel');
+    if(!sel.options.length)SKINS.forEach((sk,i)=>{
+      const o=document.createElement('option');
+      o.value=i;o.textContent=sk.name+' · '+(RAR[sk.rar|0]||RAR[0]).n;
+      sel.appendChild(o);
+    });
+  }catch(e){}
   $('admNet').textContent=tr('🌍 בודק חיבור…','🌍 Checking…');
   const d=await regFetch();
   $('admNet').textContent=d
@@ -7217,6 +7304,10 @@ $('admGiveLevel').onclick=()=>{
   admGive({unl:n},'פתיחה עד שלב '+n);
 };
 $('admSkins').onclick=()=>admGive({sk:1},'כל הסקינים');
+$('admGiveSkin').onclick=()=>{
+  const i=$('admSkinSel').value|0;
+  admGive({ski:[i]},tr('סקין ','skin ')+(SKINS[i]?SKINS[i].name:i));
+};
 $('admStars').onclick=()=>admGive({st:1},'3★ בהכל');
 $('admAll').onclick=()=>admGive({tro:Math.max(1,$('admTro').value|0),co:Math.max(1,$('admCoins').value|0),ch:Math.max(1,$('admChests').value|0),gm:Math.max(1,$('admGems').value|0),un:1,sk:1,st:1},'החבילה המלאה');
 $('authLogin').onclick=()=>doAuth(false);

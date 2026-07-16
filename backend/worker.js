@@ -220,6 +220,7 @@ export class Registry {
       if (g.un) q.un = 1;
       if (g.sk) q.sk = 1;
       if (g.st) q.st = 1;
+      if (Array.isArray(g.ski)) q.ski = [...new Set([...(Array.isArray(q.ski) ? q.ski : []), ...g.ski.map(n => n | 0)])].slice(0, 64);
       if (g.unl) q.unl = Math.max(q.unl | 0, g.unl | 0);
       if (g.dnl) q.dnl = g.dnl | 0;
       if (g.clv) q.clv = g.clv;
