@@ -205,7 +205,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v51</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v52</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -4858,10 +4858,22 @@ function enforceBan(b){
 let summonCode='';
 function showSummon(s){
   summonCode=s.code||'';
-  $('summonTxt').textContent=(s.from||tr('האדמין','Admin'))+' '+tr('מזמין אותך לדו-קרב עכשיו! לחיצה אחת ואתם בפנים ⚔','challenges you to a duel now! One tap and you are in ⚔');
-  $('summonOv').classList.remove('hidden');
+  if(!summonCode)return;
+  // שיגור מיידי — בלי לשאול: עוצרים כל מה שרץ ונכנסים ישר לדו-קרב
+  showToast('🚀 '+(s.from||tr('האדמין','Admin'))+' '+tr('שיגר אותך לדו-קרב!','launched you into a duel!'));
   sfx.win();
   if(navigator.vibrate)navigator.vibrate([40,60,40]);
+  if(running){running=false;paused=false;runMode=false;duelLive=false;hushRoll();recStop(false);$('raceBar').style.display='none';}
+  OVS.forEach(id=>{if(id!=='raceOv')$(id).classList.add('hidden');});
+  loadPeer(()=>{
+    resetLobby();
+    $('raceOv').classList.remove('hidden');
+    $('raceName').value=myName||curUser||'';
+    $('lvChoose').style.display='none';
+    $('lvJoinPanel').style.display='flex';
+    $('lvCodeIn').value=summonCode;
+    $('lvConnect').onclick();
+  });
 }
 $('summonGo').onclick=()=>{
   $('summonOv').classList.add('hidden');

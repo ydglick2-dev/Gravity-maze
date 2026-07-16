@@ -135,12 +135,27 @@ export class Registry {
 
     if (p === '/api/doc' && req.method === 'GET') { await this.tdbSync(); return J(d); }
 
-    // תאימות לאחור: כתיבת מסמך מלא (משמש למעט מסלולים ישנים כמו matchmaking)
+    // תאימות לאחור: כתיבת מסמך מלא (משמש למעט מסלולים ישנים כמו matchmaking).
+    // מחטאים מפתחות (שמות עם תווים סמויים ממכשירים ישנים) ולא נותנים לכתיבה
+    // מיושנת למחוק משתמשים קיימים (?force=1 עוקף — לתחזוקת אדמין בלבד).
     if (p === '/api/doc' && req.method === 'POST') {
       if (!b || !b.users) return J({ err: 'bad' }, 400);
+      for (const sect of ['users', 'gifts', 'summon', 'bans', 'live']) {
+        const m = b[sect] || {};
+        const out = {};
+        for (const k0 in m) {
+          const k = cleanName(k0);
+          if (!k) continue;
+          if (out[k] && sect === 'users') {
+            const a = out[k], c = m[k0];
+            out[k] = (this.score(c && c.sv) > this.score(a && a.sv)) ? c : a;
+          } else out[k] = m[k0];
+        }
+        b[sect] = out;
+      }
+      if (url.searchParams.get('force') !== '1')
+        for (const k in d.users) if (!b.users[k]) b.users[k] = d.users[k];
       this.doc = b;
-      for (const k of ['users', 'gifts', 'summon', 'bans', 'live'])
-        if (!this.doc[k]) this.doc[k] = {};
       await this.saveDoc();
       return J({ ok: 1 });
     }
