@@ -163,6 +163,7 @@
     text-align:center; color:#c8d2e0; font-size:13px; z-index:10; pointer-events:none;
     text-shadow:0 1px 4px rgba(0,0,0,.95); opacity:.92; padding:0 18px; }
   .glowy { animation: glowy 2.2s ease-in-out infinite; }
+  @keyframes boxspin { to { rotate:360deg; } }
   @keyframes glowy {
     0%,100% { box-shadow:0 0 0 rgba(245,197,24,0); }
     50% { box-shadow:0 0 18px rgba(245,197,24,.55); }
@@ -216,7 +217,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v55</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v56</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -283,7 +284,7 @@
   </div>
   <div class="row">
     <button class="btn sec" id="chestBtn" data-en="🎁 Chests">🎁 תיבות</button>
-    <button class="btn sec glowy" id="wheelBtn" data-en="🎡 Lucky Wheel">🎡 גלגל המזל</button>
+    <button class="btn sec glowy" id="scratchBtn" data-en="🎟 Scratch Card">🎟 כרטיס גירוד</button>
     <button class="btn sec" id="skinBtn" data-en="🎨 Skins">🎨 סקינים</button>
   </div>
   <div class="row">
@@ -310,7 +311,9 @@
 </div>
 
 <div id="boxOv" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(3,5,9,.96);flex-direction:column;align-items:center;justify-content:center;gap:10px">
-  <canvas id="boxCv" width="340" height="430" style="max-width:92vw;touch-action:manipulation"></canvas>
+  <div id="boxRays" style="display:none;position:absolute;inset:0;margin:auto;width:640px;height:640px;border-radius:50%;animation:boxspin 9s linear infinite;pointer-events:none"></div>
+  <canvas id="boxCv" width="340" height="430" style="position:relative;max-width:92vw;touch-action:manipulation"></canvas>
+  <canvas id="boxCv3" width="340" height="430" style="display:none;position:relative;max-width:92vw;touch-action:manipulation"></canvas>
   <div id="boxHint" style="font-weight:900;font-size:20px;color:#ffd257;text-shadow:0 2px 10px rgba(0,0,0,.6)"></div>
 </div>
 <div id="revealOv" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(3,5,9,.96);flex-direction:column;align-items:center;justify-content:center;gap:6px">
@@ -320,17 +323,18 @@
   <p id="rvStory" class="sub" style="max-width:310px;text-align:center;margin:4px 14px;min-height:34px"></p>
   <p id="rvHint" class="sub" style="opacity:.7"></p>
 </div>
-<div class="overlay hidden" id="wheelOv">
-  <h1>🎡 <span data-en="Lucky Wheel">גלגל המזל</span></h1>
-  <p class="sub" id="wheelSub"></p>
-  <canvas id="wheelCv" width="300" height="300" style="max-width:78vw;max-height:78vw;filter:drop-shadow(0 8px 26px rgba(0,0,0,.55))"></canvas>
-  <div class="row">
-    <button class="btn" id="wheelSpin" data-en="🎡 SPIN!">🎡 סובב!</button>
-    <button class="btn sec" id="wheelBack" data-en="⬅ Menu">⬅ תפריט</button>
+<div class="overlay hidden" id="scratchOv">
+  <h1>🎟 <span data-en="Scratch Card">כרטיס גירוד</span></h1>
+  <p class="sub" id="scSub"></p>
+  <div style="position:relative;width:min(320px,84vw);aspect-ratio:16/10;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.55)">
+    <canvas id="scPrize" width="320" height="200" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+    <canvas id="scCv" width="320" height="200" style="position:absolute;inset:0;width:100%;height:100%;touch-action:none"></canvas>
   </div>
-  <p class="sub" id="wheelMsg" style="min-height:22px"></p>
+  <p class="sub" id="scMsg" style="min-height:22px"></p>
+  <div class="row"><button class="btn sec" id="scBack" data-en="⬅ Menu">⬅ תפריט</button></div>
 </div>
 <canvas id="cfx" style="display:none;position:fixed;inset:0;z-index:200;pointer-events:none"></canvas>
+<div id="boxFlash" style="display:none;position:fixed;inset:0;background:#fff;z-index:66;pointer-events:none"></div>
 <div class="overlay hidden" id="adminOv" style="z-index:55;background:rgba(8,10,18,.95)">
   <h1 data-en="🛠 Admin">🛠 אדמין</h1>
   <div id="admNet" style="font-size:12.5px;font-weight:800;color:#aeb8c8">🌍 …</div>
@@ -2633,7 +2637,7 @@ function drawBall(T){
 /* ============ ⚽ לובי תלת-ממד: מגרש כדורגל ============ */
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','wheelOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -4484,8 +4488,9 @@ function grantTier(t){
 }
 function rollChest(){
   const drops=[];
-  const n=30+((Math.random()*50)|0);
-  addCoins(n);drops.push({icon:'🪙',label:'+'+n,rar:0});
+  let coinCap=30; // 🪙 מקסימום 30 מטבעות מתיבה — כלכלה מאוזנת
+  const n=10+((Math.random()*13)|0);
+  addCoins(n);coinCap-=n;drops.push({icon:'🪙',label:'+'+n,rar:0});
   if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
   let gotItem=false;
   for(let s2=0;s2<2;s2++){
@@ -4497,8 +4502,12 @@ function rollChest(){
       const d=grantTier(hit);
       if(d){drops.push(d);gotItem=true;continue;}
     }
-    const big=Math.random()<.35, m=big?(120+((Math.random()*140)|0)):(40+((Math.random()*60)|0));
-    addCoins(m);drops.push({icon:big?'💰':'🪙',label:'+'+m,rar:big?1:0});
+    if(coinCap>=5){
+      const m=Math.min(coinCap,5+((Math.random()*9)|0));
+      addCoins(m);coinCap-=m;drops.push({icon:'🪙',label:'+'+m,rar:0});
+    }else{
+      gems+=1;drops.push({icon:'💎',label:'+1',rar:1});
+    }
   }
   pity=gotItem?0:pity+1;
   return drops;
@@ -4522,7 +4531,162 @@ if(!CanvasRenderingContext2D.prototype.roundRect){ // מכשירים ישנים
     this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
     this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};
 }
-function playBoxOpen(mx,cb){
+/* 📦 טעינת three.js לפי דרישה לתיבה (ללובי יש טוען משלו) */
+function threeForBox(cb){
+  if(typeof THREE!=='undefined')return cb(true);
+  const sc2=document.createElement('script');
+  sc2.src='three.min.js';
+  sc2.onload=()=>cb(typeof THREE!=='undefined');
+  sc2.onerror=()=>cb(false);
+  document.head.appendChild(sc2);
+}
+function playBoxOpen(mx,cb){ // תלת-ממד כשאפשר, דו-ממד כגיבוי
+  threeForBox(ok=>{
+    let used=false;
+    if(ok){try{used=playBoxOpen3D(mx,cb);}catch(e){used=false;}}
+    if(!used){
+      $('boxCv3').style.display='none';$('boxRays').style.display='none';
+      $('boxCv').style.display='block';
+      playBoxOpen2D(mx,cb);
+    }
+  });
+}
+let box3R=null;
+function playBoxOpen3D(mx,cb){
+  const cv=$('boxCv3');
+  if(!box3R){
+    try{
+      box3R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+      box3R.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+      box3R.setSize(340,430,false);
+    }catch(e){box3R=null;}
+  }
+  if(!box3R)return false;
+  const ov=$('boxOv'),col=(RAR[mx|0]||RAR[0]).c;
+  ov.style.display='flex';
+  $('boxCv').style.display='none';cv.style.display='block';
+  const rays=$('boxRays');
+  rays.style.display='block';
+  rays.style.opacity=.18;
+  rays.style.background='repeating-conic-gradient('+col+'40 0 11deg,transparent 11deg 36deg)';
+  $('boxHint').textContent='';
+  const sc=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(42,340/430,.1,60);
+  cam.position.set(0,1.5,4.7);cam.lookAt(0,.1,0);
+  sc.add(new THREE.AmbientLight(0xffffff,.6));
+  const dl=new THREE.DirectionalLight(0xffffff,.95);dl.position.set(2.5,4,3);sc.add(dl);
+  const rim=new THREE.DirectionalLight(0x88aaff,.35);rim.position.set(-3,2,-2);sc.add(rim);
+  const inner=new THREE.PointLight(new THREE.Color(col),0,8);inner.position.set(0,.4,0);sc.add(inner);
+  const grp=new THREE.Group();sc.add(grp);
+  const M=(c,mt,rg)=>new THREE.MeshStandardMaterial({color:c,metalness:mt===undefined?.25:mt,roughness:rg===undefined?.55:rg});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.05,1.15),M(0x4a3f9e));grp.add(body);
+  const band=new THREE.Mesh(new THREE.BoxGeometry(1.74,.18,1.19),M(0xffc93c,.75,.3));band.position.y=.16;grp.add(band);
+  const band2=band.clone();band2.position.y=-.2;grp.add(band2);
+  const lock=new THREE.Mesh(new THREE.CylinderGeometry(.17,.17,.1,24),M(0xffc93c,.85,.25));
+  lock.rotation.x=Math.PI/2;lock.position.set(0,-.02,.62);grp.add(lock);
+  const lidG=new THREE.Group();lidG.position.set(0,.52,-.58);grp.add(lidG);
+  const lid=new THREE.Mesh(new THREE.BoxGeometry(1.78,.22,1.27),M(0x5a4cc0));lid.position.set(0,.11,.58);lidG.add(lid);
+  const lidTrim=new THREE.Mesh(new THREE.BoxGeometry(1.82,.09,1.31),M(0xffc93c,.75,.3));lidTrim.position.set(0,.25,.58);lidG.add(lidTrim);
+  const coinGeo=new THREE.CylinderGeometry(.095,.095,.032,14);
+  const coinMat=M(0xffd257,.85,.22);
+  const coinsA=[];
+  let taps=0,shake=0,tease=false,burstT=0,dropT=0,landed=false,run=true,raf=0;
+  cv.onpointerdown=()=>{
+    if(!run||!landed||tease||burstT)return;
+    taps++;shake=1;
+    tone(120-taps*16,.12,'square',.5);
+    tone(560+taps*170,.05,'triangle',.22);
+    if(navigator.vibrate)navigator.vibrate(28+taps*16);
+    inner.intensity=taps*1.6;
+    rays.style.opacity=(.18+taps*.16).toFixed(2);
+    lidG.rotation.x=-taps*.09;
+    $('boxHint').textContent=taps===1?tr('עוד פעמיים!','Two more!'):taps===2?tr('עוד אחת!!','One more!!'):'';
+    if(taps>=3){
+      const burst=()=>{
+        burstT=.0001;$('boxHint').textContent='';
+        sfx.win();confetti(mx>=3?170:95);
+        for(let i=0;i<24;i++){
+          const c2=new THREE.Mesh(coinGeo,coinMat);
+          c2.position.set(0,.45,0);
+          c2.rotation.set(Math.random()*3,Math.random()*3,0);
+          c2._v={x:(Math.random()-.5)*3.4,y:3+Math.random()*3.2,z:(Math.random()-.3)*2.2,
+                 rx:(Math.random()-.5)*10,rz:(Math.random()-.5)*10};
+          sc.add(c2);coinsA.push(c2);
+        }
+        const fl=$('boxFlash');fl.style.display='block';fl.style.opacity=.95;
+        if(navigator.vibrate)navigator.vibrate(mx>=3?[70,50,70,50,120]:[60,40,80]);
+        tone(90,.25,'square',.5);setTimeout(()=>tone(1046,.2,'sine',.35),80);
+      };
+      if(mx>=3){
+        tease=true;
+        $('boxHint').textContent=tr('רגע... יש כאן משהו מיוחד! ✨','Wait... something special! ✨');
+        let i2=0;
+        const tz=setInterval(()=>{tone(380+i2*130,.09,'sine',.3);i2++;},110);
+        setTimeout(()=>{clearInterval(tz);tease=false;burst();},1050);
+      }else burst();
+    }
+  };
+  let last=performance.now();
+  const cleanup=()=>{
+    run=false;cancelAnimationFrame(raf);
+    cv.onpointerdown=null;
+    ov.style.display='none';rays.style.display='none';
+    $('boxFlash').style.display='none';
+    sc.traverse(o=>{if(o.geometry)o.geometry.dispose();});
+    coinGeo.dispose();
+  };
+  const loop=now=>{
+    if(!run)return;
+    const dt=Math.min(.05,(now-last)/1000);last=now;
+    const t=now/1000;
+    if(!landed){ // 🪂 נפילה מלמעלה
+      dropT+=dt;
+      const k=Math.min(1,dropT/.55);
+      grp.position.y=4.2*(1-k*k);
+      if(k>=1){
+        landed=true;shake=1;
+        tone(70,.2,'square',.6);
+        if(navigator.vibrate)navigator.vibrate(70);
+        $('boxHint').textContent=tr('הקש על התיבה!','Tap the box!');
+      }
+    }
+    if(shake>0){
+      shake=Math.max(0,shake-dt*3);
+      grp.rotation.z=Math.sin(t*55)*.09*shake;
+      grp.scale.y=1-.14*shake*Math.abs(Math.sin(t*30));
+      grp.scale.x=1+.1*shake*Math.abs(Math.sin(t*30));
+    }else if(!burstT){grp.rotation.z*=.9;grp.scale.set(1,1,1);}
+    if(landed&&!burstT)grp.rotation.y=Math.sin(t*.8)*.14;
+    if(tease){
+      inner.intensity=4.5+Math.sin(t*22)*2.2;
+      grp.position.x=(Math.random()-.5)*.05;
+      grp.position.y=(Math.random()-.5)*.04;
+    }
+    if(burstT){
+      burstT+=dt;
+      inner.intensity=Math.max(2,9-burstT*4);
+      lidG.rotation.x-=dt*7;
+      lidG.position.y+=dt*(4.5-burstT*3);
+      lidG.position.z-=dt*2.2;
+      cam.position.x=Math.sin(t*70)*.05*Math.max(0,.6-burstT);
+      const fl=$('boxFlash');
+      fl.style.opacity=Math.max(0,.95-burstT*1.6);
+      if(burstT>.6)fl.style.display='none';
+      for(const c2 of coinsA){
+        c2.position.x+=c2._v.x*dt;c2.position.y+=c2._v.y*dt;c2.position.z+=c2._v.z*dt;
+        c2._v.y-=9.5*dt;
+        c2.rotation.x+=c2._v.rx*dt;c2.rotation.z+=c2._v.rz*dt;
+        if(c2.position.y<-1.05&&c2._v.y<0)c2._v.y*=-.45;
+      }
+      if(burstT>1.5){cleanup();cb();return;}
+    }
+    box3R.render(sc,cam);
+    raf=requestAnimationFrame(loop);
+  };
+  raf=requestAnimationFrame(loop);
+  return true;
+}
+function playBoxOpen2D(mx,cb){
   const ov=$('boxOv'),cv=$('boxCv'),g=cv.getContext('2d');
   const col=(RAR[mx|0]||RAR[0]).c;
   ov.style.display='flex';
@@ -4832,7 +4996,7 @@ function logLine(e){
    case 'ch':return['🎁',tr('פתח תיבה','Opened a chest')];
    case 'rn':return['🏃',tr('שיא ריצה חדש: ','New run record: ')+v+tr(' מ׳',' m')];
    case 'ac':{const a=ACH.find(x=>x.id===v);return['🏅',tr('הישג: ','Achievement: ')+(a?tr(a.name,a.en?a.en[0]:a.name):'')];}
-   case 'wh':return['🎡',tr('גלגל המזל: זכה ב-','Lucky wheel: won ')+(v||'')];
+   case 'wh':return['🎟',tr('כרטיס גירוד: זכה ב-','Scratch card: won ')+(v||'')];
   }
   return['•',String(t)];
 }
@@ -5934,120 +6098,138 @@ function confetti(n){
     requestAnimationFrame(step);
   }catch(e){}
 }
-/* 🎡 גלגל המזל — סיבוב חינם פעם ביום, סיבוב נוסף ב-150 מטבעות */
-const WHEEL=[
-  {t:'co',v:50, c:'#2563eb',l:'🪙50'},
-  {t:'gm',v:6,  c:'#7c3aed',l:'💎6'},
-  {t:'sk',v:0,  c:'#0d9488',l:'🎨?'},
-  {t:'tro',v:5, c:'#d97706',l:'🏆5'},
-  {t:'co',v:30, c:'#334155',l:'🪙30'},
-  {t:'ch',v:1,  c:'#db2777',l:'🎁1'},
-  {t:'co',v:200,c:'#16a34a',l:'🪙200'},
-  {t:'jp',v:500,c:'#eab308',l:'⭐500'}];
-const WHEEL_W=[18,12,8,11,20,9,15,3];
-const SPIN_COST=150;
-let wheelAng=0,wheelBusy=false;
-const wheelFree=()=>wheelD!==new Date().toDateString();
-function drawWheel(){
-  const cv=$('wheelCv'),g=cv.getContext('2d');
-  const R=cv.width/2,seg=Math.PI*2/WHEEL.length;
-  g.clearRect(0,0,cv.width,cv.height);
-  g.save();g.translate(R,R);g.rotate(wheelAng);
-  for(let i=0;i<WHEEL.length;i++){
-    g.beginPath();g.moveTo(0,0);
-    g.arc(0,0,R-6,i*seg,(i+1)*seg);g.closePath();
-    g.fillStyle=WHEEL[i].c;g.fill();
-    g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=2;g.stroke();
-    g.save();g.rotate(i*seg+seg/2);
-    g.textAlign='center';g.textBaseline='middle';
-    g.font='700 21px system-ui';g.fillStyle='#fff';
-    g.fillText(WHEEL[i].l,R*.62,0);
-    g.restore();
+/* 🎟 כרטיס גירוד — אחד בחינם בכל יום. הפרס נקבע מראש, מגרדים לגלות! */
+const SC_PRIZES=[
+ {t:'co',v:20,w:18,ic:'🪙',bg:'#1d4ed8'},
+ {t:'co',v:30,w:20,ic:'🪙',bg:'#0d9488'},
+ {t:'co',v:50,w:12,ic:'💰',bg:'#16a34a'},
+ {t:'gm',v:3, w:18,ic:'💎',bg:'#7c3aed'},
+ {t:'gm',v:6, w:12,ic:'💎',bg:'#9333ea'},
+ {t:'gm',v:10,w:6, ic:'💎',bg:'#c026d3'},
+ {t:'ch',v:1, w:8, ic:'🎁',bg:'#db2777'},
+ {t:'sk',v:0, w:6, ic:'🎨',bg:'#ea580c'}];
+const scratchFree=()=>wheelD!==new Date().toDateString();
+let scratchStarted=false,scratchRevealed=false,scratchRv=null,scErased=0;
+function scratchUiSync(){
+  $('scratchBtn').classList.toggle('glowy',scratchFree());
+  $('scSub').textContent=scratchFree()
+    ?tr('🎁 כרטיס חינם מחכה לך היום — גרדו אותו!','🎁 A free card awaits today — scratch it!')
+    :tr('הכרטיס של היום נוצל · כרטיס חדש מחר!','Today\'s card is used · a new one tomorrow!');
+}
+function pickScratch(){
+  let tw=0;for(const p2 of SC_PRIZES)tw+=p2.w;
+  let r=Math.random()*tw;
+  let pk=SC_PRIZES[0];
+  for(const p2 of SC_PRIZES){r-=p2.w;if(r<=0){pk=p2;break;}}
+  if(pk.t==='sk'){ // 🎨 סקין נדיר — ו-0.5% שדרוג לאדיר!
+    const epic=Math.random()<.005;
+    let pool=[];
+    SKINS.forEach((it,i2)=>{if((it.rar|0)===(epic?3:1)&&!it.pow&&!skinOwned.includes(i2))pool.push(i2);});
+    if(!pool.length)SKINS.forEach((it,i2)=>{if((it.rar|0)===1&&!it.pow&&!skinOwned.includes(i2))pool.push(i2);});
+    if(pool.length){
+      const idx=pool[(Math.random()*pool.length)|0];
+      return {t:'sk',idx,ic:'🎨',bg:'#ea580c',label:tr(SKINS[idx].name,SKINS[idx].en||SKINS[idx].name)};
+    }
+    return {t:'co',v:40,ic:'💰',bg:'#16a34a',label:'+40 🪙'};
   }
-  g.restore();
-  g.beginPath();g.arc(R,R,26,0,7);g.fillStyle='#0f172a';g.fill();
-  g.strokeStyle='#f5c518';g.lineWidth=3;g.stroke();
-  g.font='20px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText('🎡',R,R+1);
-  g.beginPath();g.moveTo(R-13,8);g.lineTo(R+13,8);g.lineTo(R,34);g.closePath();
-  g.fillStyle='#f5c518';g.fill();g.strokeStyle='#0f172a';g.lineWidth=2;g.stroke();
+  return Object.assign({label:'+'+pk.v+' '+pk.ic},pk);
 }
-function wheelUiSync(){
-  $('wheelSub').textContent=wheelFree()
-    ?tr('🎁 סיבוב חינם מחכה לך היום!','🎁 A free spin awaits you today!')
-    :tr('סיבוב נוסף: ','Extra spin: ')+SPIN_COST+' 🪙 ('+tr('יש לך ','you have ')+coins+')';
-  $('wheelSpin').textContent=wheelFree()?tr('🎡 סובב חינם!','🎡 Free spin!'):('🎡 '+tr('סובב','Spin')+' ('+SPIN_COST+'🪙)');
-  $('wheelBtn').classList.toggle('glowy',wheelFree());
+function scDrawUsed(){
+  const g=$('scPrize').getContext('2d');
+  g.clearRect(0,0,320,200);
+  g.fillStyle='#1a2230';g.fillRect(0,0,320,200);
+  g.font='44px system-ui';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('⏳',160,80);
+  g.fillStyle='#aeb8c8';g.font='700 17px system-ui';
+  g.fillText(tr('חזרו מחר לכרטיס חדש!','Come back tomorrow!'),160,135);
+  $('scCv').getContext('2d').clearRect(0,0,320,200);
 }
-$('wheelBtn').onclick=()=>{
+function scInit(){
+  scratchStarted=false;scratchRevealed=false;scratchRv=null;scErased=0;
+  $('scMsg').textContent='';
+  scratchUiSync();
+  if(!scratchFree()){scDrawUsed();return;}
+  const prize=pickScratch();
+  $('scCv')._prize=prize;
+  const pg=$('scPrize').getContext('2d');
+  const grd=pg.createLinearGradient(0,0,320,200);
+  grd.addColorStop(0,prize.bg);grd.addColorStop(1,'#0c1220');
+  pg.fillStyle=grd;pg.fillRect(0,0,320,200);
+  pg.font='64px system-ui';pg.textAlign='center';pg.textBaseline='middle';
+  pg.fillText(prize.ic,160,78);
+  pg.fillStyle='#fff';pg.font='900 26px system-ui';
+  pg.shadowColor='rgba(0,0,0,.55)';pg.shadowBlur=8;
+  pg.fillText(prize.label,160,148);pg.shadowBlur=0;
+  // שכבת הכיסוי
+  const g=$('scCv').getContext('2d');
+  g.globalCompositeOperation='source-over';
+  const cg=g.createLinearGradient(0,0,320,200);
+  cg.addColorStop(0,'#8d99aa');cg.addColorStop(.5,'#c9d3de');cg.addColorStop(1,'#78848f');
+  g.fillStyle=cg;g.fillRect(0,0,320,200);
+  g.fillStyle='rgba(255,255,255,.35)';
+  for(let k=0;k<40;k++)g.fillRect(Math.random()*320,Math.random()*200,2,2);
+  g.fillStyle='#3a4656';g.font='900 22px system-ui';g.textAlign='center';g.textBaseline='middle';
+  g.fillText(tr('🪙 גרדו כאן! 🪙','🪙 Scratch here! 🪙'),160,100);
+}
+function scAward(prize){ // הפרס נזקף כבר בגירוד הראשון — גם אם סוגרים באמצע
+  wheelD=new Date().toDateString();
+  let msg=prize.label;
+  if(prize.t==='co')coins+=prize.v;
+  else if(prize.t==='gm')gems+=prize.v;
+  else if(prize.t==='ch')chests+=prize.v;
+  else if(prize.t==='sk'){
+    skinOwned.push(prize.idx);
+    scratchRv={kind:'skin',idx:prize.idx,rar:SKINS[prize.idx].rar|0,label:prize.label,story:loreOf(prize.idx)};
+  }
+  logEv('wh',msg);
+  save();refreshTro();scratchUiSync();
+}
+function scFinish(){
+  if(scratchRevealed)return;
+  scratchRevealed=true;
+  $('scCv').getContext('2d').clearRect(0,0,320,200);
+  const prize=$('scCv')._prize;
+  $('scMsg').textContent=tr('זכית: ','You won: ')+prize.label+' 🎉';
+  confetti(prize.t==='sk'?150:90);
+  sfx.win();
+  if(navigator.vibrate)navigator.vibrate([40,60,40]);
+  if(scratchRv)setTimeout(()=>showReveal(scratchRv),500);
+}
+function scErase(e){
+  if(!scratchFree()&&!scratchStarted)return;
+  if(scratchRevealed)return;
+  const cv=$('scCv'),rc=cv.getBoundingClientRect();
+  const x=(e.clientX-rc.left)*(320/rc.width),y=(e.clientY-rc.top)*(200/rc.height);
+  if(!scratchStarted){scratchStarted=true;scAward(cv._prize);}
+  const g=cv.getContext('2d');
+  g.globalCompositeOperation='destination-out';
+  g.beginPath();g.arc(x,y,20,0,TAU);g.fill();
+  if((++scErased)%10===0){
+    tone(180+Math.random()*60,.03,'triangle',.12);
+    const d2=g.getImageData(0,0,320,200).data;
+    let left=0;
+    for(let k=3;k<d2.length;k+=64)left+=d2[k]>50?1:0;
+    if(left/(d2.length/64)<.42)scFinish();
+  }
+}
+{
+  const cv=$('scCv');
+  let dn=false;
+  cv.onpointerdown=e=>{dn=true;cv.setPointerCapture&&cv.setPointerCapture(e.pointerId);scErase(e);};
+  cv.onpointermove=e=>{if(dn)scErase(e);};
+  cv.onpointerup=cv.onpointercancel=()=>{dn=false;};
+}
+$('scratchBtn').onclick=()=>{
   $('menuOv').classList.add('hidden');
-  $('wheelOv').classList.remove('hidden');
-  $('wheelMsg').textContent='';
-  drawWheel();wheelUiSync();syncLobbyUI();
+  $('scratchOv').classList.remove('hidden');
+  scInit();syncLobbyUI();
 };
-$('wheelBack').onclick=()=>{
-  if(wheelBusy)return;
-  $('wheelOv').classList.add('hidden');
+$('scBack').onclick=()=>{
+  $('scratchOv').classList.add('hidden');
   $('menuOv').classList.remove('hidden');
   syncLobbyUI();
 };
-$('wheelSpin').onclick=()=>{
-  if(wheelBusy)return;
-  const free=wheelFree();
-  if(!free&&coins<SPIN_COST){
-    $('wheelMsg').textContent=tr('אין מספיק מטבעות 🙈 (צריך ','Not enough coins 🙈 (need ')+SPIN_COST+')';
-    tone(180,.14,'sawtooth',.25);
-    return;
-  }
-  if(free)wheelD=new Date().toDateString();else coins-=SPIN_COST;
-  wheelBusy=true;$('wheelMsg').textContent='';
-  // בחירה משוקללת — הקופה הגדולה נדירה
-  let tw=0;for(const w of WHEEL_W)tw+=w;
-  let r=Math.random()*tw,pick=0;
-  for(let i=0;i<WHEEL_W.length;i++){r-=WHEEL_W[i];if(r<=0){pick=i;break;}}
-  const seg=Math.PI*2/WHEEL.length;
-  // המצביע למעלה (−90°): מסובבים כך שאמצע הפרוסה הנבחרת יעצור שם
-  const target=-Math.PI/2-(pick*seg+seg/2)+(Math.random()-.5)*seg*.5;
-  const from=wheelAng%(Math.PI*2);
-  const total=Math.PI*2*(4+(Math.random()*2|0))+((target-from)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
-  const t0=performance.now(),dur=3600;
-  let lastSeg=-1;
-  const anim=now=>{
-    const k=Math.min(1,(now-t0)/dur);
-    const e=1-Math.pow(1-k,3);
-    wheelAng=from+total*e;
-    const cur=Math.floor(((-Math.PI/2-wheelAng)/seg%WHEEL.length+WHEEL.length))%WHEEL.length;
-    if(cur!==lastSeg){lastSeg=cur;tone(560+cur*22,.03,'square',.12);}
-    drawWheel();
-    if(k<1){requestAnimationFrame(anim);return;}
-    const p2=WHEEL[pick];
-    let msg='',rvAfter=null;
-    if(p2.t==='sk'){ // 🎨 סקין מהגלגל: נדיר — ו-0.5% שדרוג לסקין אדיר!
-      const epic=Math.random()<.005;
-      let pool=[];
-      SKINS.forEach((it,i2)=>{if((it.rar|0)===(epic?3:1)&&!it.pow&&!skinOwned.includes(i2))pool.push(i2);});
-      if(!pool.length&&epic)SKINS.forEach((it,i2)=>{if((it.rar|0)===1&&!it.pow&&!skinOwned.includes(i2))pool.push(i2);});
-      if(pool.length){
-        const idx=pool[(Math.random()*pool.length)|0];
-        skinOwned.push(idx);
-        msg=tr(SKINS[idx].name,SKINS[idx].en||SKINS[idx].name)+' 🎨';
-        rvAfter={kind:'skin',idx,rar:SKINS[idx].rar|0,label:tr(SKINS[idx].name,SKINS[idx].en||SKINS[idx].name),story:loreOf(idx)};
-      }else{coins+=150;msg='+150 🪙';}
-    }
-    else if(p2.t==='co'||p2.t==='jp'){coins+=p2.v;msg='+'+p2.v+' 🪙';}
-    else if(p2.t==='gm'){gems+=p2.v;msg='+'+p2.v+' 💎';}
-    else if(p2.t==='ch'){chests+=p2.v;msg='+'+p2.v+' 🎁';}
-    else if(p2.t==='tro'){addTro(p2.v);msg='+'+p2.v+' 🏆';}
-    logEv('wh',msg);
-    save();refreshTro();wheelUiSync();
-    $('wheelMsg').textContent=(p2.t==='jp'?tr('💥 הקופה הגדולה!!! ','💥 JACKPOT!!! '):tr('זכית: ','You won: '))+msg;
-    confetti(p2.t==='jp'?200:110);
-    sfx.win();
-    if(navigator.vibrate)navigator.vibrate(p2.t==='jp'?[60,60,60,60,120]:[40,70]);
-    wheelBusy=false;
-    if(rvAfter)setTimeout(()=>showReveal(rvAfter),450);
-  };
-  requestAnimationFrame(anim);
-};
+setInterval(scratchUiSync,60000);scratchUiSync();
 $('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה אוטומטית לכל השחקנים
   const url=($('admBackend').value||'').trim().replace(/\/+$/,'');
   if(!url){ // שדה ריק = ניתוק מהשרת
