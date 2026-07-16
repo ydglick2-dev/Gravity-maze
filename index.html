@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v73</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v74</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -3544,6 +3544,11 @@ function finishLevel(){
   const s=session[levelIdx];
   const firstClear=!s.done; // 🏆 גביעים על סיום ראשון — מזין את מסלול הגביעים (תיבה כל 25)
   const troGain=firstClear?(((levelIdx+1)%10===0)?3:1):0;
+  // ✅⭐ מונים "אמיתיים" לטבלאות: נספרים לפי דגל נפרד לכל שלב, כך שגם אחרי
+  // שהאדמין סימן הכל כהושלם — סיום אמיתי של שלב עדיין נספר
+  if(!s.edone){eDone++;s.edone=true;}
+  const _ns=Math.max(0,got-(s.estars|0));
+  eStars+=_ns;s.estars=(s.estars|0)+_ns;
   s.done=true;s.stars=Math.max(s.stars,got);
   if(troGain)addTro(troGain);
   const _le=logEv((levelIdx+1)%10===0?'bs':'lv',levelIdx+1,got);
@@ -3732,7 +3737,7 @@ function logEv(ty,a,b2){
   save();
   return e;
 }
-let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0,wheelD='',wcCups=0;
+let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,eDone=0,eStars=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0,wheelD='',wcCups=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false,raceFrom=1,raceTo=5,duelFrom=1,duelTo=5,duelCur=1,duelOppLv=1,summonAuto=false;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
@@ -3755,10 +3760,10 @@ function saveBlob(){
   while(last>0&&!session[last].done&&!session[last].stars&&!session[last].best)last--;
   return {v:2,t:Date.now(),un:unlocked,tro:trophies,nm:myName,dl:dailyLast,
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
-    co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,et:eTro,ec:eCo,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
+    co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,et:eTro,ec:eCo,edn:eDone,esn:eStars,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
     ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,
     la:lossAcc,gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
-    s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
+    s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10),x.edone?1:0,x.estars|0]),
     lg:gameLog.slice(0,30),
     cl:customLevels,
     sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity,psn:passN,psp:passP,psc:passC,wcc:wcCups};
@@ -3809,7 +3814,14 @@ function applySave(d){
     gameLog=Array.isArray(d.lg)?d.lg.slice(0,30):[];
     customLevels=(d.cl&&typeof d.cl==='object'&&!Array.isArray(d.cl))?d.cl:{};
     (d.s||[]).forEach((a,i)=>{if(!session[i])return;
-      session[i].done=!!a[0];session[i].stars=a[1]|0;session[i].best=(a[2]|0)/10;});
+      session[i].done=!!a[0];session[i].stars=a[1]|0;session[i].best=(a[2]|0)/10;
+      session[i].edone=a.length>3?!!a[3]:!!a[0]; // שמירות ישנות: קירוב לפי המצב הקיים
+      session[i].estars=a.length>4?a[4]|0:a[1]|0;});
+    if(d.edn===undefined){ // מכאן והלאה נספר רק משחק אמיתי
+      let _ed=0,_es=0;
+      session.forEach(s2=>{if(s2.edone)_ed++;_es+=s2.estars|0;});
+      eDone=_ed;eStars=_es;
+    }else{eDone=d.edn|0;eStars=d.esn|0;}
     if(d.sens)SENS=d.sens/100;
     muted=!!d.mut;
     if(typeof d.nb==='number')neutB=d.nb;
@@ -5353,12 +5365,14 @@ function statsOf(sv,name){
   return {name,tro:sv?sv.tro|0:0,co:sv?sv.co|0:0,
     et:sv?(sv.et===undefined?(sv.tl|0):(sv.et|0)):0, // הישגים אמיתיים בלבד
     ec:sv?(sv.ec===undefined?(sv.co|0):(sv.ec|0)):0,
+    edone:sv?(sv.edn===undefined?done:Math.min(sv.edn|0,done)):0, // ✅⭐ בלי מתנות אדמין, ולעולם לא יותר מהמצב הנוכחי
+    estars:sv?(sv.esn===undefined?stars:Math.min(sv.esn|0,stars)):0,
     done,stars,has:!!sv};
 }
 function myLiveStats(){
   let done=0,stars=0;
   for(const s of session){if(s.done)done++;stars+=s.stars;}
-  return {name:curUser||myName||tr('אני','me'),tro:trophies,co:coins,et:eTro,ec:eCo,done,stars,me:true};
+  return {name:curUser||myName||tr('אני','me'),tro:trophies,co:coins,et:eTro,ec:eCo,edone:Math.min(eDone,done),estars:Math.min(eStars,stars),done,stars,me:true};
 }
 async function buildFriends(){
   $('frMsg').textContent='';
@@ -5477,7 +5491,7 @@ async function buildTables(){
     (curUser&&n===curUser)?Object.assign(statsOf(d.users[n].sv,n),me,{name:n}):statsOf(d.users[n].sv,n));
   if(!curUser||!d.users[curUser])rows.push(me);
   if(tbScope==='fr')rows=rows.filter(r=>r.me||friends.includes(r.name));
-  const V={tro:r=>r.et||0,co:r=>r.ec||0,lvl:r=>r.done,star:r=>r.stars}[tbMetric]; // 🏆🪙 = אמיתי בלבד, בלי מתנות אדמין
+  const V={tro:r=>r.et||0,co:r=>r.ec||0,lvl:r=>r.edone||0,star:r=>r.estars||0}[tbMetric]; // כל המדדים = אמיתי בלבד, בלי מתנות אדמין
   const IC={tro:'🏆',co:'🪙',lvl:'✅',star:'⭐'}[tbMetric];
   rows.sort((a,b)=>V(b)-V(a));
   rows=rows.slice(0,30);
@@ -5489,7 +5503,7 @@ async function buildTables(){
     if(r.me)row.style.boxShadow='inset 0 0 0 2px #ffd25777';
     row.innerHTML='<span style="min-width:30px;font-weight:900">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</span>'
       +avHTML(r.name,38)
-      +'<div style="flex:1"><b>'+esc(r.name)+(r.me?' <span style="color:#7ae0ff">('+tr('אתם!','you!')+')</span>':'')+'</b><br><small>🏆 '+r.tro+' · 🪙 '+r.co+' · ✅ '+r.done+' · ⭐ '+r.stars+
+      +'<div style="flex:1"><b>'+esc(r.name)+(r.me?' <span style="color:#7ae0ff">('+tr('אתם!','you!')+')</span>':'')+'</b><br><small>🏆 '+r.tro+' · 🪙 '+r.co+' · ✅ '+(r.edone||0)+' · ⭐ '+(r.estars||0)+
       '</small></div><span class="skPrice" style="color:#ffd257;font-weight:900">'+IC+' '+V(r)+'</span>';
     g.appendChild(row);
   });
@@ -6041,12 +6055,12 @@ document.addEventListener('visibilitychange',()=>{
   if(document.hidden&&cloudDirty&&curUser)cloudPush(); // דחיפה אחרונה כשעוזבים
 });
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
-  unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;
+  unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;eDone=0;eStars=0;
   dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;wcCups=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
   stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];customLevels={};
-  session.forEach(s=>{s.done=false;s.stars=0;s.best=0;});
+  session.forEach(s=>{s.done=false;s.stars=0;s.best=0;s.edone=false;s.estars=0;});
   cloudForce=true; // שהאיפוס ינצח את שומר-הדריסה של הענן
   refreshTro();
 }
@@ -6088,7 +6102,11 @@ function applyGift(g,target){
   if(g.un)d.un=LEVELS.length-1;
   if(g.unl)d.un=Math.max(d.un|0,Math.min(LEVELS.length-1,(g.unl|0)-1));
   if(g.sk)d.ow=SKINS.map((_,i)=>i);
-  if(g.st)d.s=LEVELS.map((_,i)=>{const a=(d.s&&d.s[i])||[0,0,0];return[1,3,a[2]||0];});
+  if(g.st){ // לפני הניפוח: מקבעים את המונים האמיתיים, שהטבלאות ימשיכו להציג רק משחק אמיתי
+    if(d.edn===undefined){let _ed=0,_es=0;(d.s||[]).forEach(a=>{if(a&&a[0])_ed++;_es+=(a&&a[1])|0;});d.edn=_ed;d.esn=_es;}
+    d.s=LEVELS.map((_,i)=>{const a=(d.s&&d.s[i])||[0,0,0];
+      return[1,3,a[2]||0,a.length>3?a[3]:(a[0]?1:0),a.length>4?a[4]|0:a[1]|0];});
+  }
   try{st.setItem('mazeU_'+target,JSON.stringify(d));return true;}catch(e){return false;}
 }
 async function admGive(g,label){
