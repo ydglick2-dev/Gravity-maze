@@ -217,7 +217,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v57</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v58</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -275,7 +275,6 @@
   </div>
   <div class="row">
     <button class="btn sec" id="dailyBtn" data-en="🎲 Daily Challenge">🎲 אתגר יומי</button>
-    <button class="btn sec glowy" id="eventBtn" data-en="🎪 Event">🎪 אירוע</button>
     <button class="btn sec" id="questBtn" data-en="📜 Quests">📜 קווסטים</button>
     <button class="btn sec" id="boardBtn" data-en="🌍 Leaderboard">🌍 שיאים</button>
   </div>
@@ -311,21 +310,6 @@
   </div>
 </div>
 
-<div class="overlay hidden" id="eventOv">
-  <div id="evIc" style="font-size:64px;line-height:1"></div>
-  <h1 id="evName"></h1>
-  <p class="sub" id="evDesc" style="max-width:320px;text-align:center"></p>
-  <div style="width:min(280px,74vw);height:14px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden">
-    <div id="evBar" style="height:100%;width:0;background:linear-gradient(90deg,#ffd257,#ff9e4d);transition:width .4s"></div>
-  </div>
-  <div id="evProg" style="font-weight:800"></div>
-  <div id="evRew" style="color:#ffd257;font-weight:800"></div>
-  <p class="sub" id="evTimer"></p>
-  <div class="row">
-    <button class="btn" id="evPlay"></button>
-    <button class="btn sec" id="evBack" data-en="⬅ Menu">⬅ תפריט</button>
-  </div>
-</div>
 <div id="boxOv" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(3,5,9,.96);flex-direction:column;align-items:center;justify-content:center;gap:10px">
   <div id="boxRays" style="display:none;position:absolute;inset:0;margin:auto;width:640px;height:640px;border-radius:50%;animation:boxspin 9s linear infinite;pointer-events:none"></div>
   <canvas id="boxCv" width="340" height="430" style="position:relative;max-width:92vw;touch-action:manipulation"></canvas>
@@ -1660,7 +1644,7 @@ function updateHud(){
   const lives=Math.max(0,3-lvDeaths);
   const where=customLv?'🎲':(levelIdx+1)+'/'+LEVELS.length;
   $('hudInfo').textContent=
-    (evOn?EV().ic+' ':'')+'❤️'.repeat(lives)+'🤍'.repeat(3-lives)+' · ★'+got+'/'+tot+' · '+where+' · '+
+    '❤️'.repeat(lives)+'🤍'.repeat(3-lives)+' · ★'+got+'/'+tot+' · '+where+' · '+
     (gotOrientation?'📡':(touchMode?'👆':'⏳'));
 }
 
@@ -1891,9 +1875,8 @@ function physics(dt,t){
   if(comboT>0){comboT-=dt;if(comboT<=0)comboN=0;}
 
   const scale=md()/400,lv=L();
-  const evm=(evOn&&EV().mod==='mirror')?-1:1; // 🙃 אירוע עולם הפוך
-  ball.vx+=effX()*2800*scale*dt*evm;
-  ball.vy+=effY()*2800*scale*dt*evm;
+  ball.vx+=effX()*2800*scale*dt;
+  ball.vy+=effY()*2800*scale*dt;
   // fans
   for(const f of(lv.fans||[])){
     const r=R([f.x,f.y,f.w,f.h]);
@@ -2311,14 +2294,6 @@ function draw(t){
     }
   }
   drawBall(T);
-  if(evOn&&EV().mod==='dark'&&running&&!runMode){ // 🌑 אירוע אפילה
-    ctx.save();
-    const vr=ball.r*8;
-    const vg=ctx.createRadialGradient(ball.x,ball.y,vr*.42,ball.x,ball.y,vr);
-    vg.addColorStop(0,'rgba(2,3,6,0)');vg.addColorStop(1,'rgba(2,3,6,.965)');
-    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
-    ctx.restore();
-  }
   drawShocks();
   if(perfectT>0){
     ctx.save();
@@ -2662,7 +2637,7 @@ function drawBall(T){
 /* ============ ⚽ לובי תלת-ממד: מגרש כדורגל ============ */
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','eventOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -3294,7 +3269,6 @@ function finishLevel(){
   $('doneText').textContent=txt;
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('לשלב הבא','Next Level');
   addDailyWin();
-  evOnWin(got); // 🎪 התקדמות אירוע היום
   checkAch();
   save();
   if(!customLv&&(levelIdx+1)%10===0){
@@ -3458,7 +3432,7 @@ function saveBlob(){
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
     lg:gameLog.slice(0,30),
     cl:customLevels,
-    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity,evd:evD,evp:evP,evc:evC?1:0};
+    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity};
 }
 function save(){
   const st=store();
@@ -3476,7 +3450,7 @@ function load(){
 function applySave(d){
   try{
     unlocked=Math.min(LEVELS.length-1,d.un|0);
-    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';pity=d.py|0;evD=d.evd||'';evP=d.evp|0;evC=!!d.evc;
+    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';pity=d.py|0;
     skinOwned=Array.isArray(d.ow)?d.ow.filter(n=>n>=0&&n<SKINS.length):[0];
     if(!skinOwned.includes(0))skinOwned.unshift(0);
     skinSel=skinOwned.includes(d.sk|0)?(d.sk|0):0;
@@ -5023,7 +4997,6 @@ function logLine(e){
    case 'rn':return['🏃',tr('שיא ריצה חדש: ','New run record: ')+v+tr(' מ׳',' m')];
    case 'ac':{const a=ACH.find(x=>x.id===v);return['🏅',tr('הישג: ','Achievement: ')+(a?tr(a.name,a.en?a.en[0]:a.name):'')];}
    case 'wh':return['🎟',tr('כרטיס גירוד: זכה ב-','Scratch card: won ')+(v||'')];
-   case 'evt':return['🎪',tr('השלים אירוע מיוחד! ','Completed a special event! ')+(v||'')];
   }
   return['•',String(t)];
 }
@@ -5617,7 +5590,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;
-  dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;evD='';evP=0;evC=false;
+  dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
   stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];customLevels={};
@@ -6257,95 +6230,6 @@ $('scBack').onclick=()=>{
   syncLobbyUI();
 };
 setInterval(scratchUiSync,60000);scratchUiSync();
-/* 🎪 אירועים מיוחדים — אירוע חדש בכל יום, לכולם אותו אירוע (נגזר מהתאריך) */
-const EVENTS=[
- {id:'mir',ic:'🙃',n:'עולם הפוך',en:'Upside Down',d:'השליטה הפוכה! נצחו 3 שלבים במצב אירוע',den:'Controls are reversed! Win 3 levels in event mode',mod:'mirror',t:3,rew:{gm:15}},
- {id:'spd',ic:'⚡',n:'ספידראן',en:'Speedrun',d:'נצחו 3 שלבים במצב אירוע — כל אחד בפחות מ-45 שניות',den:'Win 3 levels in event mode — each under 45s',mod:null,t:3,rew:{gm:12}},
- {id:'drk',ic:'🌑',n:'אפילה',en:'Blackout',d:'חושך מוחלט — רואים רק סביב הכדור. נצחו 3 שלבים',den:'Total darkness — you only see around the ball. Win 3 levels',mod:'dark',t:3,rew:{gm:12,ch:1}},
- {id:'str',ic:'⭐',n:'ציד כוכבים',en:'Star Hunt',d:'אספו 9 כוכבים בניצחונות היום (נספר תמיד!)',den:'Collect 9 stars in wins today (always counts!)',mod:null,t:9,rew:{gm:10,ch:1}},
- {id:'nof',ic:'🛡',n:'בלי ליפול',en:'No-Fall',d:'נצחו 4 שלבים במצב אירוע בלי אף נפילה',den:'Win 4 levels in event mode with zero falls',mod:null,t:4,rew:{gm:20}},
- {id:'ace',ic:'🎯',n:'צלף',en:'Sharpshooter',d:'נצחו 3 שלבים במצב אירוע עם 3 כוכבים מלאים',den:'Win 3 levels in event mode with all 3 stars',mod:null,t:3,rew:{gm:10,ch:1}}];
-const evDayN=()=>Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/864e5);
-const EV=()=>EVENTS[evDayN()%EVENTS.length];
-let evOn=false,evD='',evP=0,evC=false;
-function evSyncDay(){
-  const d2=String(evDayN());
-  if(evD!==d2){evD=d2;evP=0;evC=false;evOn=false;}
-}
-function evTimeLeft(){
-  const now=new Date(),mid=new Date(now);
-  mid.setHours(24,0,0,0);
-  const ms=mid-now;
-  return ((ms/36e5)|0)+tr('ש ','h ')+(((ms%36e5)/6e4)|0)+tr('ד','m');
-}
-function evRewardTxt(ev){
-  const r=ev.rew,p2=[];
-  if(r.gm)p2.push(r.gm+'💎');if(r.ch)p2.push(r.ch+'🎁');if(r.co)p2.push(r.co+'🪙');
-  return p2.join(' + ');
-}
-function evUiSync(){
-  evSyncDay();
-  const ev=EV();
-  $('eventBtn').classList.toggle('glowy',!evC);
-  $('evIc').textContent=ev.ic;
-  $('evName').textContent='🎪 '+tr(ev.n,ev.en);
-  $('evDesc').textContent=tr(ev.d,ev.den);
-  $('evRew').textContent=tr('פרס: ','Reward: ')+evRewardTxt(ev);
-  $('evTimer').textContent=tr('אירוע חדש בעוד ','New event in ')+evTimeLeft();
-  $('evProg').textContent=evC?tr('✅ הושלם! הפרס אצלך','✅ Done! Reward collected'):evP+'/'+ev.t;
-  $('evBar').style.width=Math.min(100,evP/ev.t*100)+'%';
-  $('evPlay').textContent=evC?tr('נתראה מחר! 🎪','See you tomorrow! 🎪')
-    :(evOn?tr('⏸ כבה מצב אירוע','⏸ Event mode off'):tr('🎪 שחק באירוע!','🎪 Play the event!'));
-}
-$('eventBtn').onclick=()=>{
-  $('menuOv').classList.add('hidden');
-  $('eventOv').classList.remove('hidden');
-  evUiSync();syncLobbyUI();
-};
-$('evBack').onclick=()=>{
-  $('eventOv').classList.add('hidden');
-  $('menuOv').classList.remove('hidden');
-  syncLobbyUI();
-};
-$('evPlay').onclick=async()=>{
-  evSyncDay();
-  if(evC)return $('evBack').onclick();
-  if(evOn){evOn=false;evUiSync();return;}
-  evOn=true;
-  initAudio();await enableSensors();
-  $('eventOv').classList.add('hidden');
-  startRun(Math.min(unlocked,LEVELS.length-1));
-  showToast(EV().ic+' '+tr('מצב אירוע פעיל!','Event mode on!'));
-};
-function evOnWin(stars){
-  evSyncDay();
-  if(evC||customLv)return;
-  const ev=EV();
-  let inc=0;
-  if(ev.id==='str')inc=stars; // כוכבים נספרים גם בלי מצב אירוע
-  else{
-    if(!evOn)return;
-    if(ev.mod)inc=1; // עולם הפוך / אפילה — עצם הניצחון במצב הקשה
-    else if(ev.id==='spd')inc=lvTime<45?1:0;
-    else if(ev.id==='nof')inc=lvDeaths===0?1:0;
-    else if(ev.id==='ace')inc=stars>=3?1:0;
-  }
-  if(!inc)return;
-  evP+=inc;
-  if(evP<ev.t){
-    showToast(ev.ic+' '+tr('אירוע: ','Event: ')+Math.min(evP,ev.t)+'/'+ev.t);
-    return;
-  }
-  evP=ev.t;evC=true;evOn=false;
-  const r=ev.rew;
-  if(r.gm)gems+=r.gm;if(r.ch)chests+=r.ch;if(r.co)coins+=r.co;
-  logEv('evt',ev.ic+' +'+evRewardTxt(ev));
-  confetti(150);sfx.win();
-  showToast('🎪 '+tr('האירוע הושלם! ','Event complete! ')+'+'+evRewardTxt(ev));
-  if(navigator.vibrate)navigator.vibrate([50,60,50,60,110]);
-}
-setInterval(()=>{if(!$('eventOv').classList.contains('hidden'))evUiSync();},30000);
-setTimeout(evUiSync,1500);
 $('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה אוטומטית לכל השחקנים
   const url=($('admBackend').value||'').trim().replace(/\/+$/,'');
   if(!url){ // שדה ריק = ניתוק מהשרת
