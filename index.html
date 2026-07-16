@@ -24,7 +24,7 @@
   @media (pointer:coarse){
     .overlay { backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
       background:
-        radial-gradient(62% 42% at 50% 0%, rgba(110,80,255,.16), transparent 62%),
+        radial-gradient(62% 42% at 50% 0%, var(--gl,rgba(110,80,255,.16)), transparent 62%),
         linear-gradient(rgba(80,100,220,.06) 1px, transparent 1px),
         linear-gradient(90deg, rgba(80,100,220,.06) 1px, transparent 1px),
         linear-gradient(180deg,#0b0f2b,#070919) !important;
@@ -38,7 +38,7 @@
   .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
     justify-content:flex-start; gap:16px;
     background:
-      radial-gradient(62% 42% at 50% 0%, rgba(110,80,255,.16), transparent 62%),
+      radial-gradient(62% 42% at 50% 0%, var(--gl,rgba(110,80,255,.16)), transparent 62%),
       linear-gradient(rgba(80,100,220,.06) 1px, transparent 1px),
       linear-gradient(90deg, rgba(80,100,220,.06) 1px, transparent 1px),
       linear-gradient(180deg, rgba(11,15,43,.9), rgba(6,8,24,.92));
@@ -61,7 +61,7 @@
   .big { font-size:56px; filter:drop-shadow(0 0 16px rgba(255,200,110,.5)); }
 
   .btn { border:none; border-radius:999px; padding:15px 42px; font-size:19px; font-weight:900;
-    color:#1b1430; background:linear-gradient(180deg,#ffd257,#ffb020);
+    color:#1b1430; background:linear-gradient(180deg,var(--g1,#ffd257),var(--g2,#ffb020));
     box-shadow:0 8px 26px rgba(255,176,32,.35), inset 0 1px 0 rgba(255,255,255,.55);
     cursor:pointer; }
   .btn.sec { color:#e7ecf6; background:rgba(255,255,255,.07);
@@ -129,7 +129,7 @@
   .achRow.got { opacity:1; box-shadow:inset 0 0 0 1.5px rgba(255,210,87,.5); }
   .achRow div { flex:1; } .achRow small { color:#aeb8c8; }
   .qBarWrap { height:6px; border-radius:99px; background:rgba(255,255,255,.12); margin:4px 0; overflow:hidden; }
-  .qBar { height:100%; border-radius:99px; background:linear-gradient(90deg,#ffd257,#ffab3d); transition:width .3s; }
+  .qBar { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--g1,#ffd257),var(--g2,#ffab3d)); transition:width .3s; }
   #chestStage { position:relative; width:170px; height:150px; display:flex; align-items:center; justify-content:center; }
   #chestRays { position:absolute; inset:-45px; border-radius:50%;
     background:repeating-conic-gradient(rgba(255,215,120,.35) 0 12deg, transparent 12deg 30deg);
@@ -183,7 +183,7 @@
     text-align:center; color:#c8d2e0; font-size:13px; z-index:10; pointer-events:none;
     text-shadow:0 1px 4px rgba(0,0,0,.95); opacity:.92; padding:0 18px; }
   #menuOv h1, #lbTitle {
-    background:linear-gradient(90deg,#39d7ff,#8b7bff,#ff4fd8);
+    background:linear-gradient(90deg,var(--t1,#39d7ff),var(--t2,#8b7bff),var(--t3,#ff4fd8));
     -webkit-background-clip:text; background-clip:text;
     color:transparent; -webkit-text-fill-color:transparent;
     filter:drop-shadow(0 2px 14px rgba(110,90,255,.35));
@@ -245,7 +245,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v61</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v62</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -325,7 +325,7 @@
     <span style="font-size:20px">🎫</span>
     <div style="flex:1">
       <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800"><span id="mpbT"></span><span id="mpbBadge" style="color:#ff4fd8"></span></div>
-      <div style="height:8px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:3px"><div id="mpbBar" style="height:100%;width:0;background:linear-gradient(90deg,#ffd257,#ff9e4d)"></div></div>
+      <div style="height:8px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:3px"><div id="mpbBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--g1,#ffd257),var(--g2,#ff9e4d))"></div></div>
     </div>
   </div>
   <div id="menuDaily" style="font-size:12px;color:#8fe3a2;font-weight:800"></div>
@@ -355,7 +355,7 @@
       <span id="psTier"></span><span id="psPts"></span>
     </div>
     <div style="height:14px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:4px">
-      <div id="psBar" style="height:100%;width:0;background:linear-gradient(90deg,#ffd257,#ff9e4d);transition:width .4s"></div>
+      <div id="psBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--g1,#ffd257),var(--g2,#ff9e4d));transition:width .4s"></div>
     </div>
   </div>
   <button class="btn" id="psClaim" style="display:none" data-en="🎁 Collect rewards!">🎁 אסוף פרסים!</button>
@@ -400,6 +400,11 @@
     <input class="tin" id="admSeaName" maxlength="20" placeholder="שם העונה" data-en-ph="Season name" style="max-width:140px">
     <button class="btn sec" id="admSeaSet" data-en="🎫 Switch season">🎫 החלף עונה</button>
     <button class="btn sec" id="admSeaAuto" data-en="🔄 Auto">🔄 אוטומטי</button>
+  </div>
+  <div class="row" style="flex-wrap:wrap;align-items:center">
+    <button class="chip" id="admSeaBall">⚽ ערכת כדורגל</button>
+    <button class="chip" id="admSeaUp">🖼 העלאת קובץ עיצוב</button>
+    <input type="file" id="admSeaFile" accept=".json,application/json" style="display:none">
   </div>
   <div id="admSeaCur" style="font-size:12px;color:#aeb8c8"></div>
   <div class="row" style="display:none">
@@ -6322,19 +6327,35 @@ let passN=0,passP=0,passC=0;
    והפס של כולם מתאפס ומתחיל מחדש. בלי — עונה אוטומטית לפי חודש. */
 let seasonOv=null;
 try{seasonOv=JSON.parse(localStorage.getItem('mazeSeason')||'null');}catch(e){}
+function applySeasonTheme(th){ // 🖼 ערכת העיצוב של העונה — צבעי המשחק מתחלפים אצל כולם
+  const r=document.documentElement.style;
+  const set=(k,v)=>{if(v&&typeof v==='string'&&v.length<48)r.setProperty(k,v);else r.removeProperty(k);};
+  th=th||{};
+  set('--g1',th.g1);set('--g2',th.g2);
+  set('--t1',th.t1);set('--t2',th.t2);set('--t3',th.t3);
+  set('--gl',th.gl);
+}
+function normTheme(t){
+  if(!t||typeof t!=='object')return undefined;
+  const o={};
+  for(const k of ['g1','g2','t1','t2','t3','gl','ic'])if(typeof t[k]==='string')o[k]=t[k].slice(0,48);
+  return Object.keys(o).length?o:undefined;
+}
 function adoptSeason(sv2){
-  const nw=(sv2&&sv2.n)?{n:sv2.n|0,name:String(sv2.name||'').slice(0,20)}:null;
+  const nw=(sv2&&sv2.n)?{n:sv2.n|0,name:String(sv2.name||'').slice(0,20),th:normTheme(sv2.th)}:null;
   if(JSON.stringify(seasonOv)===JSON.stringify(nw))return;
   seasonOv=nw;
   try{localStorage.setItem('mazeSeason',JSON.stringify(nw));}catch(e){}
+  applySeasonTheme(nw&&nw.th);
   passSync();passUiBtn();menuPassSync();
   if(!$('passOv').classList.contains('hidden'))buildPass();
-  if(nw)showToast('🎉 '+tr('עונה חדשה: ','New season: ')+(nw.name||tr('עונה ','Season ')+nw.n)+'!');
+  if(nw)showToast('🎉 '+tr('עונה חדשה: ','New season: ')+((nw.th&&nw.th.ic)||'')+' '+(nw.name||tr('עונה ','Season ')+nw.n)+'!');
 }
 function seasonLabel(){
-  if(seasonOv)return seasonOv.name||tr('עונה ','Season ')+seasonOv.n;
+  if(seasonOv)return ((seasonOv.th&&seasonOv.th.ic)?seasonOv.th.ic+' ':'')+(seasonOv.name||tr('עונה ','Season ')+seasonOv.n);
   return tr('עונה ','Season ')+(passSeasonId()-PASS_BASE+1);
 }
+setTimeout(()=>applySeasonTheme(seasonOv&&seasonOv.th),50); // הערכה חלה כבר בטעינה
 const passSeasonId=()=>seasonOv&&seasonOv.n
   ?100000+(seasonOv.n|0)
   :(()=>{const d2=new Date();return d2.getFullYear()*12+d2.getMonth();})();
@@ -6451,6 +6472,37 @@ setTimeout(passUiBtn,1500);
 function admSeaCur(){
   $('admSeaCur').textContent=tr('עונה נוכחית: ','Current season: ')+seasonLabel()+(seasonOv?' 👑':tr(' (אוטומטית לפי חודש)',' (automatic monthly)'));
 }
+/* 🖼 ערכות עיצוב לעונות: האדמין מעלה קובץ (JSON) או בוחר ערכה — וזה מחליף
+   את צבעי המשחק אצל כל השחקנים יחד עם העונה. */
+const SEASON_PACKS={
+  football:{ic:'⚽',t1:'#5be469',t2:'#c3f45c',t3:'#ffd257',gl:'rgba(52,199,89,.22)'}
+};
+let admSeaTh=null;
+$('admSeaBall').onclick=()=>{
+  admSeaTh=SEASON_PACKS.football;
+  if(!$('admSeaName').value)$('admSeaName').value='איוונט כדורגל';
+  applySeasonTheme(admSeaTh); // תצוגה מקדימה אצל האדמין
+  $('admMsg').textContent=tr('⚽ ערכת כדורגל נטענה (תצוגה מקדימה) — לחצו "החלף עונה" להפצה','⚽ Football pack loaded (preview) — hit Switch season to publish');
+};
+$('admSeaUp').onclick=()=>$('admSeaFile').click();
+$('admSeaFile').onchange=e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const j=JSON.parse(rd.result);
+      admSeaTh=normTheme(j.th||j);
+      if(!admSeaTh)throw 0;
+      if(j.name&&!$('admSeaName').value)$('admSeaName').value=String(j.name).slice(0,20);
+      if(j.n&&!$('admSeaN').value)$('admSeaN').value=j.n|0;
+      applySeasonTheme(admSeaTh);
+      $('admMsg').textContent=tr('🖼 קובץ העיצוב נטען (תצוגה מקדימה) — לחצו "החלף עונה" להפצה','🖼 Design file loaded (preview) — hit Switch season to publish');
+    }catch(err){$('admMsg').textContent=tr('קובץ לא תקין — צריך JSON עם צבעים (g1,g2,t1,t2,t3,gl,ic)','Invalid file — expected JSON with colors');}
+    e.target.value='';
+  };
+  rd.readAsText(f);
+};
 $('admSeaSet').onclick=async()=>{
   const n=$('admSeaN').value|0;
   if(!n)return $('admMsg').textContent=tr('כתבו מספר עונה (למשל 1)','Enter a season number (e.g. 1)');
@@ -6458,7 +6510,7 @@ $('admSeaSet').onclick=async()=>{
   $('admMsg').textContent='…';
   const d=await regFetch();
   if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
-  d.season={n,name,ts:Date.now()};
+  d.season={n,name,ts:Date.now(),th:admSeaTh||undefined};
   if(!await regPut(d))return $('admMsg').textContent=tr('שגיאת רשת','Network error');
   adoptSeason(d.season);
   admSeaCur();
