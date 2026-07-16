@@ -253,7 +253,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v65</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v66</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -3714,6 +3714,27 @@ SKINS.push({name:'ליאו מסי',en:'Leo Messi',price:0,rar:5,wc:3,draw:(c,r,r
   c.beginPath();c.arc(0,0,r*.95,0,TAU);c.stroke();
 }});
 const MESSI_IDX=SKINS.length-1;
+/* ⚽ עוד כוכבי כדורגל — פנים אמיתיות (בלי פרצוף מצויר), נופלים מתיבות */
+function pushFaceSkin(nm,en,img,rar){
+  const im=new Image();im.src=img;
+  SKINS.push({name:nm,en,price:0,rar,face:1,draw:(c,r,rot,T)=>{
+    c.save();c.rotate(rot*.25);
+    if(im.complete&&im.naturalWidth)c.drawImage(im,-r*1.02,-r*1.02,r*2.04,r*2.04);
+    else{
+      const g=c.createRadialGradient(0,0,r*.2,0,0,r);
+      g.addColorStop(0,'#8fd0ff');g.addColorStop(1,'#12253f');
+      c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
+    }
+    c.restore();
+    c.strokeStyle=rar>=5?'rgba(246,180,14,.85)':'rgba(126,200,242,.7)';
+    c.lineWidth=r*.07;
+    c.beginPath();c.arc(0,0,r*.96,0,TAU);c.stroke();
+  }});
+}
+pushFaceSkin('רונאלדו','Ronaldo','ronaldo.png',5);
+pushFaceSkin('נוימאר','Neymar','neymar.png',4);
+pushFaceSkin('אמבפה','Mbappé','mbappe.png',4);
+pushFaceSkin('האלנד','Haaland','haaland.png',4);
 const POW=()=>((SKINS[skinSel]||{}).pow)||'';
 let shieldUsed=false,winStreak=0;
 function grantPowSkins(){
@@ -6120,7 +6141,11 @@ const SKIN_LORE=[
  ['לגם בטעות שיקוי זמן. מאז — העולם רץ, והוא צועד בנחת.','Accidentally sipped a time potion. The world rushes; it strolls.'],
  ['רוח של כדור מהעולם הבא. קירות? הוא כבר לא מרגיש אותם.','A ball\'s ghost from the other side. Walls? It barely feels them anymore.'],
  ['התגלגל פעם דרך בנק. יצא מהצד השני — כפול.','Once rolled through a bank. Came out the other side — doubled.'],
- ['ה-GOAT בכבודו ובעצמו. שלושה גביעי מונדיאל הביאו אותו למבוך — עכשיו הוא משחק בקבוצה שלך. 🐐🇦🇷','The GOAT himself. Three World Cups brought him to the maze — now he plays for your team. 🐐🇦🇷']];
+ ['ה-GOAT בכבודו ובעצמו. שלושה גביעי מונדיאל הביאו אותו למבוך — עכשיו הוא משחק בקבוצה שלך. 🐐🇦🇷','The GOAT himself. Three World Cups brought him to the maze — now he plays for your team. 🐐🇦🇷'],
+ ['סיוווו! מלך השערים עזב את המגרש בשביל המבוך. עדיין קופץ הכי גבוה. 🇵🇹','Siuuu! The goal king left the pitch for the maze. Still jumps the highest. 🇵🇹'],
+ ['הקוסם מברזיל. מכדרר בין הקירות כאילו הם מגינים. 🇧🇷','The Brazilian magician. Dribbles between walls like defenders. 🇧🇷'],
+ ['הצ׳יטה של פריז. מהיר מדי בשביל החורים — הם פשוט לא מספיקים לתפוס אותו. 🇫🇷','The Paris cheetah. Too fast for the holes to catch. 🇫🇷'],
+ ['הרובוט הנורווגי. נכנס לתיבה בטעות — יצא ממנה עם שער. 🤖🇳🇴','The Norwegian robot. Walked into a box — scored from it. 🤖🇳🇴']];
 function loreOf(i){const l=SKIN_LORE[i];return l?tr(l[0],l[1]):'';}
 /* 🐣 היצור: הכדור נפתח לחיה חמודה — עיניים, גבות ופה לפי מצב רוח */
 function drawCreature(g,cx,cy,R,idx,mood,t){
@@ -6134,7 +6159,8 @@ function drawCreature(g,cx,cy,R,idx,mood,t){
   g.restore();
   g.lineWidth=R*.05;g.strokeStyle='rgba(0,0,0,.25)';
   g.beginPath();g.arc(0,0,R,0,TAU);g.stroke();
-  if((SKINS[idx]||{}).wc){g.restore();return;} // 🐐 למסי יש כבר פנים אמיתיות
+  const _sk=SKINS[idx]||{};
+  if(_sk.wc||_sk.face){g.restore();return;} // ⚽ לשחקנים אמיתיים יש כבר פנים
   const blink=(Math.sin(t*1.9)>.96)?.12:1;
   const ey=sad?-R*.06:-R*.16;
   for(const sd of[-1,1]){
