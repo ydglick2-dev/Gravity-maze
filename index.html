@@ -22,7 +22,13 @@
       -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   /* 📱 מובייל: בלי טשטוש-רקע — יקר מאוד ב-WebView של אנדרואיד ונחשב מחדש כל פריים */
   @media (pointer:coarse){
-    .overlay { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; background:rgba(4,6,12,.94) !important; }
+    .overlay { backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+      background:
+        radial-gradient(62% 42% at 50% 0%, rgba(110,80,255,.16), transparent 62%),
+        linear-gradient(rgba(80,100,220,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(80,100,220,.06) 1px, transparent 1px),
+        linear-gradient(180deg,#0b0f2b,#070919) !important;
+      background-size:auto,34px 34px,34px 34px,auto !important; }
     .pill, .ic, #raceBar, .btn.sec { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
     .pill, .ic { background:rgba(8,12,20,.85) !important; }
   }
@@ -30,7 +36,14 @@
   #game { position:absolute; inset:0; will-change:transform; }
 
   .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
-    justify-content:flex-start; gap:16px; background:rgba(4,6,12,.82); backdrop-filter:blur(14px);
+    justify-content:flex-start; gap:16px;
+    background:
+      radial-gradient(62% 42% at 50% 0%, rgba(110,80,255,.16), transparent 62%),
+      linear-gradient(rgba(80,100,220,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(80,100,220,.06) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(11,15,43,.9), rgba(6,8,24,.92));
+    background-size:auto,34px 34px,34px 34px,auto;
+    backdrop-filter:blur(14px);
     color:#e8ecf4; text-align:center; padding:22px; z-index:20; transition:opacity .35s;
     overflow-y:auto; } /* תוכן ארוך נגלל — הכפתורים תמיד נגישים */
   .overlay > * { flex-shrink:0; }
@@ -47,13 +60,20 @@
   .sub { font-size:15px; line-height:1.65; max-width:330px; color:#aeb8c8; }
   .big { font-size:56px; filter:drop-shadow(0 0 16px rgba(255,200,110,.5)); }
 
-  .btn { border:none; border-radius:16px; padding:15px 40px; font-size:19px; font-weight:800;
-    color:#241505; background:linear-gradient(180deg,#ffdf9e,#ffab3d);
-    box-shadow:0 0 22px rgba(255,170,60,.4), 0 5px 0 #8a5f26, inset 0 1px 0 rgba(255,255,255,.6);
+  .btn { border:none; border-radius:999px; padding:15px 42px; font-size:19px; font-weight:900;
+    color:#1b1430; background:linear-gradient(180deg,#ffd257,#ffb020);
+    box-shadow:0 8px 26px rgba(255,176,32,.35), inset 0 1px 0 rgba(255,255,255,.55);
     cursor:pointer; }
-  .btn.sec { color:#dfe7f2; background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
-    box-shadow:0 0 0 1.5px rgba(255,255,255,.22), 0 4px 14px rgba(0,0,0,.5);
-    font-size:16px; padding:12px 26px; backdrop-filter:blur(6px); }
+  .btn.sec { color:#e7ecf6; background:rgba(255,255,255,.07);
+    box-shadow:0 0 0 1px rgba(255,255,255,.14), 0 4px 14px rgba(0,0,0,.35);
+    font-size:16px; padding:12px 28px; backdrop-filter:blur(6px); }
+  .tin { background:rgba(255,255,255,.06) !important; border:1px solid rgba(255,255,255,.14) !important;
+    border-radius:14px !important; color:#fff !important; }
+  .achRow { background:rgba(255,255,255,.055) !important; border:1px solid rgba(255,255,255,.09);
+    border-radius:16px !important; }
+  .skCard { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:18px; }
+  .chip.on { background:linear-gradient(180deg,#ffd257,#ffb020) !important; color:#1b1430 !important; font-weight:900; }
+  .overlay h1 { font-weight:900; letter-spacing:.5px; }
   .btn:active { transform:translateY(3px); }
   .chip:active, .skCard:active { transform:scale(.95); }
   .chip, .skCard { transition:transform .08s ease; }
@@ -225,7 +245,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v60</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v61</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -314,7 +334,7 @@
 </div>
 
 <div class="overlay hidden" id="authOv" style="z-index:60;background:rgba(8,10,18,.96)">
-  <div class="big float">👤</div>
+  <div class="big float">🎱</div>
   <h1 data-en="Who's Playing?">מי משחק?</h1>
   <p class="sub" data-en="Each player has their own save: progress, coins, chests and skins. ☁️ Log in and your progress is saved to the cloud — on every device.">לכל שחקן שמירה משלו: התקדמות, מטבעות, תיבות וסקינים.<br>☁️ מתחברים — וההתקדמות נשמרת בענן ועוברת איתך לכל מכשיר.</p>
   <input class="tin" id="authUser" maxlength="14" placeholder="שם משתמש" data-en-ph="Username" autocomplete="username" style="max-width:260px">
@@ -684,6 +704,7 @@
   <div id="starsBig"></div>
   <canvas id="winPet" width="120" height="116" style="margin:-4px auto 0"></canvas>
   <p class="sub" id="doneText"></p>
+  <div id="winChips" class="row" style="gap:8px"></div>
   <div class="row">
     <button class="btn" id="nextBtn" data-en="Continue">המשך</button>
     <button class="btn sec" id="replayBtn" data-en="Again">שוב</button>
@@ -3309,9 +3330,14 @@ function finishLevel(){
     txt+=tr(' — כבשת את כל 100 השלבים! ',' — you conquered all 100 levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
   }
   $('doneText').textContent=txt;
+  { // 🏅 צ'יפי פרסים (עיצוב עונה 1)
+    const chip=t2=>'<span style="background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px">'+t2+'</span>';
+    $('winChips').innerHTML=chip('+'+_cg+' 🪙')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫');
+  }
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('לשלב הבא','Next Level');
   addDailyWin();
-  passAdd(8+got*4+(firstClear?20:0)+(firstClear&&(levelIdx+1)%10===0?30:0)); // 🎫 נקודות עונה
+  const _pg=8+got*4+(firstClear?20:0)+(firstClear&&(levelIdx+1)%10===0?30:0);
+  passAdd(_pg); // 🎫 נקודות עונה
   checkAch();
   save();
   if(!customLv&&(levelIdx+1)%10===0){
@@ -4475,11 +4501,13 @@ function buildSkins(){
     rr.textContent=tr(RAR[s.rar|0].n,RAR[s.rar|0].en);
     rr.style.cssText='font-size:10px;font-weight:900;letter-spacing:.5px;color:'+RAR[s.rar|0].c;
     card.appendChild(rr);
+    const chestOnly=(s.rar|0)>=4&&!s.pow; // 🔴🟡 נדירויות גבוהות — רק מתיבות, כמו במוקאפ
     const pr=document.createElement('div');pr.className='skPrice';
-    pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select'):s.price+' 🪙');
+    pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select'):(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙'));
     card.appendChild(pr);
     card.onclick=()=>{
       if(owned){cat.setSel(i);save();buildSkins();showToast(tr(s.name,s.en||s.name)+' ✓');return;}
+      if((s.rar|0)>=4&&!s.pow)return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));
       if(coins>=s.price){
         coins-=s.price;cat.ow.push(i);cat.setSel(i);
         checkAch();save();refreshTro();buildSkins();sfx.key();
@@ -4989,9 +5017,10 @@ async function buildFriends(){
     const inner=document.createElement('div');
     inner.style.flex='1';
     inner.style.cursor='pointer';
-    inner.innerHTML='<b>👤 '+esc(n)+' ▸</b><br><small>'+
+    inner.style.display='flex';inner.style.alignItems='center';inner.style.gap='10px';
+    inner.innerHTML=avHTML(n,40)+'<div><b>'+esc(n)+' ▸</b><br><small>'+
       (rec?('🏆 '+s.tro+' · 🪙 '+s.co+' · ✅ '+s.done+'/100 · ⭐ '+s.stars)
-          :tr('עוד לא סנכרן לענן','no cloud data yet'))+'</small>';
+          :tr('עוד לא סנכרן לענן','no cloud data yet'))+'</small></div>';
     inner.onclick=()=>showProfile(n,rec&&rec.sv,false); // 📖 כניסה לפרופיל וליומן
     row.appendChild(inner);
     const x=document.createElement('button');
@@ -5096,9 +5125,11 @@ async function buildTables(){
   rows.forEach((r,i)=>{
     const row=document.createElement('div');
     row.className='achRow'+(r.me?' got':'');
-    row.innerHTML='<span>'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.')+'</span><div><b>'+
-      esc(r.name)+(r.me?' · '+tr('אני','me'):'')+'</b><br><small>🏆 '+r.tro+' · 🪙 '+r.co+' · ✅ '+r.done+' · ⭐ '+r.stars+
-      '</small></div><span class="skPrice">'+IC+' '+V(r)+'</span>';
+    if(r.me)row.style.boxShadow='inset 0 0 0 2px #ffd25777';
+    row.innerHTML='<span style="min-width:30px;font-weight:900">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</span>'
+      +avHTML(r.name,38)
+      +'<div style="flex:1"><b>'+esc(r.name)+(r.me?' <span style="color:#7ae0ff">('+tr('אתם!','you!')+')</span>':'')+'</b><br><small>🏆 '+r.tro+' · 🪙 '+r.co+' · ✅ '+r.done+' · ⭐ '+r.stars+
+      '</small></div><span class="skPrice" style="color:#ffd257;font-weight:900">'+IC+' '+V(r)+'</span>';
     g.appendChild(row);
   });
 }
@@ -5248,7 +5279,8 @@ async function buildWatch(){
     const ago=Math.max(0,((now-(r.e.t||0))/60000)|0);
     const inner=document.createElement('div');
     inner.style.flex='1';inner.style.cursor='pointer';
-    inner.innerHTML='<b>🟢 '+esc(r.n)+' ▸</b><br><small>'+md2+' '+
+    inner.style.display='flex';inner.style.alignItems='center';inner.style.gap='10px';
+    inner.innerHTML=avHTML(r.n,38)+'<div><b>'+esc(r.n)+' <span style="color:#4ade80">●</span> ▸</b><br><small>'+md2+' '+
       (r.e.lv?tr('שלב ','level ')+r.e.lv:tr('ריצה אינסופית','endless run'))+' · '+
       (ago<1?tr('ממש עכשיו','right now'):tr('לפני ~','~')+ago+tr(' ד׳','m ago'))+'</small>';
     inner.onclick=()=>{
@@ -5479,6 +5511,13 @@ async function pwMatch(user,pw,rec){
 }
 function getUsers(){const st=store();if(!st)return{};try{return JSON.parse(st.getItem(UKEY)||'{}')||{}}catch(e){return{}}}
 function putUsers(u){const st=store();if(st)try{st.setItem(UKEY,JSON.stringify(u))}catch(e){}}
+function avHTML(name,size){ // 🟠 אווטר-אות כמו בעיצוב עונה 1
+  const cols=['#ff9f2e','#22c55e','#8b5cf6','#3b82f6','#ec4899','#14b8a6','#f43f5e','#84cc16'];
+  let h=0;const n2=String(name||'?');
+  for(let i=0;i<n2.length;i++)h=(h*31+n2.charCodeAt(i))>>>0;
+  return '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;flex:none;background:'+cols[h%cols.length]+
+    ';display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:'+((size*.46)|0)+'px;box-shadow:0 2px 10px rgba(0,0,0,.35)">'+esc(n2[0])+'</div>';
+}
 function refreshUserChip(){$('userChip').textContent=curUser?('👤 '+curUser+tr(' · החלף',' · switch')):tr('👤 אורח · כניסה','👤 Guest · log in');}
 function applyUser(name){
   curUser=name;
