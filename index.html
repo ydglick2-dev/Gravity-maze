@@ -25,9 +25,9 @@
     .overlay { backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
       background:
         radial-gradient(62% 42% at 50% 0%, var(--gl,rgba(110,80,255,.16)), transparent 62%),
-        linear-gradient(rgba(80,100,220,.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(80,100,220,.06) 1px, transparent 1px),
-        linear-gradient(180deg,#0b0f2b,#070919) !important;
+        linear-gradient(var(--gd,rgba(80,100,220,.06)) 1px, transparent 1px),
+        linear-gradient(90deg, var(--gd,rgba(80,100,220,.06)) 1px, transparent 1px),
+        linear-gradient(180deg,var(--bg1,#0b0f2b),var(--bg2,#070919)) !important;
       background-size:auto,34px 34px,34px 34px,auto !important; }
     .pill, .ic, #raceBar, .btn.sec { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
     .pill, .ic { background:rgba(8,12,20,.85) !important; }
@@ -39,9 +39,9 @@
     justify-content:flex-start; gap:16px;
     background:
       radial-gradient(62% 42% at 50% 0%, var(--gl,rgba(110,80,255,.16)), transparent 62%),
-      linear-gradient(rgba(80,100,220,.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(80,100,220,.06) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(11,15,43,.9), rgba(6,8,24,.92));
+      linear-gradient(var(--gd,rgba(80,100,220,.06)) 1px, transparent 1px),
+      linear-gradient(90deg, var(--gd,rgba(80,100,220,.06)) 1px, transparent 1px),
+      linear-gradient(180deg, var(--bg1,rgba(11,15,43,.9)), var(--bg2,rgba(6,8,24,.92)));
     background-size:auto,34px 34px,34px 34px,auto;
     backdrop-filter:blur(14px);
     color:#e8ecf4; text-align:center; padding:22px; z-index:20; transition:opacity .35s;
@@ -245,7 +245,8 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v62</span></div>
+    <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v63</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -291,7 +292,8 @@
 <div id="banner"><div class="b1" id="bWorld"></div><div class="b2" id="bName"></div></div>
 
 <div class="overlay hidden" id="menuOv">
-  <div class="big float">🎱</div>
+  <div id="mnuStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:10px;font-size:15px;text-shadow:0 0 12px rgba(255,214,92,.6)">★ ★ ★</div>
+  <div class="big float" style="display:var(--ballLogo,block)">🎱</div>
   <h1 class="float">Gravity Maze</h1>
   <p class="sub" data-en="1000 levels · 100 worlds · the difficulty climbs, the powers grow. 3 falls per level. Tilt your phone. Don't fall.">1000 שלבים · 100 עולמות · הקושי מטפס, הכוחות מתחזקים.<br>3 פסילות לשלב. הטה את הטלפון. אל תיפול.</p>
   <div id="troLine" style="font-size:17px;font-weight:900;color:#ffd257">🏆 0</div>
@@ -6334,11 +6336,13 @@ function applySeasonTheme(th){ // 🖼 ערכת העיצוב של העונה —
   set('--g1',th.g1);set('--g2',th.g2);
   set('--t1',th.t1);set('--t2',th.t2);set('--t3',th.t3);
   set('--gl',th.gl);
+  set('--bg1',th.bg1);set('--bg2',th.bg2);set('--gd',th.gd);
+  set('--stars',th.st?'block':'');
 }
 function normTheme(t){
   if(!t||typeof t!=='object')return undefined;
   const o={};
-  for(const k of ['g1','g2','t1','t2','t3','gl','ic'])if(typeof t[k]==='string')o[k]=t[k].slice(0,48);
+  for(const k of ['g1','g2','t1','t2','t3','gl','ic','bg1','bg2','gd','st'])if(typeof t[k]==='string')o[k]=t[k].slice(0,48);
   return Object.keys(o).length?o:undefined;
 }
 function adoptSeason(sv2){
@@ -6474,8 +6478,13 @@ function admSeaCur(){
 }
 /* 🖼 ערכות עיצוב לעונות: האדמין מעלה קובץ (JSON) או בוחר ערכה — וזה מחליף
    את צבעי המשחק אצל כל השחקנים יחד עם העונה. */
-const SEASON_PACKS={
-  football:{ic:'⚽',t1:'#5be469',t2:'#c3f45c',t3:'#ffd257',gl:'rgba(52,199,89,.22)'}
+const SEASON_PACKS={ // ⚽ אלביסלסטה — לפי קובץ העיצוב "מבוך אלביסלסטה"
+  football:{ic:'⚽',st:'1',
+    g1:'#ffd65c',g2:'#f6b40e',
+    t1:'#eaf4ff',t2:'#c9d3dd',t3:'#8fb0c9',
+    gl:'rgba(94,160,230,.17)',
+    bg1:'rgba(11,29,54,.93)',bg2:'rgba(5,14,28,.95)',
+    gd:'rgba(126,200,242,.07)'}
 };
 let admSeaTh=null;
 $('admSeaBall').onclick=()=>{
