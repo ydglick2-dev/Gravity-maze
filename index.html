@@ -253,7 +253,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v64</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v65</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -704,6 +704,7 @@
 
 <div class="overlay hidden" id="raceResOv">
   <div class="big" id="rrIcon"></div>
+  <div id="rrPodium" style="display:flex;align-items:flex-end;gap:12px;justify-content:center;min-height:0"></div>
   <h1 id="rrTitle"></h1>
   <p class="sub" id="rrText"></p>
   <button class="btn" id="rrBack" data-en="To Menu">לתפריט</button>
@@ -3364,6 +3365,7 @@ function finishLevel(){
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('המשך לשלב ','Continue to level ')+(levelIdx+2)+' ‹';
   addDailyWin();
   passAdd(_pg); // 🎫 נקודות עונה
+  if(firstClear&&(levelIdx+1)%50===0)setTimeout(mondialBox,1100); // 🏆 תיבת מונדיאל!
   checkAch();
   save();
   if(!customLv&&(levelIdx+1)%10===0){
@@ -3393,7 +3395,9 @@ function buildGrid(){
     const lab=document.createElement('div');
     lab.className='world-label';
     lab.style.color=THEMES[z%10].accent;
-    lab.textContent=tr('עולם ','World ')+(z+1)+' · '+zoneName(z);
+    const STADIUMS=['בומבונרה','מונומנטל','קורדובה','ריבר פלייט','לה פלאטה','רוסאריו','מנדוסה','אל סמפדריו','ליברטדורס','מאראקנה'];
+    const footy=seasonOv&&seasonOv.th&&seasonOv.th.ic==='⚽';
+    lab.textContent=tr('עולם ','World ')+(z+1)+' · '+(footy?STADIUMS[z%10]:zoneName(z));
     frag.appendChild(lab);
     for(let half=0;half<2;half++){
       const row=document.createElement('div');row.className='wrow';
@@ -3499,7 +3503,7 @@ function logEv(ty,a,b2){
   save();
   return e;
 }
-let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0,wheelD='';
+let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0,wheelD='',wcCups=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false,raceFrom=1,raceTo=5,duelFrom=1,duelTo=5,duelCur=1,duelOppLv=1,summonAuto=false;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
@@ -3528,7 +3532,7 @@ function saveBlob(){
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10)]),
     lg:gameLog.slice(0,30),
     cl:customLevels,
-    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity,psn:passN,psp:passP,psc:passC};
+    sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity,psn:passN,psp:passP,psc:passC,wcc:wcCups};
 }
 function save(){
   const st=store();
@@ -3546,7 +3550,7 @@ function load(){
 function applySave(d){
   try{
     unlocked=Math.min(LEVELS.length-1,d.un|0);
-    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';pity=d.py|0;passN=d.psn|0;passP=d.psp|0;passC=d.psc|0;
+    trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';pity=d.py|0;passN=d.psn|0;passP=d.psp|0;passC=d.psc|0;wcCups=d.wcc|0;
     skinOwned=Array.isArray(d.ow)?d.ow.filter(n=>n>=0&&n<SKINS.length):[0];
     if(!skinOwned.includes(0))skinOwned.unshift(0);
     skinSel=skinOwned.includes(d.sk|0)?(d.sk|0):0;
@@ -3691,6 +3695,25 @@ DFX.push(
  {name:'ברקים',en:'Bolts',icon:'⚡',price:550,rar:2},
  {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:750,rar:3});
 POWSKINS.forEach(s=>SKINS.push(s));
+/* 👑 ליאו מסי — הסקין האגדי. נפתח רק עם 3 גביעי מונדיאל 🏆 */
+const MESSI_IMG=new Image();
+MESSI_IMG.src='messi.png';
+SKINS.push({name:'ליאו מסי',en:'Leo Messi',price:0,rar:5,wc:3,draw:(c,r,rot,T)=>{
+  c.save();c.rotate(rot*.25);
+  if(MESSI_IMG.complete&&MESSI_IMG.naturalWidth){
+    c.drawImage(MESSI_IMG,-r*1.02,-r*1.02,r*2.04,r*2.04);
+  }else{
+    const g=c.createLinearGradient(-r,0,r,0);
+    g.addColorStop(0,'#8fd0ff');g.addColorStop(.5,'#eaf4ff');g.addColorStop(1,'#8fd0ff');
+    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
+    c.fillStyle='#12253f';c.font='900 '+(r*.9|0)+'px system-ui';
+    c.textAlign='center';c.textBaseline='middle';c.fillText('10',0,r*.05);
+  }
+  c.restore();
+  c.strokeStyle='rgba(246,180,14,.85)';c.lineWidth=r*.08; // טבעת זהב של אלוף
+  c.beginPath();c.arc(0,0,r*.95,0,TAU);c.stroke();
+}});
+const MESSI_IDX=SKINS.length-1;
 const POW=()=>((SKINS[skinSel]||{}).pow)||'';
 let shieldUsed=false,winStreak=0;
 function grantPowSkins(){
@@ -4281,15 +4304,26 @@ function endDuel(win,detail){
   }
   logEv(win?'rw':'rl');
   checkAch();save();refreshTro();
-  showResult(win?'🏆':'🥈',win?tr('ניצחת! +10🏆','You won! +10🏆'):tr('הפסדת הפעם','Lost this time'),
-    detail+(win?tr(' · סה"כ ',' · total ')+trophies+'🏆':''));
+  showResult(win?'🏆':'🥈',win?tr('מקום ראשון!','First place!'):tr('מקום שני','Second place'),
+    detail+(win?tr(' · +10🏆 · סה"כ ',' · +10🏆 · total ')+trophies+'🏆':''));
+  rrPodiumShow(win);
   setTimeout(cleanupLive,600);
 }
 function showResult(icon,title,text){
   $('rrIcon').textContent=icon;
   $('rrTitle').textContent=title;
   $('rrText').textContent=text;
+  $('rrPodium').innerHTML='';
   $('raceResOv').classList.remove('hidden');
+}
+function rrPodiumShow(win){ // 🏟️ פודיום כמו בעיצוב
+  const me=myName||curUser||tr('אתה','You'),op=oppName||tr('יריב','Rival');
+  const step=(nm,place,tall)=>'<div style="display:flex;flex-direction:column;align-items:center;gap:6px">'+
+    avHTML(nm,44)+'<b style="font-size:13px;color:#eaf4ff">'+esc(nm)+(place===1?' 👑':'')+'</b>'+
+    '<div style="width:86px;height:'+(tall?86:56)+'px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;'+
+    (place===1?'background:linear-gradient(180deg,rgba(246,180,14,.85),rgba(246,180,14,.45));color:#12253f'
+              :'background:rgba(126,200,242,.15);color:#a9c6e2')+'">'+place+'</div></div>';
+  $('rrPodium').innerHTML=win?(step(op,2,false)+step(me,1,true)):(step(me,2,false)+step(op,1,true));
 }
 $('rrBack').onclick=()=>{$('raceResOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 function loadPeer(cb){
@@ -4528,12 +4562,15 @@ function buildSkins(){
     rr.textContent=tr(RAR[s.rar|0].n,RAR[s.rar|0].en);
     rr.style.cssText='font-size:10px;font-weight:900;letter-spacing:.5px;color:'+RAR[s.rar|0].c;
     card.appendChild(rr);
-    const chestOnly=(s.rar|0)>=4&&!s.pow; // 🔴🟡 נדירויות גבוהות — רק מתיבות, כמו במוקאפ
+    const chestOnly=(s.rar|0)>=4&&!s.pow&&!s.wc; // 🔴🟡 נדירויות גבוהות — רק מתיבות, כמו במוקאפ
     const pr=document.createElement('div');pr.className='skPrice';
-    pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select'):(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙'));
+    pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select')
+      :(s.wc?('🏆 '+Math.min(wcCups,s.wc)+'/'+s.wc+' '+tr('גביעי מונדיאל','World Cups'))
+      :(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙')));
     card.appendChild(pr);
     card.onclick=()=>{
       if(owned){cat.setSel(i);save();buildSkins();showToast(tr(s.name,s.en||s.name)+' ✓');return;}
+      if(s.wc&&!owned)return showToast(tr('🏆 מסי נפתח עם 3 גביעי מונדיאל — תיבת מונדיאל בכל שלב 50!','🏆 Messi unlocks with 3 World Cups — a box every 50 levels!'));
       if((s.rar|0)>=4&&!s.pow)return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));
       if(coins>=s.price){
         coins-=s.price;cat.ow.push(i);cat.setSel(i);
@@ -4568,7 +4605,7 @@ function grantTier(t){
   for(let dn=t-1;dn>=1;dn--)order.push(dn);
   for(const tier of order){
     const cands=[];
-    SKINS.forEach((it,i)=>{if((it.rar|0)===tier&&!it.pow&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
+    SKINS.forEach((it,i)=>{if((it.rar|0)===tier&&!it.pow&&!it.wc&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
     WFX.forEach((it,i)=>{if((it.rar|0)===tier&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
     DFX.forEach((it,i)=>{if((it.rar|0)===tier&&!dOw.includes(i))cands.push({k:'dfx',i,it});});
     if(!cands.length)continue;
@@ -4611,6 +4648,34 @@ function rollChest(){
   return drops;
 }
 let chestBusy=false;
+/* 🏆 תיבת מונדיאל — כל 50 שלבים. 20% לגביע מונדיאל; 3 גביעים = ליאו מסי! */
+function mondialBox(){
+  showToast(tr('🏆 תיבת מונדיאל — שלב ','🏆 World Cup box — level ')+(levelIdx+1)+'!');
+  playBoxOpen(5,()=>{
+    const winCup=Math.random()<.2;
+    if(winCup){
+      wcCups=Math.min(3,wcCups+1);
+      logEv('wc',wcCups+'/3');
+      save();refreshTro();
+      showReveal({kind:'fx',icon:'🏆',rar:5,label:tr('גביע מונדיאל! ','World Cup! ')+wcCups+'/3',
+        story:wcCups>=3?tr('שלושה גביעים!! ליאו מסי מצטרף אליך! 🐐','Three cups!! Leo Messi joins you! 🐐')
+                       :tr('עוד '+(3-wcCups)+' גביעים — ומסי שלך! התיבה הבאה בעוד 50 שלבים.','More cups to go — next box in 50 levels.')},
+        checkMessi);
+    }else{
+      coins+=30;gems+=2;
+      save();refreshTro();
+      showReveal({kind:'fx',icon:'🥈',rar:2,label:'+30 🪙 · +2 💎',
+        story:tr('הפעם בלי גביע... ההזדמנות הבאה בעוד 50 שלבים! (סיכוי: 20%)','No cup this time — next chance in 50 levels! (20%)')});
+    }
+  });
+}
+function checkMessi(){
+  if(wcCups>=3&&!skinOwned.includes(MESSI_IDX)){
+    skinOwned.push(MESSI_IDX);
+    save();
+    setTimeout(()=>showReveal({kind:'skin',idx:MESSI_IDX,rar:5,label:tr('ליאו מסי','Leo Messi'),story:loreOf(MESSI_IDX)}),500);
+  }
+}
 function openChest(){
   if(chestBusy)return;
   if(chests<=0){showToast(tr('אין תיבות — השלימו קווסטים או קנו בחנות!','No chests — complete quests or buy some!'));return;}
@@ -5097,6 +5162,7 @@ function logLine(e){
    case 'ac':{const a=ACH.find(x=>x.id===v);return['🏅',tr('הישג: ','Achievement: ')+(a?tr(a.name,a.en?a.en[0]:a.name):'')];}
    case 'wh':return['🎟',tr('כרטיס גירוד: זכה ב-','Scratch card: won ')+(v||'')];
    case 'ps':return['🎫',tr('פס העונה: אסף ','Season pass: collected ')+(v||'')];
+   case 'wc':return['🏆',tr('זכה בגביע מונדיאל! ','Won a World Cup! ')+(v||'')];
   }
   return['•',String(t)];
 }
@@ -5707,7 +5773,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;
-  dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;
+  dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;wcCups=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
   stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];customLevels={};
@@ -6053,7 +6119,8 @@ const SKIN_LORE=[
  ['נשבע להגן על כל כדור במבוך. החור הראשון — עליו.','Swore to protect every ball in the maze. The first hole is on him.'],
  ['לגם בטעות שיקוי זמן. מאז — העולם רץ, והוא צועד בנחת.','Accidentally sipped a time potion. The world rushes; it strolls.'],
  ['רוח של כדור מהעולם הבא. קירות? הוא כבר לא מרגיש אותם.','A ball\'s ghost from the other side. Walls? It barely feels them anymore.'],
- ['התגלגל פעם דרך בנק. יצא מהצד השני — כפול.','Once rolled through a bank. Came out the other side — doubled.']];
+ ['התגלגל פעם דרך בנק. יצא מהצד השני — כפול.','Once rolled through a bank. Came out the other side — doubled.'],
+ ['ה-GOAT בכבודו ובעצמו. שלושה גביעי מונדיאל הביאו אותו למבוך — עכשיו הוא משחק בקבוצה שלך. 🐐🇦🇷','The GOAT himself. Three World Cups brought him to the maze — now he plays for your team. 🐐🇦🇷']];
 function loreOf(i){const l=SKIN_LORE[i];return l?tr(l[0],l[1]):'';}
 /* 🐣 היצור: הכדור נפתח לחיה חמודה — עיניים, גבות ופה לפי מצב רוח */
 function drawCreature(g,cx,cy,R,idx,mood,t){
@@ -6067,6 +6134,7 @@ function drawCreature(g,cx,cy,R,idx,mood,t){
   g.restore();
   g.lineWidth=R*.05;g.strokeStyle='rgba(0,0,0,.25)';
   g.beginPath();g.arc(0,0,R,0,TAU);g.stroke();
+  if((SKINS[idx]||{}).wc){g.restore();return;} // 🐐 למסי יש כבר פנים אמיתיות
   const blink=(Math.sin(t*1.9)>.96)?.12:1;
   const ey=sad?-R*.06:-R*.16;
   for(const sd of[-1,1]){
