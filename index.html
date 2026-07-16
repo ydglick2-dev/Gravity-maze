@@ -190,6 +190,13 @@
   }
   #lbTitle span { -webkit-text-fill-color:#aeb8c8; }
   #menuOv .btn.sec { border-radius:16px; background:rgba(120,110,255,.09); border:1px solid #ffffff17; }
+  .mPill { background:rgba(7,16,33,.7); border:1px solid rgba(126,200,242,.18); border-radius:999px;
+    padding:9px 14px; color:#fff; font-size:14px; font-weight:800; }
+  .mTile { background:rgba(126,200,242,.08); border:1px solid rgba(126,200,242,.13); border-radius:22px;
+    height:92px; display:flex; flex-direction:column; gap:7px; align-items:center; justify-content:center;
+    color:#eaf4ff; font-size:13px; font-weight:700; cursor:pointer; transition:transform .08s; }
+  .mTile:active { transform:scale(.94); }
+  .mIc { font-size:24px; line-height:1; }
   .glowy { animation: glowy 2.2s ease-in-out infinite; }
   @keyframes boxspin { to { rotate:360deg; } }
   @keyframes glowy {
@@ -246,7 +253,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v63</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v64</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -255,9 +262,12 @@
       <div class="pill" id="lbOnline" style="display:none">🟢 0</div>
     </div>
   </div>
-  <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000" data-en="⚽ Tilt your phone and roll · score a goal!">⚽ הטה את הטלפון וגלגל · תבקיע גול!</div>
-    <button class="btn" id="menuBtn2" data-en="☰ Menu">☰ תפריט</button>
+  <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+    <div style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000;background:rgba(7,16,33,.55);border-radius:999px;padding:5px 14px" data-en="⚽ Tilt your phone and roll · score a goal!">⚽ הטו את הטלפון וגלגלו — תבקיעו גול!</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn" id="lbPlay" style="min-width:160px" data-en="Play">שחק</button>
+      <button class="btn sec" id="menuBtn2" data-en="🎮 Menu">🎮 תפריט</button>
+    </div>
   </div>
 </div>
 
@@ -291,52 +301,57 @@
 <div id="toast"></div>
 <div id="banner"><div class="b1" id="bWorld"></div><div class="b2" id="bName"></div></div>
 
-<div class="overlay hidden" id="menuOv">
-  <div id="mnuStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:10px;font-size:15px;text-shadow:0 0 12px rgba(255,214,92,.6)">★ ★ ★</div>
-  <div class="big float" style="display:var(--ballLogo,block)">🎱</div>
-  <h1 class="float">Gravity Maze</h1>
-  <p class="sub" data-en="1000 levels · 100 worlds · the difficulty climbs, the powers grow. 3 falls per level. Tilt your phone. Don't fall.">1000 שלבים · 100 עולמות · הקושי מטפס, הכוחות מתחזקים.<br>3 פסילות לשלב. הטה את הטלפון. אל תיפול.</p>
-  <div id="troLine" style="font-size:17px;font-weight:900;color:#ffd257">🏆 0</div>
-  <div id="userChip" style="font-size:13px;font-weight:800;color:#9fb2d8;cursor:pointer;padding:4px 12px;border:1px solid #ffffff22;border-radius:999px;margin:2px 0">👤</div>
-  <button class="btn" id="playBtn" data-en="▶ Play">▶ שחק</button>
-  <div class="row">
-    <button class="btn sec" id="raceBtn" data-en="🏁 Live Race">🏁 תחרות</button>
-    <button class="btn sec" id="runBtn" data-en="🏃 Endless Run">🏃 ריצה</button>
-  </div>
-  <div class="row">
-    <button class="btn sec glowy" id="passBtn" data-en="🎫 Season Pass">🎫 פס העונה</button>
-    <button class="btn sec" id="dailyBtn" data-en="🎲 Daily Challenge">🎲 אתגר יומי</button>
-    <button class="btn sec" id="questBtn" data-en="📜 Quests">📜 קווסטים</button>
-    <button class="btn sec" id="boardBtn" data-en="🌍 Leaderboard">🌍 שיאים</button>
-  </div>
-  <div class="row">
-    <button class="btn sec" id="friendsBtn" data-en="👥 Friends">👥 חברים</button>
-    <button class="btn sec" id="tablesBtn" data-en="🏆 Leaderboards">🏆 טבלאות</button>
-  </div>
-  <div class="row">
-    <button class="btn sec" id="chestBtn" data-en="🎁 Chests">🎁 תיבות</button>
-    <button class="btn sec glowy" id="scratchBtn" data-en="🎟 Scratch Card">🎟 כרטיס גירוד</button>
-    <button class="btn sec" id="skinBtn" data-en="🎨 Skins">🎨 סקינים</button>
-  </div>
-  <div class="row">
-    <button class="btn sec" id="achBtn" data-en="🏅 Achievements">🏅 הישגים</button>
-    <button class="btn sec" id="selectBtn" data-en="🗺 Levels">🗺 שלבים</button>
-    <button class="btn sec" id="adminBtn" style="display:none" data-en="🛠 Admin">🛠 אדמין</button>
-  </div>
-  <div id="menuPassBar" style="width:min(300px,84vw);cursor:pointer;background:rgba(255,255,255,.06);border:1px solid #ffffff1c;border-radius:14px;padding:8px 12px;display:flex;align-items:center;gap:10px">
-    <span style="font-size:20px">🎫</span>
-    <div style="flex:1">
-      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800"><span id="mpbT"></span><span id="mpbBadge" style="color:#ff4fd8"></span></div>
-      <div style="height:8px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:3px"><div id="mpbBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--g1,#ffd257),var(--g2,#ff9e4d))"></div></div>
+<div class="overlay hidden" id="menuOv" style="gap:0;padding:0;justify-content:flex-start">
+  <div style="position:relative;width:100%;max-width:430px;margin:0 auto;display:flex;flex-direction:column;min-height:100%;padding:12px 0 10px">
+    <div style="display:flex;gap:8px;padding:8px 16px;align-items:center;flex-wrap:wrap;justify-content:center">
+      <div class="mPill" id="mnuGem">💎 0</div>
+      <div class="mPill" id="mnuCoin">🪙 0</div>
+      <div class="mPill" id="mnuTro">🏆 0</div>
+      <div class="mPill" id="userChip" style="cursor:pointer;display:flex;gap:8px;align-items:center;padding:5px 12px 5px 8px"></div>
     </div>
+    <div style="text-align:center;margin-top:10px">
+      <div id="mnuStars" style="display:var(--stars,none);color:#f6b40e;font-size:13px;letter-spacing:8px">★ ★ ★</div>
+      <div style="font-size:34px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--t1,#8fd0ff),var(--t2,#ffffff) 50%,var(--t3,#75aadb));-webkit-background-clip:text;background-clip:text;color:transparent">GRAVITY MAZE</div>
+    </div>
+    <div style="padding:14px 20px 0"><button id="playBtn" style="width:100%;border:none;cursor:pointer;background:linear-gradient(180deg,var(--g1,#ffd65c),var(--g2,#f6b40e));color:#12253f;border-radius:20px;padding:18px;font-size:21px;font-weight:900;box-shadow:0 10px 26px rgba(246,180,14,.4)">שחק</button></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:20px 20px 0">
+      <button class="mTile" id="raceBtn"><div class="mIc">🚩</div><div data-en="Live Race">תחרות חיה</div></button>
+      <button class="mTile" id="runBtn"><div class="mIc" style="color:#7ec8f2;font-weight:900">∞</div><div data-en="Endless Run">ריצה אינסופית</div></button>
+      <button class="mTile" id="questBtn"><div class="mIc">📋</div><div data-en="Quests">קווסטים</div></button>
+      <button class="mTile" id="chestBtn"><div class="mIc">🎁</div><div data-en="Chests">תיבות</div></button>
+      <button class="mTile" id="scratchBtn"><div class="mIc">🎟️</div><div data-en="Scratch Card">כרטיס גירוד</div></button>
+      <button class="mTile" id="skinBtn"><div class="mIc">🎨</div><div data-en="Skins">סקינים</div></button>
+      <button class="mTile" id="selectBtn"><div class="mIc">🗺️</div><div data-en="Levels">שלבים</div></button>
+      <button class="mTile" id="tablesBtn"><div class="mIc">🏆</div><div data-en="Leaderboards">טבלאות</div></button>
+      <button class="mTile" id="friendsBtn"><div class="mIc">👥</div><div data-en="Friends">חברים</div></button>
+      <button class="mTile" id="boardBtn"><div class="mIc">⏱️</div><div data-en="Daily Records">שיאי היום</div></button>
+      <button class="mTile" id="achBtn"><div class="mIc">🏅</div><div data-en="Achievements">הישגים</div></button>
+      <button class="mTile" id="mnuSet"><div class="mIc">⚙️</div><div data-en="Settings">הגדרות</div></button>
+      <button class="mTile" id="adminBtn" style="display:none"><div class="mIc">🛠</div><div data-en="Admin">אדמין</div></button>
+      <button id="passBtn" style="display:none"></button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:18px 20px;gap:12px;margin-top:auto">
+      <div id="menuPassBar" style="cursor:pointer;position:relative;background:rgba(7,16,33,.8);border:1px solid rgba(246,180,14,.35);border-radius:20px;padding:14px 16px;flex:1;text-align:right">
+        <div id="mpbBadge" style="display:none;position:absolute;top:-12px;inset-inline-start:12px;background:linear-gradient(90deg,var(--g1,#ffd65c),var(--g2,#f6b40e));color:#12253f;font-size:11px;font-weight:900;border-radius:999px;padding:4px 10px"></div>
+        <div style="display:flex;align-items:center;gap:8px;color:#fff;font-weight:800;font-size:15px"><span>🏟️</span> <span data-en="Season Pass">פס העונה</span></div>
+        <div style="height:6px;border-radius:3px;background:rgba(126,200,242,.15);margin-top:10px;overflow:hidden"><div id="mpbBar" style="width:0;height:100%;background:linear-gradient(90deg,var(--g1,#ffd65c),var(--g2,#f6b40e));border-radius:3px"></div></div>
+        <div id="mpbT" style="color:#a9c6e2;font-size:11px;font-weight:600;margin-top:7px"></div>
+      </div>
+      <button id="dailyBtn" style="cursor:pointer;border:1px solid rgba(126,200,242,.18);background:rgba(7,16,33,.8);border-radius:18px;padding:12px 16px;text-align:center">
+        <div style="color:#7ec8f2;font-size:13px;font-weight:800" data-en="Daily Challenge">אתגר יומי</div>
+        <div id="menuDaily" style="color:#a9c6e2;font-size:11px;margin-top:4px"></div>
+      </button>
+    </div>
+    <div class="row" style="padding-bottom:6px">
+      <button class="btn sec" id="installBtn" style="display:none;font-size:13px;padding:9px 18px" data-en="📲 Install App">📲 התקן כאפליקציה</button>
+      <button class="btn sec" id="menuClose" style="font-size:13px;padding:9px 18px" data-en="✕ Back to Lobby">✕ חזרה ללובי</button>
+    </div>
+    <div style="display:none"><div id="troLine"></div></div>
   </div>
-  <div id="menuDaily" style="font-size:12px;color:#8fe3a2;font-weight:800"></div>
-  <button class="btn sec" id="installBtn" style="display:none" data-en="📲 Install App">📲 התקן כאפליקציה</button>
-  <button class="btn sec" id="menuClose" data-en="✕ Back to Lobby">✕ חזרה ללובי</button>
 </div>
 
-<div class="overlay hidden" id="authOv" style="z-index:60;background:rgba(8,10,18,.96)">
-  <div class="big float">🎱</div>
+<div class="overlay hidden" id="authOv" style="z-index:60">
+  <div class="float" style="width:88px;height:88px;border-radius:50%;background:radial-gradient(circle at 32% 30%,#ffffff,#d9e6f2 45%,#8fa8c0);display:flex;align-items:center;justify-content:center;font-size:46px;box-shadow:0 14px 34px rgba(0,0,0,.5)">⚽</div>
   <h1 data-en="Who's Playing?">מי משחק?</h1>
   <p class="sub" data-en="Each player has their own save: progress, coins, chests and skins. ☁️ Log in and your progress is saved to the cloud — on every device.">לכל שחקן שמירה משלו: התקדמות, מטבעות, תיבות וסקינים.<br>☁️ מתחברים — וההתקדמות נשמרת בענן ועוברת איתך לכל מכשיר.</p>
   <input class="tin" id="authUser" maxlength="14" placeholder="שם משתמש" data-en-ph="Username" autocomplete="username" style="max-width:260px">
@@ -522,6 +537,7 @@
 </div>
 
 <div class="overlay hidden" id="pauseOv">
+  <div style="width:74px;height:74px;border-radius:22px;background:rgba(126,200,242,.12);border:1px solid rgba(126,200,242,.2);display:flex;align-items:center;justify-content:center;font-size:30px;color:#8fd0ff;font-weight:900">▮▮</div>
   <h1 data-en="Paused">השהיה</h1>
   <div class="slider-wrap"><span data-en="Tilt Sensitivity">רגישות הטיה</span>
     <input type="range" id="sensSlider" min="60" max="170" value="100">
@@ -693,32 +709,35 @@
   <button class="btn" id="rrBack" data-en="To Menu">לתפריט</button>
 </div>
 
-<div class="overlay hidden" id="failOv">
+<div class="overlay hidden" id="failOv" style="justify-content:center;background:radial-gradient(130% 90% at 50% 0%,#3a1025 0%,#22081a 55%,#120310 100%)">
   <div class="big">💔</div>
   <canvas id="failPet" width="120" height="116" style="margin:-8px auto 0"></canvas>
-  <h1 data-en="Out of Lives">נגמרו הפסילות</h1>
-  <p class="sub" id="failText"></p>
-  <div class="row">
-    <button class="btn" id="failRetry" data-en="Try Again">נסה שוב</button>
-    <button class="btn sec" id="failSelect" data-en="Level Select">בחירת שלב</button>
+  <h1 style="font-size:30px" data-en="Out of Lives">נגמרו הפסילות</h1>
+  <p class="sub" style="color:#d8b8c8;max-width:300px" data-en="You were close! The level isn't going anywhere — one more try and you're there 💪">הייתם קרובים! השלב לא הולך לשום מקום — עוד ניסיון אחד ואתם שם 💪</p>
+  <div id="failText" style="background:rgba(7,16,33,.6);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:7px 18px;font-weight:800;font-size:13px;color:#eaf4ff"></div>
+  <div style="margin-top:26px;width:min(340px,88vw);display:flex;flex-direction:column;gap:10px">
+    <button class="btn" id="failRetry" style="width:100%" data-en="↺ Try Again">↺ נסו שוב</button>
+    <div class="row">
+      <button class="btn sec" id="failSelect" data-en="Level Select">בחירת שלב</button>
+      <button class="btn sec" id="failMenu" data-en="Main Menu">תפריט ראשי</button>
+    </div>
   </div>
-  <button class="btn sec" id="failMenu" data-en="🏠 Main Menu">🏠 חזרה לתפריט</button>
 </div>
 
-<div class="overlay hidden" id="doneOv">
+<div class="overlay hidden" id="doneOv" style="justify-content:center">
   <div id="medalBig"></div>
-  <h1 id="doneTitle"></h1>
+  <h1 id="doneTitle" style="font-size:30px"></h1>
   <div id="starsBig"></div>
   <canvas id="winPet" width="120" height="116" style="margin:-4px auto 0"></canvas>
-  <p class="sub" id="doneText"></p>
+  <p class="sub" id="doneText" style="color:#a9c6e2"></p>
   <div id="winChips" class="row" style="gap:8px"></div>
-  <div class="row">
-    <button class="btn" id="nextBtn" data-en="Continue">המשך</button>
-    <button class="btn sec" id="replayBtn" data-en="Again">שוב</button>
-  </div>
-  <div class="row">
-    <button class="btn sec" id="doneMenu" data-en="🏠 Menu">🏠 תפריט</button>
-    <button class="btn sec" id="doneLobby" data-en="⚽ Lobby">⚽ לובי</button>
+  <div style="margin-top:26px;width:min(340px,88vw);display:flex;flex-direction:column;gap:10px">
+    <button class="btn" id="nextBtn" style="width:100%" data-en="Continue">המשך</button>
+    <div class="row">
+      <button class="btn sec" id="doneLobby" data-en="⚽ Lobby">⚽ לובי</button>
+      <button class="btn sec" id="doneMenu" data-en="Menu">תפריט</button>
+      <button class="btn sec" id="replayBtn" data-en="↺ Again">↺ עוד פעם</button>
+    </div>
   </div>
 </div>
 
@@ -3337,13 +3356,13 @@ function finishLevel(){
     txt+=tr(' — כבשת את כל 100 השלבים! ',' — you conquered all 100 levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
   }
   $('doneText').textContent=txt;
+  const _pg=8+got*4+(firstClear?20:0)+(firstClear&&(levelIdx+1)%10===0?30:0);
   { // 🏅 צ'יפי פרסים (עיצוב עונה 1)
     const chip=t2=>'<span style="background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px">'+t2+'</span>';
     $('winChips').innerHTML=chip('+'+_cg+' 🪙')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫');
   }
-  $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('לשלב הבא','Next Level');
+  $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('המשך לשלב ','Continue to level ')+(levelIdx+2)+' ‹';
   addDailyWin();
-  const _pg=8+got*4+(firstClear?20:0)+(firstClear&&(levelIdx+1)%10===0?30:0);
   passAdd(_pg); // 🎫 נקודות עונה
   checkAch();
   save();
@@ -3394,6 +3413,7 @@ function buildGrid(){
 }
 
 $('playBtn').onclick=async()=>{initAudio();await enableSensors();startRun(Math.min(unlocked,LEVELS.length-1));};
+$('lbPlay').onclick=()=>$('playBtn').onclick();
 $('selectBtn').onclick=async()=>{initAudio();await enableSensors();
   buildGrid();$('menuOv').classList.add('hidden');$('selectOv').classList.remove('hidden');};
 $('backBtn').onclick=()=>{$('selectOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
@@ -3852,7 +3872,7 @@ function failLevel(){
       customLv=null;syncLobbyUI();
       showResult('🔒',tr('האתגר ננעל להיום','Locked for today'),tr('שלוש נפילות — האתגר היומי נעול עד מחר. מחר מחכה אתגר חדש!','Three falls — the daily challenge is locked until tomorrow. A new one awaits!'));
     }else{
-      $('failText').textContent=tr('שלב ','Level ')+(levelIdx+1)+tr(' — שלוש נפילות. קורה גם לטובים ביותר.',' — three falls. Happens to the best.')+penTxt;
+      $('failText').textContent=tr('שלב ','Level ')+(levelIdx+1)+' · '+tr(THEMES[((levelIdx/10)|0)%10].name,'world')+' · '+Math.min(3,lvDeaths)+'/3 '+tr('נפילות','falls')+penTxt;
       $('failOv').classList.remove('hidden');
     }
   });
@@ -5312,7 +5332,7 @@ $('tbLvl').onclick=()=>{tbMetric='lvl';buildTables();};
 $('tbStar').onclick=()=>{tbMetric='star';buildTables();};
 $('questBtn').onclick=()=>{buildQuests();$('menuOv').classList.add('hidden');$('questOv').classList.remove('hidden');};
 $('questBack').onclick=()=>{$('questOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
-$('menuBtn2').onclick=()=>{refreshTro();$('menuOv').classList.remove('hidden');};
+$('menuBtn2').onclick=()=>{refreshTro();menuPassSync();$('menuOv').classList.remove('hidden');};
 $('menuClose').onclick=()=>{$('menuOv').classList.add('hidden');};
 $('skinBtn').onclick=()=>{buildSkins();$('menuOv').classList.add('hidden');$('skinOv').classList.remove('hidden');};
 $('skinBack').onclick=()=>{$('skinOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
@@ -5525,7 +5545,12 @@ function avHTML(name,size){ // 🟠 אווטר-אות כמו בעיצוב עונ
   return '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;flex:none;background:'+cols[h%cols.length]+
     ';display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:'+((size*.46)|0)+'px;box-shadow:0 2px 10px rgba(0,0,0,.35)">'+esc(n2[0])+'</div>';
 }
-function refreshUserChip(){$('userChip').textContent=curUser?('👤 '+curUser+tr(' · החלף',' · switch')):tr('👤 אורח · כניסה','👤 Guest · log in');}
+function refreshUserChip(){
+  const nm=curUser||tr('אורח','Guest');
+  $('userChip').innerHTML=avHTML(nm,30)+
+    '<div style="color:#a9c6e2;font-size:11px;font-weight:700;line-height:1.25;text-align:right">'+esc(nm)+
+    '<br><span style="color:#fff;font-size:12px">'+tr('שלב ','Level ')+Math.min(unlocked+1,1000)+'</span></div>';
+}
 function applyUser(name){
   curUser=name;
   if(name){KEY='mazeU_'+name;GKEY='mazeG_'+name;}
@@ -6397,12 +6422,20 @@ function menuPassSync(){
   try{
     passSync();
     const tier=passTierNow();
-    $('mpbT').textContent='🎫 '+seasonLabel()+' · '+tr('דרגה ','Tier ')+tier+'/'+PASS_T;
+    $('mpbT').textContent='🎟️ '+(passP%PASS_COST)+'/'+PASS_COST+' · '+tr('דרגה ','Tier ')+tier+'/'+PASS_T;
     $('mpbBar').style.width=(tier>=PASS_T?100:(passP%PASS_COST))+'%';
-    $('mpbBadge').textContent=passClaimable()>0?tr('פרס מחכה! 🎁','Reward! 🎁'):'';
-    $('menuDaily').textContent=tr('🎲 אתגר יומי חדש בעוד ','🎲 New daily in ')+dwResetStr();
+    const bd=$('mpbBadge');
+    bd.textContent=tr('פרס מחכה!','Reward!');
+    bd.style.display=passClaimable()>0?'block':'none';
+    $('menuDaily').textContent=tr('מתאפס בעוד ','Resets in ')+dwResetStr();
+    $('mnuGem').textContent='💎 '+gems;
+    $('mnuCoin').textContent='🪙 '+coins;
+    $('mnuTro').textContent='🏆 '+trophies;
+    $('playBtn').textContent=tr('שחק · שלב ','Play · Level ')+Math.min(unlocked+1,1000);
+    refreshUserChip();
   }catch(e){}
 }
+$('mnuSet').onclick=()=>{$('menuOv').classList.add('hidden');$('setBtn').onclick();};
 $('menuPassBar').onclick=()=>{
   $('menuOv').classList.add('hidden');
   $('passOv').classList.remove('hidden');
