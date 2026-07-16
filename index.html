@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v70</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v71</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -405,6 +405,7 @@
   <p class="sub" id="scMsg" style="min-height:22px"></p>
   <div class="row"><button class="btn sec" id="scBack" data-en="⬅ Menu">⬅ תפריט</button></div>
 </div>
+<video id="fxVid" playsinline preload="none" style="display:none;position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:44;pointer-events:none"></video>
 <canvas id="cfx" style="display:none;position:fixed;inset:0;z-index:200;pointer-events:none"></canvas>
 <div id="boxFlash" style="display:none;position:fixed;inset:0;background:#fff;z-index:66;pointer-events:none"></div>
 <div class="overlay hidden" id="adminOv" style="z-index:55;background:rgba(8,10,18,.95)">
@@ -2523,8 +2524,65 @@ function goalFxShow(kind){
     setTimeout(()=>d.remove(),1900);
   }catch(e){}
 }
+/* 🎬 אפקטי הניצחון החדשים: וידאו שהועלה לכל אפקט.
+   הרקע (שחור/לבן) יכול להתחלף באמצע הקליפ — דוגמים פינות כל ~150ms
+   ובוחרים מיזוג בהתאם: שחור=screen (נעלם), לבן=multiply (נעלם). */
+const FXV_BLEND=['screen','screen','multiply','screen','screen','multiply','screen','multiply','multiply'];
+let _fxsC=null,_fxsT=0;
+function fxAutoBlend(v){
+  try{
+    if(!_fxsC){_fxsC=document.createElement('canvas');_fxsC.width=16;_fxsC.height=9;}
+    const g=_fxsC.getContext('2d',{willReadFrequently:true});
+    g.drawImage(v,0,0,16,9);
+    const d2=g.getImageData(0,0,16,9).data;
+    const pk=[0,15*4,8*4*16+0,8*4*16+15*4];
+    let lum=0;
+    for(const o of pk)lum+=(d2[o]+d2[o+1]+d2[o+2])/3;
+    lum/=pk.length;
+    if(lum>175)v.style.mixBlendMode='multiply';
+    else if(lum<70)v.style.mixBlendMode='screen';
+  }catch(e){}
+}
+function playWinVideo(i){
+  try{
+    const v=$('fxVid');
+    if(!v)return false;
+    v._failed=v._failed||{};
+    if(v._failed[i])return false;
+    v.style.mixBlendMode=FXV_BLEND[i]||'screen';
+    clearInterval(_fxsT);
+    _fxsT=setInterval(()=>{
+      if(v.style.display==='none'||v.paused){clearInterval(_fxsT);return;}
+      fxAutoBlend(v);
+    },140);
+    if(v._cur!==i){
+      v.src='fx-win-'+i+((v._webm&&v._webm[i])?'.webm':'.mp4');
+      v._cur=i;
+    }
+    v.currentTime=0;
+    v.muted=muted;
+    v.style.display='block';
+    v.onended=()=>{v.style.display='none';};
+    v.onerror=()=>{
+      if(!v._webm||!v._webm[i]){ // נסיון שני: WebM (דפדפנים בלי H.264)
+        (v._webm=v._webm||{})[i]=true;
+        v.src='fx-win-'+i+'.webm';
+        v.play().catch(()=>{v._failed[i]=true;v.style.display='none';});
+        return;
+      }
+      v._failed[i]=true;v.style.display='none';
+    };
+    const pr=v.play();
+    if(pr&&pr.catch)pr.catch(()=>{
+      v.muted=true;
+      v.play().catch(()=>{v.style.display='none';});
+    });
+    return true;
+  }catch(e){return false;}
+}
 function playWinFX(x,y,big){
   const k=big?2:1;
+  playWinVideo(wSel); // 🎬 האפקט החדש — הווידאו שהועלה
   // 💥 בסיס עוצמתי לכל האפקטים: הבזק, רעידה, גלי הדף כפולים ורטט
   flashW=Math.max(flashW,big?.5:.32);
   shake=Math.max(shake,big?.7:.45);
