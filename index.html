@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v72</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v73</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -408,6 +408,14 @@
 <video id="fxVid" playsinline preload="none" style="display:none;position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:44;pointer-events:none"></video>
 <canvas id="cfx" style="display:none;position:fixed;inset:0;z-index:200;pointer-events:none"></canvas>
 <div id="boxFlash" style="display:none;position:fixed;inset:0;background:#fff;z-index:66;pointer-events:none"></div>
+<div class="overlay hidden" id="sndOv" style="z-index:56;background:rgba(8,10,18,.96)">
+  <h1 data-en="🔊 Skin sounds">🔊 סאונדים לסקינים</h1>
+  <p class="sub" data-en="Upload a short clip (~3s, up to ~90KB) per skin — plays for all players on wins and goals. Your own recordings only 🎙">מעלים קליפ קצר (בערך 3 שניות, עד ~90KB) לכל סקין —<br>מתנגן אצל כל השחקנים בניצחונות ובגולים. רק הקלטות שיצרתם בעצמכם 🎙</p>
+  <div id="sndMsg" style="font-size:12.5px;font-weight:800;color:#ffd257;min-height:18px;max-width:min(92vw,420px);text-align:center"></div>
+  <div id="sndList" style="width:min(92vw,420px);max-height:48vh;overflow-y:auto;background:rgba(7,16,33,.6);border:1px solid rgba(126,200,242,.15);border-radius:16px"></div>
+  <input type="file" id="sndFile" accept="audio/*" style="display:none">
+  <div class="row"><button class="btn sec" id="sndBack" data-en="⬅ Admin">⬅ אדמין</button></div>
+</div>
 <div class="overlay hidden" id="adminOv" style="z-index:55;background:rgba(8,10,18,.95)">
   <h1 data-en="🛠 Admin">🛠 אדמין</h1>
   <div id="admNet" style="font-size:12.5px;font-weight:800;color:#aeb8c8">🌍 …</div>
@@ -472,6 +480,7 @@
   </div>
   <button class="btn sec" id="admResetUser" data-en="🗑 Reset player (everything)">🗑 איפוס שחקן (הכל)</button>
   <button class="btn sec" id="admEditor" data-en="🧩 Custom level designer">🧩 עורך שלבים מותאמים</button>
+  <button class="btn sec" id="admSounds" data-en="🔊 Skin sounds">🔊 סאונדים לסקינים</button>
   <div class="row">
     <button class="btn sec" id="admSummon" data-en="🚀 Summon to race">🚀 זמן למרוץ</button>
     <button class="btn sec" id="admWatch" data-en="👀 Playing now">👀 משחקים עכשיו</button>
@@ -2483,7 +2492,17 @@ function shoutBanner(txt){
 }
 function skinShout(idx){
   try{
-    const sk=SKINS[idx===undefined?skinSel:idx]||{};
+    const _i=idx===undefined?skinSel:idx;
+    const sk=SKINS[_i]||{};
+    const _cs=sndFor(sk,_i); // 🔊 סאונד שהאדמין העלה לסקין — עדיפות ראשונה, לכל סקין
+    if(_cs&&!muted){
+      if(sk._caud!==_cs){sk._caud=_cs;sk._cA=new Audio(_cs);}
+      try{sk._cA.currentTime=0;}catch(e2){}
+      sk._cA.volume=1;
+      sk._cA.play().catch(()=>{});
+      if(sk.shout)shoutBanner(sk.shout);
+      return;
+    }
     if(!sk.shout)return;
     if(sk.vkey){ // קובץ קול אמיתי שהועלה למשחק
       if(!sk._aud){
@@ -2891,7 +2910,7 @@ function drawBall(T){
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 const SB={x:0,z:5.5,vx:0,vz:0,rot:0}; // ⚽ כדור הכדורגל — דוחפים אותו לשער
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv','sndOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -5535,8 +5554,9 @@ setInterval(async()=>{
 },30000);
 /* 📬 דואר נכנס כמעט-מיידי: מתנות, איפוסים, באנים וזימונים מוחלים תוך ~10 שניות,
    בלובי וגם באמצע משחק — בלי לחכות לכניסה מחדש */
-function applyInbox(r){ // {gift,summon,ban,season} — מכל מקור
+function applyInbox(r){ // {gift,summon,ban,season,snv} — מכל מקור
   if('season' in r)adoptSeason(r.season);
+  if('snv' in r)syncSounds(r.snv); // 🔊 גרסת הסאונדים לסקינים השתנתה? מורידים ברקע
   if(enforceBan(r.ban))return true;
   const sm=r.summon;
   if(sm&&sm.code&&Date.now()-(sm.ts||0)<180e3)setTimeout(()=>showSummon(sm),400);
@@ -6890,6 +6910,116 @@ $('admSeaAuto').onclick=async()=>{
   adoptSeason(null);
   admSeaCur();
   $('admMsg').textContent=tr('🔄 חזרנו לעונות אוטומטיות (מתחלפות כל חודש)','🔄 Back to automatic monthly seasons');
+};
+/* ============ 🔊 דף נתינת סאונדים לסקינים (אדמין) ============
+   האדמין מעלה קליפ קצר לכל סקין (הקלטות שלו בלבד) → נשמר בשרת הבקנד →
+   כל שחקן מוריד אוטומטית לפי גרסה (snv ב-claim) ושומר מקומית.
+   בזמן ניצחון/גול skinShout מנגן קודם את הסאונד שהוקצה לסקין. */
+let SNDS=null;
+try{SNDS=JSON.parse(localStorage.getItem('mazeSounds')||'null');}catch(e){}
+function sndKey(sk,i){
+  return sk.vkey||String(sk.en||'s'+i).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||('s'+i);
+}
+function sndFor(sk,i){return (SNDS&&SNDS.m&&SNDS.m[sndKey(sk,i)])||null;}
+let sndSyncBusy=false;
+async function syncSounds(v){ // v — גרסת הסאונדים שדווחה מהשרת; -1 = רענון בכוח
+  if(v===undefined||v===null)return;
+  if(!v||v<0){
+    if(v===0&&SNDS){SNDS=null;try{localStorage.removeItem('mazeSounds');}catch(e){}}
+    if(v===0)return;
+  }
+  if(v>0&&SNDS&&SNDS.v===v)return;
+  if(sndSyncBusy||!beOn())return;
+  sndSyncBusy=true;
+  try{
+    const r=await be('/api/sounds');
+    if(r&&r.m!==undefined){
+      SNDS={v:r.v||0,m:r.m||{}};
+      SKINS.forEach(s=>{delete s._cA;delete s._caud;}); // אודיו ישן שמור בזיכרון — מרעננים
+      try{localStorage.setItem('mazeSounds',JSON.stringify(SNDS));}catch(e){}
+      try{if(!$('sndOv').classList.contains('hidden'))sndRender();}catch(e){}
+    }
+  }catch(e){}
+  sndSyncBusy=false;
+}
+let sndPick=null;
+function sndRender(){
+  let h='';
+  SKINS.forEach((sk,i)=>{
+    const k=sndKey(sk,i),has=!!(SNDS&&SNDS.m&&SNDS.m[k]);
+    h+='<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid rgba(126,200,242,.08)">'+
+      '<div style="flex:1;min-width:0;font-weight:800;font-size:13px;color:'+((RAR[sk.rar|0]||RAR[0]).c)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+sk.name+(sk.shout?' 🎙':'')+'</div>'+
+      '<div style="font-size:13px;width:20px;text-align:center">'+(has?'🎵':'·')+'</div>'+
+      '<button class="chip" data-up="'+k+'">🎙 '+tr('קובץ','File')+'</button>'+
+      '<button class="chip" data-pl="'+k+'"'+(has?'':' style="opacity:.35"')+'>▶</button>'+
+      (has?'<button class="chip" data-del="'+k+'">🗑</button>':'')+
+      '</div>';
+  });
+  $('sndList').innerHTML=h;
+}
+$('admSounds').onclick=()=>{
+  $('adminOv').classList.add('hidden');
+  $('sndOv').classList.remove('hidden');
+  $('sndMsg').textContent=beOn()?'':tr('⚠ אין שרת בקנד מחובר — הסאונדים לא יופצו לשחקנים','⚠ No backend connected — sounds will not reach players');
+  sndRender();
+  syncSounds(-1); // מרעננים מהשרת כדי לראות מצב עדכני
+};
+$('sndBack').onclick=()=>{$('sndOv').classList.add('hidden');$('adminOv').classList.remove('hidden');};
+$('sndList').onclick=async e=>{
+  const t=e.target.closest('button');
+  if(!t)return;
+  if(t.dataset.up){sndPick=t.dataset.up;$('sndFile').value='';$('sndFile').click();return;}
+  if(t.dataset.pl){
+    const d2=SNDS&&SNDS.m&&SNDS.m[t.dataset.pl];
+    if(d2){try{new Audio(d2).play().catch(()=>{});}catch(e2){}}
+    else $('sndMsg').textContent=tr('אין עדיין סאונד לסקין הזה','No sound assigned to this skin yet');
+    return;
+  }
+  if(t.dataset.del){
+    if(!beOn())return $('sndMsg').textContent=tr('דרוש שרת בקנד מחובר','Backend server required');
+    $('sndMsg').textContent='…';
+    const r=await be('/api/sounds',{k:t.dataset.del,dat:null});
+    if(r&&r.ok){
+      if(SNDS&&SNDS.m)delete SNDS.m[t.dataset.del];
+      if(SNDS)SNDS.v=r.v;
+      SKINS.forEach(s=>{delete s._cA;delete s._caud;});
+      try{localStorage.setItem('mazeSounds',JSON.stringify(SNDS));}catch(e2){}
+      sndRender();
+      $('sndMsg').textContent=tr('🗑 הסאונד הוסר מכל השחקנים','🗑 Sound removed for all players');
+    }else $('sndMsg').textContent=tr('❌ המחיקה נכשלה','❌ Delete failed');
+  }
+};
+$('sndFile').onchange=e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f||!sndPick)return;
+  if(!/^audio\//.test(f.type||''))return $('sndMsg').textContent=tr('❌ זה לא קובץ אודיו','❌ Not an audio file');
+  const rd=new FileReader();
+  rd.onload=async()=>{
+    const dat=String(rd.result||'');
+    if(dat.length>126000)return $('sndMsg').textContent=tr('❌ גדול מדי — עד ~90KB (קליפ של כמה שניות). חתכו או כווצו את הקובץ','❌ Too big — up to ~90KB (a few seconds). Trim or compress the file');
+    if(!beOn())return $('sndMsg').textContent=tr('דרוש שרת בקנד מחובר','Backend server required');
+    $('sndMsg').textContent=tr('⬆ מעלה…','⬆ Uploading…');
+    let r=null;
+    try{ // העלאה עם timeout ארוך יותר מ-be() הרגיל — הקובץ גדול מבקשה רגילה
+      const ac=new AbortController();
+      const to=setTimeout(()=>ac.abort(),20000);
+      const rs=await fetch(BACKEND+'/api/sounds',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k:sndPick,dat}),signal:ac.signal});
+      clearTimeout(to);
+      r=await rs.json();
+    }catch(e2){}
+    if(r&&r.ok){
+      if(!SNDS)SNDS={v:0,m:{}};
+      if(!SNDS.m)SNDS.m={};
+      SNDS.m[sndPick]=dat;
+      SNDS.v=r.v;
+      SKINS.forEach(s=>{delete s._cA;delete s._caud;});
+      try{localStorage.setItem('mazeSounds',JSON.stringify(SNDS));}catch(e2){}
+      sndRender();
+      $('sndMsg').textContent=tr('✔ הועלה! מתנגן אצל כל השחקנים תוך שניות','✔ Uploaded! Playing for all players within seconds');
+      try{new Audio(dat).play().catch(()=>{});}catch(e2){}
+    }else $('sndMsg').textContent=tr('❌ ההעלאה נכשלה','❌ Upload failed')+(r&&r.err==='big'?tr(' — הקובץ גדול מדי',' — file too big'):'');
+  };
+  rd.readAsDataURL(f);
 };
 $('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה אוטומטית לכל השחקנים
   const url=($('admBackend').value||'').trim().replace(/\/+$/,'');

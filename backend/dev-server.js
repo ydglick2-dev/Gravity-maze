@@ -20,6 +20,7 @@ const PORT = +(process.argv[2] || 8787);
 const FILE = path.join(__dirname, 'dev-data.json');
 let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
 try { doc = Object.assign(doc, JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) { }
+if (!doc.snd) doc.snd = { v: 0, m: {} }; // 🔊 סאונדים לסקינים
 const persist = () => { try { fs.writeFileSync(FILE, JSON.stringify(doc)); } catch (e) { } };
 
 const socks = new Map(); // user -> Set<ws>
@@ -69,8 +70,10 @@ const server = http.createServer((req, res) => {
     if (p === '/api/doc' && req.method === 'GET') return J(doc);
     if (p === '/api/doc' && req.method === 'POST') {
       if (!b || !b.users) return J({ err: 'bad' }, 400);
+      const snd0 = doc.snd;
       doc = b;
       for (const k of ['users', 'gifts', 'summon', 'bans', 'live']) if (!doc[k]) doc[k] = {};
+      if (!doc.snd) doc.snd = snd0 || { v: 0, m: {} };
       persist(); return J({ ok: 1 });
     }
     if (p === '/api/import' && req.method === 'POST') {
@@ -125,7 +128,7 @@ const server = http.createServer((req, res) => {
     }
     if (p === '/api/claim' && req.method === 'POST') {
       const u = cleanName(b.u);
-      const out = { gift: doc.gifts[u] || null, summon: doc.summon[u] || null, ban: doc.bans[u] || null, season: doc.season || null };
+      const out = { gift: doc.gifts[u] || null, summon: doc.summon[u] || null, ban: doc.bans[u] || null, season: doc.season || null, snv: doc.snd.v || 0 };
       if (out.gift || out.summon) { delete doc.gifts[u]; delete doc.summon[u]; persist(); }
       return J(out);
     }
@@ -144,6 +147,24 @@ const server = http.createServer((req, res) => {
       return J({ ok: 1 });
     }
     if (p === '/api/mm' && req.method === 'POST') { doc.mm = b.mm || null; persist(); return J({ ok: 1 }); }
+    /* 🔊 סאונדים לסקינים — זהה ל-worker.js */
+    if (p === '/api/sounds' && req.method === 'GET') return J({ v: doc.snd.v || 0, m: doc.snd.m || {} });
+    if (p === '/api/sounds' && req.method === 'POST') {
+      const k = String(b.k || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+      if (!k) return J({ err: 'bad' }, 400);
+      if (b.dat === null || b.dat === undefined) delete doc.snd.m[k];
+      else {
+        const dat = String(b.dat);
+        if (!/^data:audio\//.test(dat)) return J({ err: 'bad' }, 400);
+        if (dat.length > 126000) return J({ err: 'big' }, 400);
+        if (!(k in doc.snd.m) && Object.keys(doc.snd.m).length >= 48) return J({ err: 'full' }, 400);
+        doc.snd.m[k] = dat;
+      }
+      doc.snd.v = Date.now();
+      persist();
+      for (const s of socks.values()) for (const ws of s) { try { ws.send(JSON.stringify({ t: 'inbox' })); } catch (e) { } }
+      return J({ ok: 1, v: doc.snd.v });
+    }
     J({ err: 'notfound' }, 404);
   });
 });

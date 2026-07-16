@@ -36,6 +36,7 @@ export class Registry {
   constructor(state) {
     this.state = state;
     this.doc = null;
+    this.snd = null; // 🔊 אינדקס סאונדים לסקינים {v, ks:[...]} — הקבצים עצמם במפתחות snd:<k>
     this.socks = new Map(); // user -> Set<WebSocket>
     this._liveT = 0;
     this._syncT = 0;
@@ -72,6 +73,7 @@ export class Registry {
       for (const k of ['users', 'gifts', 'summon', 'bans', 'live'])
         if (!this.doc[k]) this.doc[k] = {};
     }
+    if (!this.snd) this.snd = (await this.state.storage.get('sndIdx')) || { v: 0, ks: [] };
     return this.doc;
   }
 
@@ -234,7 +236,7 @@ export class Registry {
     if (p === '/api/claim' && req.method === 'POST') {
       await this.tdbSync();
       const u = cleanName(b.u);
-      const out = { gift: d.gifts[u] || null, summon: d.summon[u] || null, ban: d.bans[u] || null, season: d.season || null };
+      const out = { gift: d.gifts[u] || null, summon: d.summon[u] || null, ban: d.bans[u] || null, season: d.season || null, snv: this.snd.v || 0 };
       if (out.gift || out.summon) {
         delete d.gifts[u];
         delete d.summon[u];
@@ -270,6 +272,41 @@ export class Registry {
       d.mm = b.mm || null;
       await this.saveDoc();
       return J({ ok: 1 });
+    }
+
+    /* 🔊 סאונדים לסקינים — קליפים קצרים שהאדמין מעלה (הקלטות שלו);
+       כל שחקן מוריד פעם אחת לפי גרסה (snv ב-claim) ושומר מקומית.
+       כל קליפ במפתח אחסון משלו — מגבלת Durable Object היא 128KB לערך. */
+    if (p === '/api/sounds' && req.method === 'GET') {
+      const m = {};
+      for (const k of this.snd.ks) {
+        const v = await this.state.storage.get('snd:' + k);
+        if (v) m[k] = v;
+      }
+      return J({ v: this.snd.v || 0, m });
+    }
+    if (p === '/api/sounds' && req.method === 'POST') {
+      const k = String(b.k || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+      if (!k) return J({ err: 'bad' }, 400);
+      if (b.dat === null || b.dat === undefined) {
+        await this.state.storage.delete('snd:' + k);
+        this.snd.ks = this.snd.ks.filter(x => x !== k);
+      } else {
+        const dat = String(b.dat);
+        if (!/^data:audio\//.test(dat)) return J({ err: 'bad' }, 400);
+        if (dat.length > 126000) return J({ err: 'big' }, 400);
+        if (!this.snd.ks.includes(k)) {
+          if (this.snd.ks.length >= 48) return J({ err: 'full' }, 400);
+          this.snd.ks.push(k);
+        }
+        await this.state.storage.put('snd:' + k, dat);
+      }
+      this.snd.v = Date.now();
+      await this.state.storage.put('sndIdx', this.snd);
+      // כולם מקבלים דחיפה — הסאונד החדש נטען אצלם תוך שניות
+      for (const set of this.socks.values())
+        for (const ws of set) { try { ws.send(JSON.stringify({ t: 'inbox' })); } catch (e) { } }
+      return J({ ok: 1, v: this.snd.v });
     }
 
     return J({ err: 'notfound' }, 404);
