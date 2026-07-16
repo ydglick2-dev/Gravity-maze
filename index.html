@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v67</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v68</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -264,7 +264,7 @@
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
-    <div style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000;background:rgba(7,16,33,.55);border-radius:999px;padding:5px 14px" data-en="⚽ Tilt your phone and roll · score a goal!">⚽ הטו את הטלפון וגלגלו — תבקיעו גול!</div>
+    <div style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000;background:rgba(7,16,33,.55);border-radius:999px;padding:5px 14px" data-en="⚽ Bump the soccer ball and push it into the goal!">⚽ תתנגשו בכדורגל ותדחפו אותו לשער!</div>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn" id="lbPlay" style="min-width:160px" data-en="Play">שחק</button>
       <button class="btn sec" id="menuBtn2" data-en="🎮 Menu">🎮 תפריט</button>
@@ -2442,6 +2442,17 @@ const DFX=[
  {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:1500,rar:4}
 ];
 /* ⚽ אפקטי GOAL! — מגיעים במתנה עם סקין שחקן כדורגל */
+/* 🎙 קריאת שער מפורסמת של השחקן שעל הכדור */
+function skinShout(){
+  try{
+    const sh=(SKINS[skinSel]||{}).shout;
+    if(!sh||!window.speechSynthesis)return;
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(sh);
+    u.lang='he-IL';u.rate=1.12;u.pitch=1.25;u.volume=1;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
 function goalFxShow(kind){
   try{
     const d=document.createElement('div');
@@ -2755,6 +2766,7 @@ function drawBall(T){
 
 /* ============ ⚽ לובי תלת-ממד: מגרש כדורגל ============ */
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
+const SB={x:0,z:5.5,vx:0,vz:0,rot:0}; // ⚽ כדור הכדורגל — דוחפים אותו לשער
 let lbBg=null,firstGest=false;
 const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
@@ -2862,11 +2874,35 @@ function lobbyFrame(dt,t){
   if(LB.x<-9.3){LB.x=-9.3;LB.vx*=-.5;}
   if(LB.x>9.3){LB.x=9.3;LB.vx*=-.5;}
   if(LB.z>26.8){LB.z=26.8;LB.vz*=-.5;}
-  if(LB.z<1){
-    if(Math.abs(LB.x)<2.7){
+  if(LB.z<1){LB.z=1;LB.vz*=-.5;} // השחקן לא מבקיע בעצמו — הכדורגל כן!
+  // ⚽ פיזיקת כדור הכדורגל
+  SB.vx*=Math.pow(.988,dt*60);SB.vz*=Math.pow(.988,dt*60);
+  SB.x+=SB.vx*dt;SB.z+=SB.vz*dt;
+  if(SB.x<-9.3){SB.x=-9.3;SB.vx*=-.55;}
+  if(SB.x>9.3){SB.x=9.3;SB.vx*=-.55;}
+  if(SB.z>26.8){SB.z=26.8;SB.vz*=-.55;}
+  // התנגשות: הכדור שלך בועט בכדורגל
+  {
+    const dx=SB.x-LB.x,dz=SB.z-LB.z,d=Math.hypot(dx,dz)||.001;
+    if(d<1.05){
+      const nx=dx/d,nz=dz/d;
+      SB.x=LB.x+nx*1.05;SB.z=LB.z+nz*1.05;
+      const dot=(LB.vx-SB.vx)*nx+(LB.vz-SB.vz)*nz;
+      if(dot>0){
+        SB.vx+=nx*dot*1.25;SB.vz+=nz*dot*1.25;
+        LB.vx-=nx*dot*.35;LB.vz-=nz*dot*.35;
+        tone(150,.06,'square',.28);
+        if(navigator.vibrate&&dot>6)navigator.vibrate(18);
+      }
+    }
+  }
+  if(SB.z<1){
+    if(Math.abs(SB.x)<2.7){ // ⚽ גוווול!
       LB.goals++;LB.glow=1;
       showToast(tr('⚽ גוֹל! (','⚽ GOAL! (')+LB.goals+')');
       sfx.win();
+      goalFxShow(LB.goals%2?'comic':'fly');
+      skinShout();
       for(let i=0;i<30;i++){
         if(particles.length>240)particles.shift();
         particles.push({x:W/2+(Math.random()-.5)*120,y:H*.46,
@@ -2874,9 +2910,10 @@ function lobbyFrame(dt,t){
           life:1,decay:.8,size:3+Math.random()*3,grav:620,gl:Math.random()<.5,
           color:['#ffd98a','#7ae0ff','#a8ff9e','#ff8a7a'][Math.random()*4|0]});
       }
-      LB.x=0;LB.z=10;LB.vx=0;LB.vz=0;
-    }else{LB.z=1;LB.vz*=-.5;}
+      SB.x=(Math.random()-.5)*4;SB.z=8+Math.random()*4;SB.vx=0;SB.vz=0;
+    }else{SB.z=1;SB.vz*=-.55;}
   }
+  SB.rot+=Math.hypot(SB.vx,SB.vz)*dt/.45;
   LB.rot+=Math.hypot(LB.vx,LB.vz)*dt/.55;
   LB.glow=Math.max(0,LB.glow-dt);
   connectLobbyNet();
@@ -3015,9 +3052,26 @@ function init3D(){
   scene.add(blob);
   const gGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(255,214,90,.95)'),transparent:true,opacity:0}));
   gGlow.scale.set(4,4,1);scene.add(gGlow);
+  // ⚽ כדור הכדורגל
+  const sbTex=cvTex({w:256,h:128},(g,w,h)=>{
+    g.fillStyle='#f4f4f0';g.fillRect(0,0,w,h);
+    g.fillStyle='#16181c';
+    for(let i=0;i<8;i++){
+      const x=(i%4)*(w/4)+w/8+((i/4|0)?w/8:0),y=(i/4|0)?h*.7:h*.3;
+      g.beginPath();g.arc(x%w,y,15,0,Math.PI*2);g.fill();
+    }
+  });
+  const sb3=new THREE.Mesh(new THREE.SphereGeometry(.45,24,18),
+    new THREE.MeshLambertMaterial({map:sbTex}));
+  sb3.position.set(SB.x,.45,SB.z);
+  scene.add(sb3);
+  const blob2=new THREE.Mesh(new THREE.PlaneGeometry(1.3,1.3),
+    new THREE.MeshBasicMaterial({map:radialTex('rgba(0,0,0,.5)'),transparent:true,depthWrite:false}));
+  blob2.rotation.x=-Math.PI/2;blob2.position.y=.012;
+  scene.add(blob2);
   const cam=new THREE.PerspectiveCamera(58,W/H,.1,90);
   cam.position.set(0,5,LB.z+7.4);
-  return {ren,scene,cam,ball3,blob,gGlow,stars,bTex,lastSkin:skinSel};
+  return {ren,scene,cam,ball3,blob,gGlow,stars,bTex,sb3,blob2,lastSkin:skinSel};
 }
 function render3D(dt){
   if(!T3&&threeAllowed()&&typeof THREE!=='undefined'&&!threeTried){threeTried=true;try{T3=init3D();}catch(e){T3=null;}}
@@ -3035,6 +3089,13 @@ function render3D(dt){
     b.rotateOnWorldAxis(ax,sp*dt/.55);
   }
   T3.blob.position.set(LB.x,.012,LB.z);
+  T3.sb3.position.set(SB.x,.45,SB.z);
+  const sp2=Math.hypot(SB.vx,SB.vz);
+  if(sp2>.01){
+    const ax2=new THREE.Vector3(SB.vz/sp2,0,-SB.vx/sp2);
+    T3.sb3.rotateOnWorldAxis(ax2,sp2*dt/.45);
+  }
+  T3.blob2.position.set(SB.x,.012,SB.z);
   T3.gGlow.position.set(LB.x,.7,LB.z);
   T3.gGlow.material.opacity=LB.glow*.85;
   T3.stars.rotation.y+=dt*.008;
@@ -3287,12 +3348,7 @@ function loop(ts){
     stepAmbient(dt,t,L().th);
     flashW=Math.max(0,flashW-dtRaw*1.6);
     flashR=Math.max(0,flashR-dtRaw*1.4);
-    if(rollGain){
-      const sp=falling||winPause?0:Math.hypot(ball.vx,ball.vy);
-      const tg=muted?0:Math.min(.22,sp/1300);
-      rollGain.gain.value+=(tg-rollGain.gain.value)*.2;
-      rollFilter.frequency.value=280+Math.min(1400,sp);
-    }
+    // 🔇 סאונד הגלגול (סוווש) הוסר לבקשת ההנהלה
     if(!REDUCED){
       dTiltX+=(effX()-dTiltX)*.12;dTiltY+=(effY()-dTiltY)*.12;
       if(!PERF&&!MOBILE)canvas.style.transform='rotateX('+(-dTiltY*5)+'deg) rotateY('+(dTiltX*5)+'deg) scale(1.04)';
@@ -3397,6 +3453,7 @@ function finishLevel(){
   if(firstClear&&(levelIdx+1)%50===0)setTimeout(mondialBox,1100); // 🏆 תיבת מונדיאל!
   checkAch();
   save();
+  skinShout(); // 🎙 "אנקרה מסי!" וחברים
   if(!customLv&&(levelIdx+1)%10===0){
     running=true;
     const gw=P(L().goal);
@@ -3727,7 +3784,7 @@ POWSKINS.forEach(s=>SKINS.push(s));
 /* 👑 ליאו מסי — הסקין האגדי. נפתח רק עם 3 גביעי מונדיאל 🏆 */
 const MESSI_IMG=new Image();
 MESSI_IMG.src='messi.png';
-SKINS.push({name:'ליאו מסי',en:'Leo Messi',price:0,rar:5,wc:3,draw:(c,r,rot,T)=>{
+SKINS.push({name:'ליאו מסי',en:'Leo Messi',price:0,rar:5,wc:3,shout:'אנקרה מסי! אנקרה מסי! גול גול גול!',draw:(c,r,rot,T)=>{
   c.save();c.rotate(rot*.25);
   if(MESSI_IMG.complete&&MESSI_IMG.naturalWidth){
     c.drawImage(MESSI_IMG,-r*1.02,-r*1.02,r*2.04,r*2.04);
@@ -3744,9 +3801,9 @@ SKINS.push({name:'ליאו מסי',en:'Leo Messi',price:0,rar:5,wc:3,draw:(c,r,r
 }});
 const MESSI_IDX=SKINS.length-1;
 /* ⚽ עוד כוכבי כדורגל — פנים אמיתיות (בלי פרצוף מצויר), נופלים מתיבות */
-function pushFaceSkin(nm,en,img,rar){
+function pushFaceSkin(nm,en,img,rar,shout){
   const im=new Image();im.src=img;
-  SKINS.push({name:nm,en,price:0,rar,face:1,draw:(c,r,rot,T)=>{
+  SKINS.push({name:nm,en,price:0,rar,face:1,shout,draw:(c,r,rot,T)=>{
     c.save();c.rotate(rot*.25);
     if(im.complete&&im.naturalWidth)c.drawImage(im,-r*1.02,-r*1.02,r*2.04,r*2.04);
     else{
@@ -3770,14 +3827,15 @@ function grantGoalFx(){
   if(!pool.length)return null;
   const idx=pool[(Math.random()*pool.length)|0];
   wOw.push(idx);
+  wSel=idx; // ⚽ נבחר אוטומטית — הניצחון הבא כבר עם GOAL!
   return {icon:WFX[idx].icon,label:tr('ניצחון: ','Victory: ')+tr(WFX[idx].name,WFX[idx].en),rar:4,
     rv:{kind:'fx',icon:WFX[idx].icon,rar:4,label:tr(WFX[idx].name,WFX[idx].en),
         story:tr('אפקט ניצחון במתנה עם סקין השחקן! נבחר בחנות בלשונית אפקט ניצחון.','A free victory effect with your player skin!')}};
 }
-pushFaceSkin('רונאלדו','Ronaldo','ronaldo.png',5);
-pushFaceSkin('נוימאר','Neymar','neymar.png',4);
-pushFaceSkin('אמבפה','Mbappé','mbappe.png',4);
-pushFaceSkin('האלנד','Haaland','haaland.png',4);
+pushFaceSkin('רונאלדו','Ronaldo','ronaldo.png',5,'סיוווווו! כריסטיאנו רונאלדו!');
+pushFaceSkin('נוימאר','Neymar','neymar.png',4,'אולה אולה אולה! נוימאר הקוסם!');
+pushFaceSkin('אמבפה','Mbappé','mbappe.png',4,'קיליאן אמבפה! מהיר כמו ברק!');
+pushFaceSkin('האלנד','Haaland','haaland.png',4,'ארלינג האלנד! המכונה משער!');
 const POW=()=>((SKINS[skinSel]||{}).pow)||'';
 let shieldUsed=false,winStreak=0;
 function grantPowSkins(){
@@ -4481,11 +4539,7 @@ function runFrame(dt,t){
   if(ti!==runThemeIdx){runThemeIdx=ti;buildLayers(ti);initAmbient(ti);}
   stepParticles(dt);stepAmbient(dt,t,runThemeIdx);
   flashW=Math.max(0,flashW-dt*1.6);flashR=Math.max(0,flashR-dt*1.4);
-  if(rollGain){
-    const tg=muted||runDead?0:Math.min(.22,runV*M2PX()/1300);
-    rollGain.gain.value+=(tg-rollGain.gain.value)*.2;
-    rollFilter.frequency.value=280+Math.min(1400,runV*M2PX());
-  }
+  /* 🔇 סוווש הוסר */
   if(!REDUCED){
     dTiltX+=(effX()-dTiltX)*.12;dTiltY+=(0-dTiltY)*.12;
     if(!PERF&&!MOBILE)canvas.style.transform='rotateY('+(dTiltX*5)+'deg) scale(1.04)';
