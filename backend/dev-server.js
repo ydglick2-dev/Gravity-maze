@@ -125,7 +125,7 @@ const server = http.createServer((req, res) => {
     }
     if (p === '/api/claim' && req.method === 'POST') {
       const u = cleanName(b.u);
-      const out = { gift: doc.gifts[u] || null, summon: doc.summon[u] || null, ban: doc.bans[u] || null };
+      const out = { gift: doc.gifts[u] || null, summon: doc.summon[u] || null, ban: doc.bans[u] || null, season: doc.season || null };
       if (out.gift || out.summon) { delete doc.gifts[u]; delete doc.summon[u]; persist(); }
       return J(out);
     }

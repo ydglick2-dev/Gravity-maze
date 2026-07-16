@@ -162,6 +162,14 @@
   #hint { position:fixed; bottom:calc(12px + env(safe-area-inset-bottom)); left:0; right:0;
     text-align:center; color:#c8d2e0; font-size:13px; z-index:10; pointer-events:none;
     text-shadow:0 1px 4px rgba(0,0,0,.95); opacity:.92; padding:0 18px; }
+  #menuOv h1, #lbTitle {
+    background:linear-gradient(90deg,#39d7ff,#8b7bff,#ff4fd8);
+    -webkit-background-clip:text; background-clip:text;
+    color:transparent; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 2px 14px rgba(110,90,255,.35));
+  }
+  #lbTitle span { -webkit-text-fill-color:#aeb8c8; }
+  #menuOv .btn.sec { border-radius:16px; background:rgba(120,110,255,.09); border:1px solid #ffffff17; }
   .glowy { animation: glowy 2.2s ease-in-out infinite; }
   @keyframes boxspin { to { rotate:360deg; } }
   @keyframes glowy {
@@ -217,7 +225,7 @@
 
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v59</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v60</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -293,6 +301,14 @@
     <button class="btn sec" id="selectBtn" data-en="🗺 Levels">🗺 שלבים</button>
     <button class="btn sec" id="adminBtn" style="display:none" data-en="🛠 Admin">🛠 אדמין</button>
   </div>
+  <div id="menuPassBar" style="width:min(300px,84vw);cursor:pointer;background:rgba(255,255,255,.06);border:1px solid #ffffff1c;border-radius:14px;padding:8px 12px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🎫</span>
+    <div style="flex:1">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800"><span id="mpbT"></span><span id="mpbBadge" style="color:#ff4fd8"></span></div>
+      <div style="height:8px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:3px"><div id="mpbBar" style="height:100%;width:0;background:linear-gradient(90deg,#ffd257,#ff9e4d)"></div></div>
+    </div>
+  </div>
+  <div id="menuDaily" style="font-size:12px;color:#8fe3a2;font-weight:800"></div>
   <button class="btn sec" id="installBtn" style="display:none" data-en="📲 Install App">📲 התקן כאפליקציה</button>
   <button class="btn sec" id="menuClose" data-en="✕ Back to Lobby">✕ חזרה ללובי</button>
 </div>
@@ -313,7 +329,7 @@
 
 <div class="overlay hidden" id="passOv">
   <h1>🎫 <span data-en="Season Pass">פס העונה</span></h1>
-  <p class="sub" id="psSeason"></p>
+  <p class="sub" id="psSeason" style="background:rgba(255,255,255,.08);border:1px solid #ffffff1c;border-radius:999px;padding:4px 16px;font-weight:800"></p>
   <div style="width:min(300px,80vw)">
     <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800">
       <span id="psTier"></span><span id="psPts"></span>
@@ -358,6 +374,15 @@
   <div class="row">
     <input class="tin" id="admBackend" placeholder="כתובת שרת בקנד (workers.dev)" data-en-ph="Backend URL (workers.dev)" style="max-width:210px;direction:ltr">
     <button class="btn sec" id="admBeSet" data-en="🔌 Connect">🔌 חבר</button>
+  </div>
+  <div class="row" style="flex-wrap:wrap;align-items:center">
+    <input class="tin" id="admSeaN" type="number" min="1" placeholder="מס׳" data-en-ph="No." style="max-width:64px">
+    <input class="tin" id="admSeaName" maxlength="20" placeholder="שם העונה" data-en-ph="Season name" style="max-width:140px">
+    <button class="btn sec" id="admSeaSet" data-en="🎫 Switch season">🎫 החלף עונה</button>
+    <button class="btn sec" id="admSeaAuto" data-en="🔄 Auto">🔄 אוטומטי</button>
+  </div>
+  <div id="admSeaCur" style="font-size:12px;color:#aeb8c8"></div>
+  <div class="row" style="display:none">
   </div>
   <p class="sub" data-en="Empty name = you · player on this device — instant. Remote player — receives on next login ☁️">שם ריק = אתה · שחקן במכשיר הזה — מיידי<br>שחקן רחוק — יקבל בכניסה הבאה שלו ☁️</p>
   <input class="tin" id="admTarget" maxlength="14" placeholder="שם משתמש יעד (ריק = אני)" data-en-ph="Target username (empty = me)" style="max-width:260px">
@@ -5137,7 +5162,8 @@ setInterval(async()=>{
 },30000);
 /* 📬 דואר נכנס כמעט-מיידי: מתנות, איפוסים, באנים וזימונים מוחלים תוך ~10 שניות,
    בלובי וגם באמצע משחק — בלי לחכות לכניסה מחדש */
-function applyInbox(r){ // {gift,summon,ban} — מכל מקור
+function applyInbox(r){ // {gift,summon,ban,season} — מכל מקור
+  if('season' in r)adoptSeason(r.season);
   if(enforceBan(r.ban))return true;
   const sm=r.summon;
   if(sm&&sm.code&&Date.now()-(sm.ts||0)<180e3)setTimeout(()=>showSummon(sm),400);
@@ -5159,6 +5185,7 @@ function applyInbox(r){ // {gift,summon,ban} — מכל מקור
 }
 async function processInbox(d){ // מסלול textdb
   if(!curUser||!d)return false;
+  adoptSeason(d.season||null);
   const gift=(d.gifts&&d.gifts[curUser])||null;
   const summon=(d.summon&&d.summon[curUser])||null;
   const ban=(d.bans&&d.bans[curUser])||null;
@@ -6252,7 +6279,26 @@ setInterval(scratchUiSync,60000);scratchUiSync();
 /* 🎫 פס העונה — 30 דרגות, עונה חדשה בכל חודש (כמו בראול פאס, הכול בחינם) */
 const PASS_T=30,PASS_COST=100,PASS_BASE=2026*12+6; // יולי 2026 = עונה 1
 let passN=0,passP=0,passC=0;
-const passSeasonId=()=>{const d2=new Date();return d2.getFullYear()*12+d2.getMonth();};
+/* 👑 עונה בניהול האדמין: האדמין קובע מספר ושם — מתעדכן לכל השחקנים דרך הענן,
+   והפס של כולם מתאפס ומתחיל מחדש. בלי — עונה אוטומטית לפי חודש. */
+let seasonOv=null;
+try{seasonOv=JSON.parse(localStorage.getItem('mazeSeason')||'null');}catch(e){}
+function adoptSeason(sv2){
+  const nw=(sv2&&sv2.n)?{n:sv2.n|0,name:String(sv2.name||'').slice(0,20)}:null;
+  if(JSON.stringify(seasonOv)===JSON.stringify(nw))return;
+  seasonOv=nw;
+  try{localStorage.setItem('mazeSeason',JSON.stringify(nw));}catch(e){}
+  passSync();passUiBtn();menuPassSync();
+  if(!$('passOv').classList.contains('hidden'))buildPass();
+  if(nw)showToast('🎉 '+tr('עונה חדשה: ','New season: ')+(nw.name||tr('עונה ','Season ')+nw.n)+'!');
+}
+function seasonLabel(){
+  if(seasonOv)return seasonOv.name||tr('עונה ','Season ')+seasonOv.n;
+  return tr('עונה ','Season ')+(passSeasonId()-PASS_BASE+1);
+}
+const passSeasonId=()=>seasonOv&&seasonOv.n
+  ?100000+(seasonOv.n|0)
+  :(()=>{const d2=new Date();return d2.getFullYear()*12+d2.getMonth();})();
 function passSync(){
   const cur=passSeasonId();
   if(passN!==cur){passN=cur;passP=0;passC=0;} // עונה חדשה — הפס מתאפס
@@ -6282,7 +6328,23 @@ function passAdd(n){
   }
   passUiBtn();
 }
-function passUiBtn(){$('passBtn').classList.toggle('glowy',passClaimable()>0);}
+function passUiBtn(){$('passBtn').classList.toggle('glowy',passClaimable()>0);menuPassSync();}
+function menuPassSync(){
+  try{
+    passSync();
+    const tier=passTierNow();
+    $('mpbT').textContent='🎫 '+seasonLabel()+' · '+tr('דרגה ','Tier ')+tier+'/'+PASS_T;
+    $('mpbBar').style.width=(tier>=PASS_T?100:(passP%PASS_COST))+'%';
+    $('mpbBadge').textContent=passClaimable()>0?tr('פרס מחכה! 🎁','Reward! 🎁'):'';
+    $('menuDaily').textContent=tr('🎲 אתגר יומי חדש בעוד ','🎲 New daily in ')+dwResetStr();
+  }catch(e){}
+}
+$('menuPassBar').onclick=()=>{
+  $('menuOv').classList.add('hidden');
+  $('passOv').classList.remove('hidden');
+  buildPass();syncLobbyUI();
+};
+setInterval(menuPassSync,30000);
 function passClaimAll(){
   passSync();
   let got2=[];
@@ -6303,8 +6365,7 @@ function passClaimAll(){
 }
 function buildPass(){
   passSync();
-  const seasonNum=passN-PASS_BASE+1;
-  $('psSeason').textContent=tr('עונה ','Season ')+seasonNum+' · '+tr('נגמרת בעוד ','ends in ')+passDaysLeft()+tr(' ימים',' days');
+  $('psSeason').textContent=seasonLabel()+' · '+(seasonOv?tr('עונה מיוחדת 👑','special season 👑'):tr('נגמרת בעוד ','ends in ')+passDaysLeft()+tr(' ימים',' days'));
   const tier=passTierNow();
   $('psTier').textContent=tr('דרגה ','Tier ')+tier+'/'+PASS_T;
   $('psPts').textContent=(passP%PASS_COST)+'/'+PASS_COST+' 🎫';
@@ -6315,11 +6376,20 @@ function buildPass(){
     const r=passReward(i);
     const row=document.createElement('div');
     const st=i<passC?'done':(i<tier?'ready':'lock');
+    const ms=(i%10===9); // אבן דרך
     row.className='achRow'+(st!=='lock'?' got':'');
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 12px'+(st==='ready'?';box-shadow:inset 0 0 0 2px #ffd257':'');
-    row.innerHTML='<div style="font-size:24px">'+r.ic+'</div>'+
-      '<div style="flex:1"><b>'+tr('דרגה ','Tier ')+(i+1)+'</b><br><small>'+r.lb+'</small></div>'+
-      '<div style="font-size:20px">'+(st==='done'?'✅':st==='ready'?'🎁':'🔒')+'</div>';
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px'
+      +(ms?';background:rgba(130,90,255,.16);box-shadow:inset 0 0 0 1.5px #b26aff66':'')
+      +(st==='ready'?';box-shadow:inset 0 0 0 2px #ffd257':'');
+    row.innerHTML=
+      '<div style="width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;'
+        +(st==='done'?'background:#1f9d55;color:#fff':st==='ready'?'background:#ffd257;color:#1b2430':'background:rgba(255,255,255,.1);color:#aeb8c8')+'">'
+        +(st==='done'?'✓':(i+1))+'</div>'
+      +'<div style="flex:1"><b>'+tr('דרגה ','Tier ')+(i+1)+(ms?' · '+tr('אבן דרך','Milestone'):'')
+        +(st==='ready'?' — <span style=\'color:#ffd257\'>'+tr('מוכן לאיסוף!','ready to collect!')+'</span>':'')+'</b><br><small>'+r.ic+' '+r.lb+'</small></div>'
+      +(st==='ready'
+        ?'<div style="background:#ffd257;color:#1b2430;font-weight:900;padding:4px 14px;border-radius:999px;font-size:13px">'+tr('אסוף','Collect')+'</div>'
+        :'<div style="font-size:18px;opacity:.75">'+(st==='done'?'':'🔒')+'</div>');
     if(st==='ready')row.onclick=passClaimAll;
     g.appendChild(row);
   }
@@ -6338,6 +6408,33 @@ $('psBack').onclick=()=>{
 };
 $('psClaim').onclick=passClaimAll;
 setTimeout(passUiBtn,1500);
+/* 👑 ניהול עונות מהאדמין — גלובלי לכל השחקנים */
+function admSeaCur(){
+  $('admSeaCur').textContent=tr('עונה נוכחית: ','Current season: ')+seasonLabel()+(seasonOv?' 👑':tr(' (אוטומטית לפי חודש)',' (automatic monthly)'));
+}
+$('admSeaSet').onclick=async()=>{
+  const n=$('admSeaN').value|0;
+  if(!n)return $('admMsg').textContent=tr('כתבו מספר עונה (למשל 1)','Enter a season number (e.g. 1)');
+  const name=cleanName($('admSeaName').value).slice(0,20);
+  $('admMsg').textContent='…';
+  const d=await regFetch();
+  if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
+  d.season={n,name,ts:Date.now()};
+  if(!await regPut(d))return $('admMsg').textContent=tr('שגיאת רשת','Network error');
+  adoptSeason(d.season);
+  admSeaCur();
+  $('admMsg').textContent='🎫 '+tr('העונה הוחלפה ל"','Season switched to "')+(name||tr('עונה ','Season ')+n)+'" — '+tr('הפס של כל השחקנים מתאפס ומתחיל מחדש ⚡','every player\'s pass resets ⚡');
+};
+$('admSeaAuto').onclick=async()=>{
+  $('admMsg').textContent='…';
+  const d=await regFetch();
+  if(!d)return $('admMsg').textContent=tr('דרוש אינטרנט','Internet required');
+  delete d.season;
+  if(!await regPut(d))return $('admMsg').textContent=tr('שגיאת רשת','Network error');
+  adoptSeason(null);
+  admSeaCur();
+  $('admMsg').textContent=tr('🔄 חזרנו לעונות אוטומטיות (מתחלפות כל חודש)','🔄 Back to automatic monthly seasons');
+};
 $('admBeSet').onclick=async()=>{ // 🚀 חיבור שרת בקנד + הפצה אוטומטית לכל השחקנים
   const url=($('admBackend').value||'').trim().replace(/\/+$/,'');
   if(!url){ // שדה ריק = ניתוק מהשרת
@@ -6455,6 +6552,7 @@ $('adminBtn').onclick=async()=>{
   $('admMsg').textContent='';$('admTarget').value='';
   // 🌍 אבחון חיבור לענן — כדי שיהיה ברור מיד אם שירות הרישום נפל
   $('admBackend').value=BACKEND;
+  try{admSeaCur();}catch(e){}
   $('admNet').textContent=tr('🌍 בודק חיבור…','🌍 Checking…');
   const d=await regFetch();
   $('admNet').textContent=d

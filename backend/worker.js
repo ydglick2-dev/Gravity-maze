@@ -234,7 +234,7 @@ export class Registry {
     if (p === '/api/claim' && req.method === 'POST') {
       await this.tdbSync();
       const u = cleanName(b.u);
-      const out = { gift: d.gifts[u] || null, summon: d.summon[u] || null, ban: d.bans[u] || null };
+      const out = { gift: d.gifts[u] || null, summon: d.summon[u] || null, ban: d.bans[u] || null, season: d.season || null };
       if (out.gift || out.summon) {
         delete d.gifts[u];
         delete d.summon[u];
