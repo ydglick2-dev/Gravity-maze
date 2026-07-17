@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v83</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v84</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5293,16 +5293,10 @@ function threeForBox(cb){
   sc2.onerror=()=>cb(false);
   document.head.appendChild(sc2);
 }
-function playBoxOpen(mx,cb){ // תלת-ממד כשאפשר, דו-ממד כגיבוי
-  threeForBox(ok=>{
-    let used=false;
-    if(ok){try{used=playBoxOpen3D(mx,cb);}catch(e){used=false;}}
-    if(!used){
-      $('boxCv3').style.display='none';$('boxRays').style.display='none';
-      $('boxCv').style.display='block';
-      playBoxOpen2D(mx,cb);
-    }
-  });
+function playBoxOpen(mx,cb){ // 📦 אנימציית 2D מושקעת — עץ, זהב, רולטת נדירות וקרן אור
+  $('boxCv3').style.display='none';$('boxRays').style.display='none';
+  $('boxCv').style.display='block';
+  playBoxOpen2D(mx,cb);
 }
 let box3R=null;
 function playBoxOpen3D(mx,cb){
@@ -5443,10 +5437,14 @@ function playBoxOpen2D(mx,cb){
   const ov=$('boxOv'),cv=$('boxCv'),g=cv.getContext('2d');
   const col=(RAR[mx|0]||RAR[0]).c;
   ov.style.display='flex';
-  const W2=cv.width,H2=cv.height,cx=W2/2,cy=H2/2+26;
+  const W2=cv.width,H2=cv.height,cx=W2/2,cy=H2/2+42;
   let taps=0,shake=0,burstT=0,teasing=false,run=true,rot=0;
-  let dropT=0,landed=false; // 📦 הקופסה נופלת מלמעלה ונוחתת עם מעיכה
-  const sparks=[],coins2=[],cracks=[];
+  let dropT=0,landed=false,bounceV=0,bounceY=0,squash=0;
+  let badgeIdx=0,badgeLock=false,badgeCyc=0,badgePop=0;
+  const sparks=[],coins2=[],cracks=[],stars2=[],dust=[];
+  // 🫧 אבק-אור מרחף ברקע — אווירה
+  for(let i=0;i<16;i++)dust.push({x:Math.random()*W2,y:Math.random()*H2,
+    r:1+Math.random()*2.2,sp:6+Math.random()*14,ph:Math.random()*6.3});
   $('boxHint').textContent='';
   const addCrack=()=>{
     const a=Math.random()*Math.PI*2,pts=[[Math.cos(a)*18,Math.sin(a)*12]];
@@ -5455,24 +5453,32 @@ function playBoxOpen2D(mx,cb){
     cracks.push(pts);
   };
   const spawnSparks=n=>{for(let i=0;i<n;i++)sparks.push({
-    x:cx+(Math.random()-.5)*150,y:cy+(Math.random()-.5)*90,
-    vx:(Math.random()-.5)*160,vy:-60-Math.random()*140,life:.5+Math.random()*.5});};
+    x:cx+(Math.random()-.5)*160,y:cy+(Math.random()-.5)*90,
+    vx:(Math.random()-.5)*180,vy:-70-Math.random()*150,life:.5+Math.random()*.5,
+    c:Math.random()<.5?'#ffd257':col});};
+  const spawnStars=n=>{for(let i=0;i<n;i++){const a=Math.random()*TAU,v=120+Math.random()*260;
+    stars2.push({x:cx,y:cy-20,vx:Math.cos(a)*v,vy:Math.sin(a)*v-140,
+      life:.8+Math.random()*.7,r:5+Math.random()*7,rot:Math.random()*6.3,vr:(Math.random()-.5)*9});}};
   const burst=()=>{
-    burstT=.0001;$('boxHint').textContent='';
+    burstT=.0001;badgeLock=true;badgePop=1;$('boxHint').textContent='';
     sfx.win();confetti(mx>=3?170:95);
-    for(let i=0;i<26;i++)coins2.push({x:cx,y:cy-14,vx:(Math.random()-.5)*260,vy:-260-Math.random()*220,
-      r:8+Math.random()*7,a:Math.random()*6.3,va:(Math.random()-.5)*8});
+    for(let i=0;i<28;i++)coins2.push({x:cx,y:cy-14,vx:(Math.random()-.5)*280,vy:-280-Math.random()*230,
+      r:8+Math.random()*7,a:Math.random()*6.3,va:(Math.random()-.5)*9});
+    spawnStars(mx>=3?22:12);
+    shake=1.2;
     if(navigator.vibrate)navigator.vibrate(mx>=3?[70,50,70,50,120]:[60,40,80]);
     tone(90,.25,'square',.5);setTimeout(()=>tone(1046,.2,'sine',.35),80);
   };
   cv.onpointerdown=()=>{
     if(burstT||teasing||!run||!landed)return;
-    taps++;shake=1;spawnSparks(8+taps*7);addCrack();addCrack();
+    taps++;shake=1;squash=.22;spawnSparks(8+taps*8);addCrack();addCrack();
+    badgeCyc=0; // הרולטה של הנדירות מאיצה עם כל הקשה
     tone(120-taps*16,.12,'square',.5);
     tone(560+taps*170,.05,'triangle',.22);
     if(navigator.vibrate)navigator.vibrate(28+taps*16);
     $('boxHint').textContent=taps===1?tr('עוד פעמיים!','Two more!'):taps===2?tr('עוד אחת!!','One more!!'):'';
     if(taps>=3){
+      badgeLock=true;badgePop=1; // 🏷 הנדירות האמיתית ננעלת
       if(mx>=3){ // 🌟 טיזר דרמטי לפריט אדיר ומעלה
         teasing=true;
         $('boxHint').textContent=tr('רגע... יש כאן משהו מיוחד! ✨','Wait... something special! ✨');
@@ -5482,86 +5488,192 @@ function playBoxOpen2D(mx,cb){
       }else burst();
     }
   };
-  const drawBox=(bx,by,openK)=>{
-    const w=150,h=104;
+  const star5b=(x,y,r,a)=>{g.beginPath();
+    for(let k=0;k<10;k++){const rr=k%2?r*.45:r,an=a+k*Math.PI/5-Math.PI/2;
+      k?g.lineTo(x+Math.cos(an)*rr,y+Math.sin(an)*rr):g.moveTo(x+Math.cos(an)*rr,y+Math.sin(an)*rr);}
+    g.closePath();};
+  /* 📦 התיבה: עץ כהה, רצועות זהב, מסמרות, מכסה כיפתי ומנעול — עם ברק חי */
+  const drawBox=(bx,by,openK,tNow)=>{
+    const w=158,h=106;
     g.save();g.translate(bx,by);
-    // גוף
+    // צל קרקע
+    g.save();g.globalAlpha=.4;g.fillStyle='#000';
+    g.beginPath();g.ellipse(0,h/2+12,w*.62*(1+squash*.5),13,0,0,TAU);g.fill();g.restore();
+    // גוף עץ
     const bg=g.createLinearGradient(0,-h/2,0,h/2);
-    bg.addColorStop(0,'#6d5bd0');bg.addColorStop(.5,'#4a3f9e');bg.addColorStop(1,'#2c2566');
+    bg.addColorStop(0,'#7a4a24');bg.addColorStop(.45,'#5b3517');bg.addColorStop(1,'#33200e');
     g.fillStyle=bg;
-    g.beginPath();g.roundRect(-w/2,-h/2,w,h,12);g.fill();
-    g.lineWidth=5;g.strokeStyle='#ffd257';g.stroke();
-    g.fillStyle='rgba(255,210,87,.9)';
-    g.fillRect(-w/2,-8,w,16); // פס אמצע
+    g.beginPath();g.roundRect(-w/2,-h/2,w,h,14);g.fill();
+    // פסי עץ
+    g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=2;
+    for(const yy of[-h/6,h/6])
+      {g.beginPath();g.moveTo(-w/2+8,yy);g.lineTo(w/2-8,yy);g.stroke();}
+    // רצועות זהב אנכיות
+    for(const sx of[-w*.3,w*.3]){
+      const mg=g.createLinearGradient(sx-9,0,sx+9,0);
+      mg.addColorStop(0,'#8a6114');mg.addColorStop(.5,'#ffd257');mg.addColorStop(1,'#8a6114');
+      g.fillStyle=mg;g.fillRect(sx-9,-h/2,18,h);
+      g.fillStyle='#6e4d0e';
+      for(const ry of[-h/2+12,0,h/2-12]){g.beginPath();g.arc(sx,ry,2.6,0,TAU);g.fill();}
+    }
+    // מסגרת
+    g.lineWidth=4;g.strokeStyle='#c9962b';
+    g.beginPath();g.roundRect(-w/2,-h/2,w,h,14);g.stroke();
     // סדקים זוהרים
-    g.save();g.strokeStyle=col;g.shadowColor=col;g.shadowBlur=12;g.lineWidth=2.5;
+    g.save();g.strokeStyle=col;g.shadowColor=col;g.shadowBlur=14;g.lineWidth=2.5;
     cracks.forEach(pts=>{g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
       for(const p of pts.slice(1))g.lineTo(p[0]*2.2,p[1]*2.2);g.stroke();});
     g.restore();
-    // מכסה — נפתח מעט עם כל הקשה
-    g.save();g.translate(0,-h/2);g.rotate(-openK*.16);
-    const lg=g.createLinearGradient(0,-34,0,0);
-    lg.addColorStop(0,'#8a7ae8');lg.addColorStop(1,'#5a4cc0');
-    g.fillStyle=lg;
-    g.beginPath();g.roundRect(-w/2-8,-34,w+16,36,10);g.fill();
-    g.lineWidth=5;g.strokeStyle='#ffd257';g.stroke();
-    g.restore();
-    // אור דולף מהחריץ לפי כמות ההקשות
+    // אור דולף מהחריץ לפי ההקשות
     if(taps>0){
-      g.save();g.globalAlpha=Math.min(.85,taps*.25+(teasing?.35:0));
-      g.fillStyle=col;g.shadowColor=col;g.shadowBlur=30+(teasing?40:0);
-      g.fillRect(-w/2+6,-h/2-6,w-12,7);g.restore();
+      g.save();g.globalAlpha=Math.min(.9,taps*.26+(teasing?.4:0));
+      g.fillStyle=col;g.shadowColor=col;g.shadowBlur=34+(teasing?46:0);
+      g.fillRect(-w/2+8,-h/2-5,w-16,7);g.restore();
     }
-    // מנעול
-    g.beginPath();g.arc(0,0,15,0,TAU);g.fillStyle='#ffd257';g.fill();
-    g.fillStyle='#2c2566';g.fillRect(-4,-2,8,12);
+    // מכסה כיפתי — נפתח מעט עם כל הקשה
+    g.save();g.translate(0,-h/2);g.rotate(-openK*.15);
+    const lg=g.createLinearGradient(0,-44,0,2);
+    lg.addColorStop(0,'#9a6630');lg.addColorStop(.55,'#6e451d');lg.addColorStop(1,'#4a2c10');
+    g.fillStyle=lg;
+    g.beginPath();g.moveTo(-w/2-8,2);
+    g.quadraticCurveTo(-w/2-8,-42,0,-46);
+    g.quadraticCurveTo(w/2+8,-42,w/2+8,2);g.closePath();g.fill();
+    g.lineWidth=4;g.strokeStyle='#c9962b';g.stroke();
+    // רצועות זהב על המכסה + ברק נודד
+    g.fillStyle='rgba(255,210,87,.85)';
+    for(const sx of[-w*.3,w*.3])g.fillRect(sx-8,-40,16,42);
+    const gl2=((tNow*.6)%2)-.5; // sweep highlight
+    g.save();g.globalAlpha=.28;
+    const hg=g.createLinearGradient((gl2-.18)*w,0,(gl2+.18)*w,0);
+    hg.addColorStop(0,'rgba(255,255,255,0)');hg.addColorStop(.5,'rgba(255,255,255,.9)');hg.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=hg;g.beginPath();g.moveTo(-w/2-8,2);
+    g.quadraticCurveTo(-w/2-8,-42,0,-46);
+    g.quadraticCurveTo(w/2+8,-42,w/2+8,2);g.closePath();g.fill();g.restore();
+    g.restore();
+    // מנעול זהב + חור מפתח
+    const kg=g.createRadialGradient(-4,-6,2,0,0,20);
+    kg.addColorStop(0,'#ffe9a8');kg.addColorStop(.6,'#ffd257');kg.addColorStop(1,'#8a6114');
+    g.fillStyle=kg;
+    g.beginPath();g.roundRect(-17,-16,34,34,8);g.fill();
+    g.lineWidth=2.5;g.strokeStyle='#6e4d0e';g.stroke();
+    g.fillStyle='#33200e';
+    g.beginPath();g.arc(0,-3,4.6,0,TAU);g.fill();
+    g.fillRect(-2.6,-1,5.2,12);
+    // ✨ נצנוץ נודד על הזהב
+    const tw2=(tNow*1.3)%3;
+    if(tw2<0.5){const k2=tw2/0.5,sx2=-w*.3,sy2=-h/2+14;
+      g.save();g.globalAlpha=Math.sin(k2*Math.PI);g.fillStyle='#fff';
+      star5b(sx2,sy2,7,k2*2);g.fill();g.restore();}
+    g.restore();
+  };
+  /* 🏷 תג הנדירות מעל התיבה — רולטה שמסתובבת ונעולת ברגע האמת */
+  const drawBadge=tNow=>{
+    if(!landed)return;
+    const idx=badgeLock?(mx|0):badgeIdx;
+    const rr=RAR[idx]||RAR[0];
+    const txt=(badgeLock?'':'❔ ')+tr(rr.n,rr.en)+(badgeLock&&mx>=5?' 👑':badgeLock&&mx>=4?' 🔥':'');
+    g.save();
+    const pop=1+badgePop*.35+(badgeLock?Math.sin(tNow*5)*.03:0);
+    g.translate(cx,cy-148);g.scale(pop,pop);
+    g.font='900 19px -apple-system,Arial';
+    const tw3=g.measureText(txt).width+34;
+    g.globalAlpha=badgeLock?1:.85;
+    g.fillStyle='rgba(7,16,33,.88)';
+    g.strokeStyle=rr.c;g.lineWidth=2.5;
+    if(badgeLock){g.shadowColor=rr.c;g.shadowBlur=18;}
+    g.beginPath();g.roundRect(-tw3/2,-19,tw3,38,19);g.fill();g.stroke();
+    g.shadowBlur=0;
+    g.fillStyle=rr.c;g.textAlign='center';g.textBaseline='middle';
+    g.fillText(txt,0,1);
     g.restore();
   };
   let last=performance.now();
   const loop=now=>{
     if(!run)return;
     const dt=Math.min(.05,(now-last)/1000);last=now;rot+=dt*.5;
+    const tNow=now/1000;
     if(shake>0)shake=Math.max(0,shake-dt*3.2);
+    if(squash>0)squash=Math.max(0,squash-dt*2.6);
+    if(badgePop>0)badgePop=Math.max(0,badgePop-dt*3);
+    if(!badgeLock&&landed){ // רולטת נדירויות
+      badgeCyc+=dt;
+      const cyc=Math.max(.09,.3-taps*.07);
+      if(badgeCyc>=cyc){badgeCyc=0;badgeIdx=(badgeIdx+1)%RAR.length;}
+    }
     g.clearRect(0,0,W2,H2);
-    // קרני רקע — מתחזקות עם ההקשות
-    g.save();g.translate(cx,cy);g.rotate(rot);
-    const ra=.05+taps*.045+(teasing?.22:0)+(burstT?Math.max(0,.5-burstT*.4):0);
-    for(let i=0;i<10;i++){g.rotate(Math.PI/5);g.globalAlpha=ra;g.fillStyle=col;
-      g.beginPath();g.moveTo(0,0);g.arc(0,0,230,-.14,.14);g.closePath();g.fill();}
+    // 🫧 אבק-אור
+    g.save();
+    for(const d2 of dust){
+      d2.y-=d2.sp*dt;if(d2.y<-6)d2.y=H2+6;
+      g.globalAlpha=.18+.12*Math.sin(tNow*2+d2.ph);
+      g.fillStyle=col;g.beginPath();g.arc(d2.x,d2.y,d2.r,0,TAU);g.fill();
+    }
     g.restore();g.globalAlpha=1;
-    if(!landed){ // כניסה: נפילה מלמעלה, נחיתה עם סקווש ואבק
+    // קרני רקע כפולות — מסתובבות זו נגד זו
+    const ra=.05+taps*.045+(teasing?.22:0)+(burstT?Math.max(0,.5-burstT*.4):0);
+    g.save();g.translate(cx,cy-20);g.rotate(rot);
+    for(let i=0;i<10;i++){g.rotate(Math.PI/5);g.globalAlpha=ra;g.fillStyle=col;
+      g.beginPath();g.moveTo(0,0);g.arc(0,0,240,-.13,.13);g.closePath();g.fill();}
+    g.restore();
+    g.save();g.translate(cx,cy-20);g.rotate(-rot*.6);
+    for(let i=0;i<6;i++){g.rotate(Math.PI/3);g.globalAlpha=ra*.5;g.fillStyle='#fff';
+      g.beginPath();g.moveTo(0,0);g.arc(0,0,210,-.05,.05);g.closePath();g.fill();}
+    g.restore();g.globalAlpha=1;
+    if(!landed){ // 🪂 כניסה: נפילה, נחיתה עם מעיכה וקפיצה
       dropT+=dt;
       const k=Math.min(1,dropT/.55);
-      const yy=-140+(cy+140)*(k*k); // תאוצה
+      const yy=-150+(cy+150)*(k*k);
       if(k>=1){
-        landed=true;shake=1;spawnSparks(26);
+        landed=true;shake=1;squash=.34;bounceV=-240;spawnSparks(30);
         tone(70,.2,'square',.6);
         if(navigator.vibrate)navigator.vibrate(70);
         $('boxHint').textContent=tr('הקש על התיבה!','Tap the box!');
       }
-      drawBox(cx,Math.min(yy,cy),0);
+      drawBox(cx,Math.min(yy,cy),0,tNow);
       requestAnimationFrame(loop);
       return;
     }
+    // קפיצת נחיתה קטנה
+    if(bounceV!==0||bounceY!==0){
+      bounceV+=1400*dt;bounceY+=bounceV*dt;
+      if(bounceY>=0){bounceY=0;bounceV=Math.abs(bounceV)>90?-Math.abs(bounceV)*.4:0;if(bounceV)squash=.2;}
+    }
     if(!burstT){
-      const sq=shake>0?1+shake*.12:1; // סקווש-סטרץ' אחרי נחיתה/הקשה
-      g.save();g.translate(cx,cy);g.scale(sq,1/sq);g.translate(-cx,-cy);
-      const ox=(Math.random()-.5)*16*shake+(teasing?(Math.random()-.5)*7:0);
-      const oy=(Math.random()-.5)*12*shake+(teasing?(Math.random()-.5)*5:0);
-      drawBox(cx+ox,cy+oy,taps*(teasing?1.6:1));
+      const sq=1+(shake*.1+squash)*1; // סקווש-סטרץ'
+      g.save();g.translate(cx,cy+bounceY);g.scale(sq,1/sq);g.translate(-cx,-(cy+bounceY));
+      const ox=(Math.random()-.5)*16*shake+(teasing?(Math.random()-.5)*8:0);
+      const oy=(Math.random()-.5)*12*shake+(teasing?(Math.random()-.5)*6:0);
+      const brth=teasing?0:Math.sin(tNow*2)*2; // נשימה עדינה
+      drawBox(cx+ox,cy+bounceY+oy+brth,taps*(teasing?1.6:1),tNow);
       g.restore();
     }else{
       burstT+=dt;
-      // המכסה עף
-      g.save();g.translate(cx-30+burstT*40,cy-80-burstT*300);g.rotate(-burstT*5);
-      g.fillStyle='#6d5bd0';g.beginPath();g.roundRect(-80,-20,160,36,10);g.fill();
-      g.lineWidth=5;g.strokeStyle='#ffd257';g.stroke();g.restore();
+      // 🌟 עמוד אור מהתיבה
+      const pl=Math.max(0,1-burstT*.8);
+      if(pl>0){
+        g.save();g.globalAlpha=pl*.75;
+        const pg2=g.createLinearGradient(0,0,0,cy);
+        pg2.addColorStop(0,'rgba(255,255,255,0)');pg2.addColorStop(.4,col);pg2.addColorStop(1,'#fff');
+        g.fillStyle=pg2;
+        g.beginPath();g.moveTo(cx-46*pl,0);g.lineTo(cx+46*pl,0);
+        g.lineTo(cx+16,cy-30);g.lineTo(cx-16,cy-30);g.closePath();g.fill();
+        g.restore();
+      }
+      // המכסה עף עם שובל
+      g.save();g.translate(cx-30+burstT*46,cy-84-burstT*320);g.rotate(-burstT*5.2);
+      g.save();g.globalAlpha=.3;g.fillStyle=col;
+      g.beginPath();g.roundRect(-84,-6,168,44,12);g.fill();g.restore();
+      const lg2=g.createLinearGradient(0,-22,0,16);
+      lg2.addColorStop(0,'#9a6630');lg2.addColorStop(1,'#4a2c10');
+      g.fillStyle=lg2;g.beginPath();g.roundRect(-84,-22,168,40,12);g.fill();
+      g.lineWidth=4;g.strokeStyle='#c9962b';g.stroke();
+      g.restore();
       // גוף נשאר פתוח וזוהר
       g.save();g.translate(cx,cy);
-      g.fillStyle='#2c2566';g.beginPath();g.roundRect(-75,-52,150,104,12);g.fill();
-      g.lineWidth=5;g.strokeStyle='#ffd257';g.stroke();
-      g.globalAlpha=Math.min(1,burstT*3);g.fillStyle=col;g.shadowColor=col;g.shadowBlur=60;
-      g.beginPath();g.ellipse(0,-52,70,26+burstT*30,0,0,TAU);g.fill();g.restore();
+      g.fillStyle='#33200e';g.beginPath();g.roundRect(-79,-53,158,106,14);g.fill();
+      g.lineWidth=4;g.strokeStyle='#c9962b';g.stroke();
+      g.globalAlpha=Math.min(1,burstT*3);g.fillStyle=col;g.shadowColor=col;g.shadowBlur=70;
+      g.beginPath();g.ellipse(0,-53,74,28+burstT*34,0,0,TAU);g.fill();g.restore();
       // הבזק לבן
       const fl=Math.max(0,.95-burstT*1.5);
       if(fl>0){g.globalAlpha=fl;g.fillStyle='#fff';g.fillRect(0,0,W2,H2);g.globalAlpha=1;}
@@ -5571,9 +5683,16 @@ function playBoxOpen2D(mx,cb){
     for(let i=sparks.length-1;i>=0;i--){const p=sparks[i];
       p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=520*dt;p.life-=dt;
       if(p.life<=0){sparks.splice(i,1);continue;}
-      g.globalAlpha=Math.max(0,p.life);g.fillStyle='#ffd257';
+      g.globalAlpha=Math.max(0,p.life);g.fillStyle=p.c||'#ffd257';
       g.fillRect(p.x-2,p.y-2,4,4);}
     g.globalAlpha=1;
+    // ⭐ כוכבי נדירות מסתחררים אחרי הפיצוץ
+    for(let i=stars2.length-1;i>=0;i--){const p=stars2[i];
+      p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=430*dt;p.rot+=p.vr*dt;p.life-=dt;
+      if(p.life<=0){stars2.splice(i,1);continue;}
+      g.save();g.globalAlpha=Math.max(0,Math.min(1,p.life*1.4));
+      g.fillStyle=col;g.shadowColor=col;g.shadowBlur=10;
+      star5b(p.x,p.y,p.r,p.rot);g.fill();g.restore();}
     // מטבעות מתעופפים אחרי הפיצוץ
     for(let i=coins2.length-1;i>=0;i--){const p=coins2[i];
       p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=620*dt;p.a+=p.va*dt;
@@ -5582,6 +5701,7 @@ function playBoxOpen2D(mx,cb){
       g.fillStyle='#ffd257';g.beginPath();g.ellipse(0,0,p.r,p.r*.75,0,0,TAU);g.fill();
       g.fillStyle='#b8860b';g.font='700 '+(p.r|0)+'px system-ui';g.textAlign='center';g.textBaseline='middle';g.fillText('¢',0,1);
       g.restore();}
+    drawBadge(tNow); // 🏷 תג הנדירות — תמיד מעל הכל
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
@@ -6860,6 +6980,11 @@ function showReveal(o,cb){
       g.beginPath();g.moveTo(0,0);g.arc(0,0,210,-.13,.13);g.closePath();g.fill();
     }
     g.restore();g.globalAlpha=1;
+    // 🏷 שם הנדירות מעל הכדור — רואים כבר בזמן הסיבוב
+    g.save();g.font='900 20px -apple-system,Arial';g.textAlign='center';g.textBaseline='middle';
+    g.fillStyle=col;g.shadowColor=col;g.shadowBlur=16;
+    g.fillText(tr(RAR[o.rar|0].n,RAR[o.rar|0].en)+(o.rar>=5?' 👑':o.rar>=4?' 🔥':''),cx,20);
+    g.restore();
     const P1=1.05,P2=1.75;
     if(t<P1){ // הכדור מגיע מסתובב
       const k=t/P1,e=1-Math.pow(1-k,3);
