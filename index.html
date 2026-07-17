@@ -301,7 +301,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v90</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v91</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -774,7 +774,7 @@
 
 <div class="overlay hidden" id="failOv" style="justify-content:center;background:radial-gradient(130% 90% at 50% 0%,#3a1025 0%,#22081a 55%,#120310 100%)">
   <div class="big">💔</div>
-  <canvas id="failPet" width="120" height="116" style="margin:-8px auto 0"></canvas>
+  <canvas id="failPet" width="160" height="215" style="margin:-8px auto 0"></canvas>
   <h1 style="font-size:30px" data-en="Out of Lives">נגמרו הפסילות</h1>
   <p class="sub" style="color:#d8b8c8;max-width:300px" data-en="You were close! The level isn't going anywhere — one more try and you're there 💪">הייתם קרובים! השלב לא הולך לשום מקום — עוד ניסיון אחד ואתם שם 💪</p>
   <div id="failText" style="background:rgba(7,16,33,.6);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:7px 18px;font-weight:800;font-size:13px;color:#eaf4ff"></div>
@@ -791,7 +791,7 @@
   <div id="medalBig"></div>
   <h1 id="doneTitle" style="font-size:30px"></h1>
   <div id="starsBig"></div>
-  <canvas id="winPet" width="120" height="116" style="margin:-4px auto 0"></canvas>
+  <canvas id="winPet" width="160" height="215" style="margin:-4px auto 0"></canvas>
   <p class="sub" id="doneText" style="color:#a9c6e2"></p>
   <div id="winChips" class="row" style="gap:8px"></div>
   <div style="margin-top:26px;width:min(340px,88vw);display:flex;flex-direction:column;gap:10px">
@@ -1485,18 +1485,73 @@ function startMusic(){
     while(musNext<now+.3){schedStep(musStep,musNext);musStep++;musNext+=MSPB;}
   },110);
 }
+/* 🥁 שכבת רעש מסונן — נותנת "בשר" לכל אפקט (מכות, וושים, נצנוצים) */
+function noiseHit(dur,vol,f0,q,hp){
+  try{
+    if(!AC||muted)return;
+    const len=Math.max(1,AC.sampleRate*dur|0),buf=AC.createBuffer(1,len,AC.sampleRate),d2=buf.getChannelData(0);
+    for(let i=0;i<len;i++)d2[i]=(Math.random()*2-1)*Math.pow(1-i/len,1.6);
+    const src=AC.createBufferSource();src.buffer=buf;
+    const bp=AC.createBiquadFilter();bp.type=hp?'highpass':'bandpass';bp.frequency.value=f0||800;bp.Q.value=q||.9;
+    const g2=AC.createGain();g2.gain.value=vol||.3;
+    src.connect(bp);bp.connect(g2);g2.connect(master);src.start();
+  }catch(e){}
+}
+/* 🔊 הסאונדים המשודרגים: כל אפקט בנוי משכבות — טון + הרמוניה + רעש */
 const sfx={
-  thud:i=>{tone(110,.07,'sine',Math.min(.5,i/700));tone(60,.1,'triangle',Math.min(.4,i/900));},
-  star:()=>{const p=1+comboN*.13;tone(1318*p,.09,'sine',.28);
-    setTimeout(()=>tone(1760*p,.14,'sine',.28),70);},
-  portal:()=>tone(280,.3,'sine',.3,1400),
-  fall:()=>tone(520,.45,'sawtooth',.25,70),
-  bump:()=>tone(230,.13,'square',.32,110),
-  key:()=>{tone(880,.08,'sine',.3);setTimeout(()=>tone(1174,.16,'sine',.3),60);},
-  gate:()=>tone(150,.22,'square',.3,90),
-  sw:()=>{tone(660,.07,'square',.25);setTimeout(()=>tone(990,.1,'sine',.25),60);},
-  win:()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.22,'sine',.3),i*110));}
+  thud:i=>{ // נחיתה בשרית: באס + חבטת רעש
+    tone(110,.07,'sine',Math.min(.5,i/700));tone(58,.12,'triangle',Math.min(.42,i/900));
+    noiseHit(.08,Math.min(.3,i/1200),240,.7);
+  },
+  star:()=>{ // איסוף נוצץ: ארפג'יו + שימר גבוה
+    const p=1+comboN*.13;
+    tone(1046*p,.07,'sine',.24);
+    setTimeout(()=>tone(1318*p,.09,'sine',.26),55);
+    setTimeout(()=>tone(1760*p,.16,'sine',.26),115);
+    noiseHit(.12,.08,5200,1.2,true);
+  },
+  portal:()=>{ // שיגור חלל: סוויפ כפול מנוגד + ווש
+    tone(280,.3,'sine',.28,1400);
+    tone(900,.28,'triangle',.16,180);
+    noiseHit(.3,.1,1600,.5);
+  },
+  fall:()=>{ // נפילה: צלילה + ווש אוויר
+    tone(520,.45,'sawtooth',.25,70);
+    tone(300,.4,'triangle',.18,50);
+    noiseHit(.4,.14,900,.4);
+  },
+  bump:()=>{ // באמפר קפיצי: פאנץ' + סנאפ
+    tone(230,.13,'square',.32,110);
+    tone(460,.06,'triangle',.2,300);
+    noiseHit(.05,.16,1800,1);
+  },
+  key:()=>{ // מפתח: פעמון תלת-צלילי
+    tone(880,.08,'sine',.3);
+    setTimeout(()=>tone(1174,.1,'sine',.3),60);
+    setTimeout(()=>tone(1568,.18,'sine',.28),130);
+  },
+  gate:()=>{ // שער נפתח: חריקה + נקישת שחרור
+    tone(150,.22,'square',.28,90);
+    noiseHit(.16,.12,500,.6);
+    setTimeout(()=>tone(660,.06,'triangle',.2),160);
+  },
+  sw:()=>{ // מתג: קליק + זאפ
+    tone(660,.07,'square',.25);
+    setTimeout(()=>tone(990,.1,'sine',.25),60);
+    noiseHit(.04,.1,3200,1.4,true);
+  },
+  win:()=>{ // פנפרה: אקורדים כפולי-אוקטבה + נצנוץ סיום
+    [523,659,784,1046].forEach((f,i)=>setTimeout(()=>{
+      tone(f,.22,'sine',.3);tone(f/2,.24,'triangle',.14);
+    },i*110));
+    setTimeout(()=>{tone(1568,.3,'sine',.2);noiseHit(.35,.1,6000,1,true);},460);
+  },
+  click:()=>tone(720,.035,'triangle',.11) // 🖱 טיק עדין לכפתורים
 };
+// כל כפתור במשחק מרגיש בקצות האצבעות
+document.addEventListener('click',e=>{
+  try{if(e.target.closest&&e.target.closest('.btn,.chip,.mTile,.lv,.skCard'))sfx.click();}catch(e2){}
+},true);
 
 /* ============ GLOW SPRITES ============ */
 function glow(color){
@@ -7232,18 +7287,110 @@ function showReveal(o,cb){
     if(cb)cb();
   };
 }
-/* 🐾 היצור מלווה גם את מסכי הניצחון וההפסד */
+/* 🧍 הבאדי: הכדור נפתח ליצור קטן — הראש הוא הכדור, עם גוף, ידיים ורגליים.
+   רוקד וקופץ בניצחון, יושב שמוט ובוכה בהפסד.
+   ⚽ סקיני כדורגלנים נפתחים לשחקן עצמו: מדים אמיתיים, מספר על החולצה,
+   נעלי כדורגל — וכדור לרגליו בניצחון. */
+const KIT={
+  messi:  {sh:'#75aadb',stripe:'#ffffff',pants:'#0b1d36',socks:'#75aadb',num:'10',numCol:'#0b1d36'},
+  ronaldo:{sh:'#c8102e',stripe:null,     pants:'#ffffff',socks:'#0a4d3c',num:'7', numCol:'#fff'},
+  neymar: {sh:'#ffdc02',stripe:null,     pants:'#1c9c48',socks:'#ffffff',num:'10',numCol:'#1c5c9e'},
+  mbappe: {sh:'#21304e',stripe:null,     pants:'#ffffff',socks:'#c8102e',num:'7', numCol:'#fff'},
+  haaland:{sh:'#6cabdd',stripe:null,     pants:'#ffffff',socks:'#6cabdd',num:'9', numCol:'#0b1d36'}
+};
+function drawBuddy(g,cx,cy,R,idx,mood,t){
+  const sk=SKINS[idx]||SKINS[0];
+  const win=mood!=='sad';
+  const kit=KIT[sk.vkey];
+  const jump=win?Math.abs(Math.sin(t*4.6))*R*.5:0;
+  const sway=win?Math.sin(t*4.6)*.1:Math.sin(t*1.5)*.035;
+  g.save();g.translate(cx,cy-jump+(win?0:R*.22));g.rotate(sway);
+  // צל על הרצפה (נשאר למטה גם כשקופצים)
+  g.save();g.rotate(-sway);g.globalAlpha=.35-jump/(R*2);
+  g.fillStyle='#000';
+  g.beginPath();g.ellipse(0,R*2.05+jump-(win?0:R*.22),R*(.9-jump/(R*3)),R*.16,0,0,TAU);g.fill();
+  g.restore();
+  const legK=win?Math.sin(t*9.2):0;
+  g.lineCap='round';
+  // רגליים (גרביים)
+  g.strokeStyle=kit?kit.socks:'#38445a';g.lineWidth=R*.22;
+  g.beginPath();g.moveTo(-R*.3,R*1.32);g.lineTo(-R*.34+legK*R*.14,R*1.88);g.stroke();
+  g.beginPath();g.moveTo(R*.3,R*1.32);g.lineTo(R*.34-legK*R*.14,R*1.88);g.stroke();
+  // נעליים
+  g.fillStyle=kit?'#16181c':'#222a36';
+  g.beginPath();g.ellipse(-R*.4+legK*R*.14,R*1.94,R*.22,R*.1,-.1,0,TAU);g.fill();
+  g.beginPath();g.ellipse(R*.4-legK*R*.14,R*1.94,R*.22,R*.1,.1,0,TAU);g.fill();
+  // גוף
+  if(kit){ // 👕 חולצת כדורגל
+    g.fillStyle=kit.sh;
+    g.beginPath();g.roundRect(-R*.62,R*.48,R*1.24,R*.78,R*.22);g.fill();
+    if(kit.stripe){ // פסי ארגנטינה
+      g.save();g.beginPath();g.roundRect(-R*.62,R*.48,R*1.24,R*.78,R*.22);g.clip();
+      g.fillStyle=kit.stripe;
+      for(const sx of[-R*.46,-R*.06,R*.34])g.fillRect(sx,R*.48,R*.2,R*.78);
+      g.restore();
+    }
+    g.lineWidth=R*.05;g.strokeStyle='rgba(0,0,0,.25)';
+    g.beginPath();g.roundRect(-R*.62,R*.48,R*1.24,R*.78,R*.22);g.stroke();
+    // מספר על החזה
+    g.fillStyle=kit.numCol;g.font='900 '+(R*.42|0)+'px Arial';
+    g.textAlign='center';g.textBaseline='middle';
+    g.fillText(kit.num,0,R*.9);
+    // מכנסיים
+    g.fillStyle=kit.pants;
+    g.beginPath();g.roundRect(-R*.56,R*1.12,R*1.12,R*.3,R*.09);g.fill();
+    g.lineWidth=R*.04;g.strokeStyle='rgba(0,0,0,.2)';g.stroke();
+  }else{ // יצור חמוד — גוף כהה עם בטן בהירה
+    g.fillStyle='#2e3a4c';
+    g.beginPath();g.roundRect(-R*.58,R*.48,R*1.16,R*.92,R*.4);g.fill();
+    g.fillStyle='rgba(255,255,255,.13)';
+    g.beginPath();g.ellipse(0,R*1,R*.32,R*.3,0,0,TAU);g.fill();
+  }
+  // ידיים — מונפות למעלה ומנופפות בניצחון, שמוטות הצידה בהפסד
+  g.strokeStyle=kit?kit.sh:'#2e3a4c';g.lineWidth=R*.19;
+  for(const sd of[-1,1]){
+    g.save();g.translate(sd*R*.64,R*.6);
+    g.rotate(-sd*(win?(2.55+Math.sin(t*9.2+sd)*.3):(.32+Math.sin(t*1.5)*.05)));
+    g.beginPath();g.moveTo(0,0);g.lineTo(0,R*.62);g.stroke();
+    g.fillStyle=kit?'#e8b98a':'#26303f'; // כף יד
+    g.beginPath();g.arc(0,R*.68,R*.12,0,TAU);g.fill();
+    g.restore();
+  }
+  // הראש = הכדור עצמו (הפרצוף מגיע מ-drawCreature; לכדורגלנים — הפנים האמיתיות)
+  g.save();g.rotate(win?Math.sin(t*9.2)*.05:.13);
+  drawCreature(g,0,0,R,idx,win?'happy':'sad',t);
+  g.restore();
+  if(!win){ // 💧 דמעות נופלות
+    g.fillStyle='rgba(122,196,255,.85)';
+    for(const sd of[-1,1]){
+      const tk2=((t*1.3+(sd>0?.5:0))%1);
+      g.globalAlpha=.85*(1-tk2);
+      g.beginPath();g.ellipse(sd*R*.34,R*.05+tk2*R*.9,R*.055,R*.1,0,0,TAU);g.fill();
+    }
+    g.globalAlpha=1;
+  }
+  if(kit&&win){ // ⚽ כדור מסתובב לרגליו של הכדורגלן
+    g.save();g.translate(R*.8,R*1.86);g.rotate(t*6);
+    g.fillStyle='#f4f4f0';g.beginPath();g.arc(0,0,R*.24,0,TAU);g.fill();
+    g.fillStyle='#16181c';pent(g,0,0,R*.1,0);g.fill();
+    g.lineWidth=1.2;g.strokeStyle='rgba(0,0,0,.4)';
+    g.beginPath();g.arc(0,0,R*.24,0,TAU);g.stroke();
+    g.restore();
+  }
+  g.restore();
+}
+/* 🐾 הבאדי מלווה את מסכי הניצחון וההפסד */
 (function petLoop(){
   requestAnimationFrame(petLoop);
   const t=performance.now()/1000;
   try{
     if(!$('doneOv').classList.contains('hidden')){
       const c=$('winPet'),g=c.getContext('2d');
-      g.clearRect(0,0,c.width,c.height);drawCreature(g,60,60,42,skinSel,'happy',t);
+      g.clearRect(0,0,c.width,c.height);drawBuddy(g,80,68,38,skinSel,'win',t);
     }
     if(!$('failOv').classList.contains('hidden')){
       const c=$('failPet'),g=c.getContext('2d');
-      g.clearRect(0,0,c.width,c.height);drawCreature(g,60,60,42,skinSel,'sad',t);
+      g.clearRect(0,0,c.width,c.height);drawBuddy(g,80,64,38,skinSel,'sad',t);
     }
   }catch(e){}
 })();
