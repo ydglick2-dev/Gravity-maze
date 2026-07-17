@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v80</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v81</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -3207,6 +3207,8 @@ function lobbyFrame(dt,t){
       sfx.win();
       goalFxShow(LB.goals%2?'comic':'fly');
       skinShout();
+      try{confetti3D(SB.x,Math.max(1.2,SB.z));}catch(e){} // 🎉 קונפטי תלת-ממדי מהשער
+      emojiBurst({e:['🎉','⚽','✨','🎊'],n:20,m:'burst',d:1600});
       for(let i=0;i<30;i++){
         if(particles.length>240)particles.shift();
         particles.push({x:W/2+(Math.random()-.5)*120,y:H*.46,
@@ -3373,9 +3375,35 @@ function init3D(){
     new THREE.MeshBasicMaterial({map:radialTex('rgba(0,0,0,.5)'),transparent:true,depthWrite:false}));
   blob2.rotation.x=-Math.PI/2;blob2.position.y=.012;
   scene.add(blob2);
+  // ✨ שדרוגי אווירה: הילת נדירות סביב הכדור + מאגר קונפטי תלת-ממדי לגולים
+  const aura=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(255,255,255,.85)'),transparent:true,opacity:0,depthWrite:false}));
+  aura.scale.set(2.7,2.7,1);scene.add(aura);
+  const CN=90,cg=new THREE.BufferGeometry();
+  cg.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(CN*3),3));
+  cg.setAttribute('color',new THREE.Float32BufferAttribute(new Float32Array(CN*3),3));
+  const conf=new THREE.Points(cg,new THREE.PointsMaterial({size:.17,vertexColors:true,transparent:true,opacity:0,depthWrite:false}));
+  conf.frustumCulled=false;scene.add(conf);
   const cam=new THREE.PerspectiveCamera(58,W/H,.1,90);
   cam.position.set(0,5,LB.z+7.4);
-  return {ren,scene,cam,ball3,blob,gGlow,stars,bTex,sb3,blob2,lastSkin:skinSel};
+  return {ren,scene,cam,ball3,blob,gGlow,stars,bTex,sb3,blob2,lastSkin:skinSel,
+    aura,auraRar:-1,conf,cvel:new Float32Array(CN*3),confT:0};
+}
+/* 🎉 פרץ קונפטי תלת-ממדי — צבעוני, קופץ על הדשא ונמוג */
+function confetti3D(x,z){
+  if(!T3||!T3.conf)return;
+  const pa=T3.conf.geometry.attributes.position.array,
+        ca=T3.conf.geometry.attributes.color.array,v=T3.cvel;
+  const cols=[[1,.84,.36],[.48,.88,1],[1,.42,.5],[.66,1,.62],[1,1,1]];
+  for(let i=0;i<v.length;i+=3){
+    pa[i]=x+(Math.random()-.5)*.7;pa[i+1]=.3+Math.random()*.6;pa[i+2]=z+(Math.random()-.5)*.7;
+    v[i]=(Math.random()-.5)*6.5;v[i+1]=3+Math.random()*5.5;v[i+2]=(Math.random()-.5)*6.5;
+    const c=cols[(Math.random()*cols.length)|0];
+    ca[i]=c[0];ca[i+1]=c[1];ca[i+2]=c[2];
+  }
+  T3.conf.geometry.attributes.position.needsUpdate=true;
+  T3.conf.geometry.attributes.color.needsUpdate=true;
+  T3.confT=1.8;
+  T3.conf.material.opacity=1;
 }
 function render3D(dt){
   if(!T3&&threeAllowed()&&typeof THREE!=='undefined'&&!threeTried){threeTried=true;try{T3=init3D();}catch(e){T3=null;}}
@@ -3403,12 +3431,42 @@ function render3D(dt){
   T3.gGlow.position.set(LB.x,.7,LB.z);
   T3.gGlow.material.opacity=LB.glow*.85;
   T3.stars.rotation.y+=dt*.008;
+  const _now=performance.now()/1000;
+  T3.stars.material.opacity=.68+.24*Math.sin(_now*1.7); // ✨ נצנוץ כוכבים
+  // 💎 הילת נדירות סביב הכדור (אדיר ומעלה)
+  {
+    const _rar=(SKINS[skinSel]||{}).rar|0;
+    if(_rar>=3){
+      if(T3.auraRar!==_rar){
+        T3.auraRar=_rar;
+        try{T3.aura.material.map=radialTex(hexA((RAR[_rar]||RAR[3]).c,.9));T3.aura.material.needsUpdate=true;}catch(e){}
+      }
+      T3.aura.position.set(LB.x,.55,LB.z);
+      T3.aura.material.opacity=.2+.13*Math.sin(_now*3);
+    }else T3.aura.material.opacity=0;
+  }
+  // 🎉 קונפטי גול: פיזיקה + קפיצה על הדשא + דעיכה
+  if(T3.confT>0){
+    T3.confT-=dt;
+    const pa=T3.conf.geometry.attributes.position.array,v=T3.cvel;
+    for(let i=0;i<v.length;i+=3){
+      v[i+1]-=9.5*dt;
+      pa[i]+=v[i]*dt;pa[i+1]+=v[i+1]*dt;pa[i+2]+=v[i+2]*dt;
+      if(pa[i+1]<.02){pa[i+1]=.02;v[i+1]*=-.35;v[i]*=.82;v[i+2]*=.82;}
+    }
+    T3.conf.geometry.attributes.position.needsUpdate=true;
+    T3.conf.material.opacity=Math.max(0,Math.min(1,T3.confT));
+  }
   const cam=T3.cam;
   cam.position.x+=((LB.x*.55+dTiltX*.8)-cam.position.x)*Math.min(1,dt*4);
   cam.position.z+=((LB.z+7.4)-cam.position.z)*Math.min(1,dt*4);
   cam.position.y+=((5.1)-cam.position.y)*Math.min(1,dt*4);
   cam.lookAt(LB.x*.8,.55,LB.z-3);
   cam.rotation.z=-dTiltX*.045;
+  if(LB.glow>.45){ // 📸 רעידת מצלמה קטנה ברגע הגול
+    cam.position.x+=(Math.random()-.5)*.09*LB.glow;
+    cam.position.y+=(Math.random()-.5)*.07*LB.glow;
+  }
   syncLobbyPlayers3D(dt);
   T3.ren.render(T3.scene,cam);
   return true;
