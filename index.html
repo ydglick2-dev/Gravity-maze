@@ -319,7 +319,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v95</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v96</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -1893,7 +1893,8 @@ function respawn(){
   starGot=(L().stars||[]).map(()=>false);
   swState=(L().switches||[]).map(()=>({open:false,inside:false}));
   comboN=0;
-  bossShots.length=0;bossPShot=null;
+  bossShots.length=0;
+  if(bossPShot){bossPShot=null;bossAmmo=3;try{bossAmmoUi();}catch(e){}} // 🎯 ירייה שנקטעה במוות — התחמושת מוחזרת
   if(bossOn()&&bossHp>0){bossInvT=1;bossMode='idle';bossStT=1;}
   updateHud();
 }
@@ -2284,13 +2285,16 @@ function physics(dt,t){
     }
   }
   // magnet cores + holes
+  const _bDead=lv.boss&&bossMaxHp>0&&!customLv&&bossHp<=0; // 👑 הבוס מת — החורים כבר לא קטלניים (חוגגים בשקט)
   for(const m of(lv.magnets||[])){
+    if(_bDead)break;
     const c=P([m.x,m.y]);
     if(Math.hypot(ball.x-c.x,ball.y-c.y)<holeR()*.7){
       falling=.0001;fallPt=c;sfx.fall();shake=5;playDeathFX(c.x,c.y,THEMES[lv.th]);return;
     }
   }
   for(const hpt of(lv.holes||[])){
+    if(_bDead)break;
     const h=P(hpt);
     if(Math.hypot(ball.x-h.x,ball.y-h.y)<holeR()*.75){
       falling=.0001;fallPt=h;sfx.fall();shake=6;
@@ -2338,8 +2342,18 @@ function bossSpawnRemn(x,y){
   let ry=Math.max(board.y+board.h*.3,Math.min(board.y+board.h-ball.r*2,y));
   for(const hpt of(L().holes||[])){const hh=P(hpt),d=Math.hypot(rx-hh.x,ry-hh.y);
     if(d<holeR()*1.3){const k=(holeR()*1.6)/(d||1);rx=hh.x+(rx-hh.x)*k;ry=hh.y+(ry-hh.y)*k;}}
+  for(const w of(L().walls||[])){ // 🧱 שארית שנחתה בתוך קיר — נדחפת לקצה הקרוב
+    const r=R(w);
+    if(rx>r.x-ball.r&&rx<r.x+r.w+ball.r&&ry>r.y-ball.r&&ry<r.y+r.h+ball.r){
+      const dl=rx-(r.x-ball.r),dr=(r.x+r.w+ball.r)-rx,dt2=ry-(r.y-ball.r),db=(r.y+r.h+ball.r)-ry;
+      const mn=Math.min(dl,dr,dt2,db);
+      if(mn===dl)rx=r.x-ball.r;else if(mn===dr)rx=r.x+r.w+ball.r;
+      else if(mn===dt2)ry=r.y-ball.r;else ry=r.y+r.h+ball.r;
+    }}
+  rx=Math.max(board.x+ball.r,Math.min(board.x+board.w-ball.r,rx));
+  ry=Math.max(board.y+ball.r,Math.min(board.y+board.h-ball.r,ry));
   if(bossRemn.length>=6)bossRemn.shift();
-  bossRemn.push({x:rx,y:ry,life:6,ph:Math.random()*6.3});
+  bossRemn.push({x:rx,y:ry,life:8,ph:Math.random()*6.3}); // 8ש — זמן נשימה לילדים
 }
 function bossAmmoUi(){
   const emo=BOSS_EMO[bossZone()];
@@ -2409,14 +2423,20 @@ function bossPhysics(dt,t){
     s.life-=dt;s.vy+=(s.grav||0)*dt;
     s.x+=s.vx*dt*spdF;s.y+=s.vy*dt*spdF;s.rot+=dt*4;
     let dead=s.life<=0||s.x<board.x+5||s.x>board.x+board.w-5||s.y>board.y+board.h-5||s.y<board.y-40;
-    if(!dead)for(const w of(lv.walls||[])){const r=R(w);
-      if(s.x>r.x&&s.x<r.x+r.w&&s.y>r.y&&s.y<r.y+r.h){dead=true;break;}}
+    const _sIn=r=>s.x>r.x&&s.x<r.x+r.w&&s.y>r.y&&s.y<r.y+r.h;
+    if(!dead)for(const w of(lv.walls||[])){if(_sIn(R(w))){dead=true;break;}}
+    // 🛡 מחסה עקבי: קליעים נעצרים גם בשערי מפתח סגורים, מחסומי מתג, קירות פאזה ופלטפורמות נעות
+    if(!dead)(lv.keys||[]).forEach((k,ki)=>{if(!dead&&!keyGot[ki]&&_sIn(R(k.g)))dead=true;});
+    if(!dead)(lv.switches||[]).forEach((sw,si)=>{if(!dead&&!swState[si].open)for(const g2 of sw.g)if(_sIn(R(g2))){dead=true;break;}});
+    if(!dead)for(const mvr of(lv.movers||[])){if(_sIn(moverRect(mvr,t))){dead=true;break;}}
+    if(!dead)for(const ph2 of(lv.phase||[]))if(phaseOn(ph2,t)&&_sIn(R([ph2.x,ph2.y,ph2.w,ph2.h]))){dead=true;break;}
     if(dead){if(s.y>board.y+board.h*.18)bossSpawnRemn(s.x,s.y);bossShots.splice(i,1);continue;}
     if(falling===0&&winPause===0&&ball.spawnT<=0&&bossInvT<=0&&bossMode!=='dying'&&
        Math.hypot(s.x-ball.x,s.y-ball.y)<ball.r+s.r){
       bossShots.splice(i,1);
       falling=.0001;fallPt={x:ball.x,y:ball.y};sfx.fall();shake=6; // מסלול החור — מגן/לבבות חינם
       playDeathFX(ball.x,ball.y,T);
+      if(zone<2)bossSpawnRemn(ball.x,ball.y); // 💗 חסד עולמות 1-2: גם פגיעה משאירה שארית
       if(navigator.vibrate)navigator.vibrate([40,30,60]);
     }
   }
@@ -2498,6 +2518,8 @@ function drawBossShots(t){
     const gl=ctx.createRadialGradient(0,0,1,0,0,s.r*2.4);
     gl.addColorStop(0,hexA(T.accent2,.55));gl.addColorStop(1,hexA(T.accent2,0));
     ctx.fillStyle=gl;ctx.beginPath();ctx.arc(0,0,s.r*2.4,0,TAU);ctx.fill();
+    ctx.strokeStyle='rgba(255,80,70,'+(.45+.3*Math.sin(t*10+s.rot))+')'; // ⛔ טבעת סכנה אדומה — להבדיל משאריות-האיסוף הזהובות
+    ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,s.r*1.5,0,TAU);ctx.stroke();
     ctx.rotate(s.rot);
     ctx.font=Math.round(s.r*2.3)+'px sans-serif';
     ctx.fillText(emo,0,0);
@@ -2561,9 +2583,10 @@ function drawBossBody(t){
     ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.font='16px sans-serif';
     const hw=22,x0=G.cx-(bossMaxHp-1)*hw/2;
+    const hy=G.cy-G.S*(G.idx===6?.58:.42); // המדוזה גבוהה — הלבבות מעליה
     for(let i=0;i<bossMaxHp;i++){
       const beat=i<bossHp?1+.1*Math.max(0,Math.sin(t*3.2+i)):1;
-      ctx.save();ctx.translate(x0+i*hw,G.cy-G.S*.42);ctx.scale(beat,beat);
+      ctx.save();ctx.translate(x0+i*hw,hy);ctx.scale(beat,beat);
       ctx.fillText(i<bossHp?'💜':'🖤',0,0);ctx.restore();
     }
     ctx.restore();
@@ -2869,16 +2892,19 @@ function drawBossMonster(g,S,idx,st,t){
       g.beginPath();g.arc(0,0,S*.5*(1+st.ph),0,TAU);g.fill();}
   }
 }
-/* 🎯 כפתור הירייה */
-$('fireBtn').onpointerdown=e=>{
-  e.preventDefault();
-  if(!running||paused||bossAmmo<3||!bossOn()||bossHp<=0||bossPShot||falling>0||winPause>0)return;
+/* 🎯 כפתור הירייה (גם רווח/F במקלדת) */
+function bossTryFire(){
+  if(!running||paused||runMode||bossAmmo<3||!bossOn()||bossHp<=0||bossPShot||falling>0||winPause>0)return;
   bossAmmo=0;bossAmmoUi();
   bossPShot={x:ball.x,y:ball.y,t:0};
   sfx.playerShoot();
   shock(ball.x,ball.y,'rgba(255,214,87,.8)',ball.r*3);
   if(navigator.vibrate)navigator.vibrate(30);
-};
+}
+$('fireBtn').onpointerdown=e=>{e.preventDefault();bossTryFire();};
+window.addEventListener('keydown',e=>{
+  if((e.key===' '||e.key==='f'||e.key==='F')&&running&&!runMode&&bossOn()){e.preventDefault();bossTryFire();}
+});
 
 /* ============ DRAW ============ */
 /* 🕹 ג'ויסטיק וירטואלי — מוצג רק במצב מגע (כשאין גישה לחיישן ההטיה) */
@@ -4738,7 +4764,7 @@ $('nextBtn').onclick=()=>{
 $('replayBtn').onclick=()=>{$('doneOv').classList.add('hidden');startRun(customLv||levelIdx);};
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden&&running&&!runLive&&!cineMode){paused=true;hushRoll();$('pauseOv').classList.remove('hidden');} // קולנועית לא נקטעת ע"י auto-pause
-  if(document.hidden)for(const k in kbDown)delete kbDown[k]; // מקשים לא נתקעים
+  if(document.hidden){for(const k in kbDown)delete kbDown[k];try{updKb();}catch(e){}} // מקשים לא נתקעים
 });
 window.addEventListener('blur',()=>{for(const k in kbDown)delete kbDown[k];try{updKb();}catch(e){}}); // ⌨️ איבוד פוקוס משחרר מקשים
 
@@ -5562,6 +5588,9 @@ async function beginCountdown(x,seed){
 /* ---- ליבת הראנר ---- */
 function startRunner(live,seed,target){
   customLv=null;runMode=true;runLive=!!live;runDead=false;
+  bossMaxHp=0;bossHp=0;bossShots.length=0;bossRemn.length=0;bossPShot=null;bossAmmo=0; // 👾 קרב בוס לא דולף לראנר (למשל אחרי זימון)
+  try{$('fireWrap').classList.add('hidden');}catch(e){}
+  cineMode='';cineHold=false;cineCb=null;timeScale=1;
   runSeed=seed;runTarget=live?target:1e9;
   runRnd=mulberry(seed);
   runDist=0;runV=5;runTime=0;runLives=3;runInv=0;runTier=0;
