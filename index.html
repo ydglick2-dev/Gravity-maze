@@ -301,7 +301,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v93</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v94</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2619,7 +2619,7 @@ function rrc(c,x,y,w,h,rad){const q=Math.min(rad,w/2,h/2);c.beginPath();
 /* ---- ✨💀 אפקטי ניצחון ומוות — פריטים ---- */
 let wSel=0,dSel=0,wOw=[0],dOw=[0];
 const WFX=[
- {name:'גשם מטבעות',en:'Coin Rain',icon:'🪙',price:0,rar:0},
+ {name:'גשם מטבעות',en:'Coin Rain',icon:'🪙',price:0,rar:1},
  {name:'זיקוקים',en:'Fireworks',icon:'🎆',price:250,rar:1},
  {name:'יונים',en:'Doves',icon:'🕊',price:250,rar:1},
  {name:'סופרנובה',en:'Supernova',icon:'🌟',price:500,rar:2},
@@ -2627,7 +2627,7 @@ const WFX=[
  {name:'גשם כוכבים',en:'Star Rain',icon:'⭐',price:1600,rar:4}
 ];
 const DFX=[
- {name:'שאיבה',en:'Vortex',icon:'🌀',price:0,rar:0},
+ {name:'שאיבה',en:'Vortex',icon:'🌀',price:0,rar:1},
  {name:'פיצוץ',en:'Explosion',icon:'💥',price:220,rar:1},
  {name:'ברק',en:'Lightning',icon:'⚡',price:450,rar:2},
  {name:'קרח נשבר',en:'Ice Shatter',icon:'❄️',price:450,rar:2},
@@ -2995,7 +2995,7 @@ function playDeathFX(x,y,T){
   timeScale=Math.min(timeScale,.35);
 }
 const SKINS=[
- {name:'פלדה',en:'Steel',price:0,rar:0,draw:(c,r,rot,T)=>{
+ {name:'פלדה',en:'Steel',price:0,rar:1,draw:(c,r,rot,T)=>{
    const bg=c.createRadialGradient(-r*.4,-r*.45,r*.1,0,0,r*1.15);
    bg.addColorStop(0,'#fff');bg.addColorStop(.25,'#d6dde6');bg.addColorStop(.6,'#8a95a2');bg.addColorStop(1,'#333b46');
    c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
@@ -3004,7 +3004,7 @@ const SKINS=[
      c.beginPath();c.arc(Math.cos(a)*r*.55,Math.sin(a)*r*.55,r*.22,0,TAU);c.fill();}
    c.globalAlpha=1;
    c.beginPath();c.arc(-r*.35,-r*.4,r*.16,0,TAU);c.fillStyle='rgba(255,255,255,.95)';c.fill();}},
- {name:'כדורגל',en:'Soccer',price:100,rar:0,draw:(c,r,rot)=>{
+ {name:'כדורגל',en:'Soccer',price:100,rar:1,draw:(c,r,rot)=>{
    c.fillStyle='#f4f4f0';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.7);
    c.fillStyle='#16181c';pent(c,0,0,r*.34,0);c.fill();
@@ -3015,7 +3015,7 @@ const SKINS=[
      c.beginPath();c.moveTo(Math.cos(a)*r*.34,Math.sin(a)*r*.34);
      c.lineTo(Math.cos(a)*r*.58,Math.sin(a)*r*.58);c.stroke();}
    c.restore();skShade(c,r);}},
- {name:'כדורסל',en:'Basketball',price:100,rar:0,draw:(c,r,rot)=>{
+ {name:'כדורסל',en:'Basketball',price:100,rar:1,draw:(c,r,rot)=>{
    const g=c.createRadialGradient(-r*.3,-r*.3,r*.2,0,0,r);
    g.addColorStop(0,'#ff9a52');g.addColorStop(1,'#c9531e');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -3081,7 +3081,7 @@ const SKINS=[
    c.strokeStyle='rgba(255,250,220,.6)';c.lineWidth=r*.08;
    c.beginPath();c.arc(0,0,r*.72,Math.PI*1.05,Math.PI*1.65);c.stroke();
    skShade(c,r);}},
- {name:'אבטיח',en:'Watermelon',price:120,rar:0,draw:(c,r,rot)=>{
+ {name:'אבטיח',en:'Watermelon',price:120,rar:1,draw:(c,r,rot)=>{
    c.fillStyle='#2e8b3a';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.5);
    c.strokeStyle='#1d5c26';c.lineWidth=r*.16;
@@ -5518,7 +5518,7 @@ function playBoxOpen3D(mx,cb){
     }catch(e){box3R=null;}
   }
   if(!box3R)return false;
-  const ov=$('boxOv'),col=(RAR[mx|0]||RAR[0]).c;
+  const ov=$('boxOv'),col=(RAR[Math.max(1,mx|0)]||RAR[1]).c;
   ov.style.display='flex';
   $('boxCv').style.display='none';cv.style.display='block';
   const rays=$('boxRays');
@@ -5644,8 +5644,8 @@ function playBoxOpen3D(mx,cb){
 }
 function playBoxOpen2D(mx,cb){
   const ov=$('boxOv'),cv=$('boxCv'),g=cv.getContext('2d');
-  // ⬆ הנדירות מטפסת תוך כדי ההקשות: מתחילים מ"רגיל", וכל עליית רמה מאפסת את הספירה
-  let dispR=0,col=(RAR[0]||{c:'#9aa7b5'}).c;
+  // ⬆ הנדירות מטפסת תוך כדי ההקשות: מתחילים מ"נדיר" (אין יותר "רגיל"), וכל עליית רמה מאפסת את הספירה
+  let dispR=1,col=(RAR[1]||{c:'#2edd6f'}).c;
   ov.style.display='flex';
   const W2=cv.width,H2=cv.height,cx=W2/2,cy=H2/2+42;
   let taps=0,shake=0,burstT=0,teasing=false,run=true,rot=0;
