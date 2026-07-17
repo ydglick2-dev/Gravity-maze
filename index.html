@@ -301,7 +301,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v92</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v93</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5408,11 +5408,8 @@ function grantTier(t){
 }
 function rollChest(){
   const drops=[];
-  let coinCap=30; // 🪙 מקסימום 30 מטבעות מתיבה — כלכלה מאוזנת
-  const n=10+((Math.random()*13)|0);
-  addCoins(n);coinCap-=n;drops.push({icon:'🪙',label:'+'+n,rar:0});
-  if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
-  let gotItem=false;
+  // 🎁 קודם מגלגלים את שני חריצי הפריטים — נדירות התיבה קובעת את תקרת המטבעות
+  const slots=[];let gotItem=false;
   for(let s2=0;s2<2;s2++){
     const luck=1+pity*.35;
     const r=Math.random()*100;
@@ -5420,16 +5417,27 @@ function rollChest(){
     for(const[tier,pc] of DROP_PCT){acc+=pc*luck;if(r<acc){hit=tier;break;}}
     if(hit){
       const d=grantTier(hit);
-      if(d){drops.push(d);if(d._extra)drops.push(d._extra);gotItem=true;continue;}
+      if(d){slots.push(d);gotItem=true;continue;}
     }
+    slots.push(null); // חריץ ריק → מילוי מטבעות/יהלום בהמשך
+  }
+  pity=gotItem?0:pity+1;
+  const mxR=slots.reduce((m,d)=>d?Math.max(m,d.rar|0):m,0);
+  // 🪙 תקרת המטבעות עולה עם נדירות התיבה: אדיר +25%, מדהים +50%, אגדי +100%
+  const capMul=mxR>=5?2:mxR>=4?1.5:mxR>=3?1.25:1;
+  let coinCap=Math.round(30*capMul);
+  const n=Math.round((10+((Math.random()*13)|0))*capMul);
+  addCoins(n);coinCap-=n;drops.push({icon:'🪙',label:'+'+n,rar:0});
+  if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
+  for(const d of slots){
+    if(d){drops.push(d);if(d._extra)drops.push(d._extra);continue;}
     if(coinCap>=5){
-      const m=Math.min(coinCap,5+((Math.random()*9)|0));
+      const m=Math.min(coinCap,Math.round((5+((Math.random()*9)|0))*capMul));
       addCoins(m);coinCap-=m;drops.push({icon:'🪙',label:'+'+m,rar:0});
     }else{
       gems+=1;drops.push({icon:'💎',label:'+1',rar:1});
     }
   }
-  pity=gotItem?0:pity+1;
   return drops;
 }
 let chestBusy=false;
