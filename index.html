@@ -301,7 +301,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v91</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v92</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5064,17 +5064,16 @@ function showResult(icon,title,text){
   $('rrIcon').textContent=icon;
   $('rrTitle').textContent=title;
   $('rrText').textContent=text;
-  $('rrPodium').innerHTML='';
+  $('rrPodium').innerHTML='';rrCine=null;
   $('raceResOv').classList.remove('hidden');
 }
-function rrPodiumShow(win){ // 🏟️ פודיום כמו בעיצוב
-  const me=myName||curUser||tr('אתה','You'),op=oppName||tr('יריב','Rival');
-  const step=(nm,place,tall)=>'<div style="display:flex;flex-direction:column;align-items:center;gap:6px;animation:popIn .5s cubic-bezier(.2,1.4,.4,1) both;animation-delay:'+(place===1?'.25s':'.05s')+'">'+
-    avHTML(nm,44)+'<b style="font-size:13px;color:#eaf4ff">'+esc(nm)+(place===1?' 👑':'')+'</b>'+
-    '<div style="width:86px;height:'+(tall?86:56)+'px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;'+
-    (place===1?'background:linear-gradient(180deg,rgba(246,180,14,.85),rgba(246,180,14,.45));color:#12253f'
-              :'background:rgba(126,200,242,.15);color:#a9c6e2')+'">'+place+'</div></div>';
-  $('rrPodium').innerHTML=win?(step(op,2,false)+step(me,1,true)):(step(me,2,false)+step(op,1,true));
+function rrPodiumShow(win){ // 🏟️ פודיום קולנועי: הכדור מתגלגל, מזנק ונפתח ליצור
+  $('rrPodium').innerHTML='<canvas id="rrPodCv" width="340" height="260" style="max-width:88vw"></canvas>';
+  rrCine={win,
+    me:myName||curUser||tr('אתה','You'),
+    op:oppName||tr('יריב','Rival'),
+    rvIdx:(skinSel+2)%SKINS.length,
+    botIdx:(skinSel+5)%SKINS.length};
 }
 $('rrBack').onclick=()=>{$('raceResOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 function loadPeer(cb){
@@ -7287,10 +7286,14 @@ function showReveal(o,cb){
     if(cb)cb();
   };
 }
-/* 🧍 הבאדי: הכדור נפתח ליצור קטן — הראש הוא הכדור, עם גוף, ידיים ורגליים.
-   רוקד וקופץ בניצחון, יושב שמוט ובוכה בהפסד.
-   ⚽ סקיני כדורגלנים נפתחים לשחקן עצמו: מדים אמיתיים, מספר על החולצה,
-   נעלי כדורגל — וכדור לרגליו בניצחון. */
+/* 🧍 הבאדי: הכדור נפתח ליצור קטן — הראש הוא הכדור.
+   יצורים רגילים: גוף חמוד. ⚽ כדורגלנים: גוף אתלטי אמיתי — צוואר, כתפיים
+   רחבות, שרוולים עם זרועות בגון עור, מרפקים וברכיים, שוקיים עם גרביים,
+   נעלי כדורגל, מספר על החולצה. open=0→1 מגלגל את האיברים החוצה מהכדור. */
+const cl01=k=>k<0?0:k>1?1:k;
+const eOutCubic=k=>1-Math.pow(1-k,3);
+const eOutQuad=k=>1-(1-k)*(1-k);
+const eOutBack=k=>{const c=1.70158;k-=1;return 1+(c+1)*k*k*k+c*k*k;};
 const KIT={
   messi:  {sh:'#75aadb',stripe:'#ffffff',pants:'#0b1d36',socks:'#75aadb',num:'10',numCol:'#0b1d36'},
   ronaldo:{sh:'#c8102e',stripe:null,     pants:'#ffffff',socks:'#0a4d3c',num:'7', numCol:'#fff'},
@@ -7298,69 +7301,112 @@ const KIT={
   mbappe: {sh:'#21304e',stripe:null,     pants:'#ffffff',socks:'#c8102e',num:'7', numCol:'#fff'},
   haaland:{sh:'#6cabdd',stripe:null,     pants:'#ffffff',socks:'#6cabdd',num:'9', numCol:'#0b1d36'}
 };
-function drawBuddy(g,cx,cy,R,idx,mood,t){
+const buddyFT=idx=>KIT[(SKINS[idx]||{}).vkey]?3.12:2.06; // 📏 גובה הרגליים: אתלט גבוה מיצור
+function drawBuddy(g,cx,cy,R,idx,mood,t,open){
   const sk=SKINS[idx]||SKINS[0];
-  const win=mood!=='sad';
   const kit=KIT[sk.vkey];
+  const pose=mood==='sad'?'sad':(mood==='idle'?'idle':'win');
+  const win=pose==='win',sad=pose==='sad';
+  const o=open===undefined?1:Math.max(0,open); // מותר אוברשוט — הפתיחה קופצת מעבר ומתייצבת
   const jump=win?Math.abs(Math.sin(t*4.6))*R*.5:0;
+  const bob=pose==='idle'?Math.sin(t*2.1)*R*.03:0;
   const sway=win?Math.sin(t*4.6)*.1:Math.sin(t*1.5)*.035;
-  g.save();g.translate(cx,cy-jump+(win?0:R*.22));g.rotate(sway);
-  // צל על הרצפה (נשאר למטה גם כשקופצים)
-  g.save();g.rotate(-sway);g.globalAlpha=.35-jump/(R*2);
+  g.save();g.translate(cx,cy-jump+(sad?R*.22:0)+bob);g.rotate(sway);
+  // צל קרקע — נשאר על הרצפה גם בקפיצה
+  g.save();g.rotate(-sway);g.globalAlpha=Math.max(0,.35-jump/(R*2));
   g.fillStyle='#000';
-  g.beginPath();g.ellipse(0,R*2.05+jump-(win?0:R*.22),R*(.9-jump/(R*3)),R*.16,0,0,TAU);g.fill();
+  g.beginPath();g.ellipse(0,R*(kit?3.06:2.05)+jump-(sad?R*.22:0),R*((kit?.95:.9)-jump/(R*3))*(.5+.5*o),R*.16,0,0,TAU);g.fill();
   g.restore();
-  const legK=win?Math.sin(t*9.2):0;
-  g.lineCap='round';
-  // רגליים (גרביים)
-  g.strokeStyle=kit?kit.socks:'#38445a';g.lineWidth=R*.22;
-  g.beginPath();g.moveTo(-R*.3,R*1.32);g.lineTo(-R*.34+legK*R*.14,R*1.88);g.stroke();
-  g.beginPath();g.moveTo(R*.3,R*1.32);g.lineTo(R*.34-legK*R*.14,R*1.88);g.stroke();
-  // נעליים
-  g.fillStyle=kit?'#16181c':'#222a36';
-  g.beginPath();g.ellipse(-R*.4+legK*R*.14,R*1.94,R*.22,R*.1,-.1,0,TAU);g.fill();
-  g.beginPath();g.ellipse(R*.4-legK*R*.14,R*1.94,R*.22,R*.1,.1,0,TAU);g.fill();
-  // גוף
-  if(kit){ // 👕 חולצת כדורגל
-    g.fillStyle=kit.sh;
-    g.beginPath();g.roundRect(-R*.62,R*.48,R*1.24,R*.78,R*.22);g.fill();
-    if(kit.stripe){ // פסי ארגנטינה
-      g.save();g.beginPath();g.roundRect(-R*.62,R*.48,R*1.24,R*.78,R*.22);g.clip();
-      g.fillStyle=kit.stripe;
-      for(const sx of[-R*.46,-R*.06,R*.34])g.fillRect(sx,R*.48,R*.2,R*.78);
+  g.save();g.scale(o,o); // ⚙ הגוף נפתח מתוך הכדור
+  g.lineCap='round';g.lineJoin='round';
+  if(kit){ /* ===== ⚽ גוף אתלטי אמיתי ===== */
+    const SKIN='#e8b98a';
+    // צוואר
+    g.fillStyle=SKIN;g.fillRect(-R*.11,R*.82,R*.22,R*.26);
+    // רגליים: ירך (עור) → ברך → שוק+גרב+שריר → נעל
+    const kickA=win?(.85+.12*Math.sin(t*4.6)):(sad?.06:.07);
+    const plantA=win?.1:(sad?.06:.07);
+    const kneeK=win?(.25+.3*(1-jump/(R*.5))):(sad?.05:.04);
+    for(const sd of[-1,1]){
+      const h1=sd>0?kickA:plantA,h2=sd>0?(win?.12:.05):kneeK;
+      g.save();g.translate(sd*R*.2,R*2.02);g.rotate(-sd*h1);
+      g.strokeStyle=SKIN;g.lineWidth=R*.2;
+      g.beginPath();g.moveTo(0,0);g.lineTo(0,R*.5);g.stroke();
+      g.translate(0,R*.5);g.rotate(-sd*h2);
+      g.fillStyle=kit.socks;
+      g.beginPath();g.ellipse(sd*R*.045,R*.16,R*.11,R*.16,0,0,TAU);g.fill();
+      g.strokeStyle=kit.socks;g.lineWidth=R*.17;
+      g.beginPath();g.moveTo(0,0);g.lineTo(0,R*.5);g.stroke();
+      g.fillStyle='#16181c';
+      g.beginPath();g.ellipse(sd*R*.09,R*.53,R*.21,R*.09,0,0,TAU);g.fill();
       g.restore();
     }
-    g.lineWidth=R*.05;g.strokeStyle='rgba(0,0,0,.25)';
-    g.beginPath();g.roundRect(-R*.62,R*.48,R*1.24,R*.78,R*.22);g.stroke();
-    // מספר על החזה
-    g.fillStyle=kit.numCol;g.font='900 '+(R*.42|0)+'px Arial';
+    // טורסו — חולצה עם היצרות אתלטית
+    const torso=()=>{g.beginPath();
+      g.moveTo(-R*.55,R*1.05);g.quadraticCurveTo(-R*.6,R*1.42,-R*.38,R*1.78);
+      g.lineTo(R*.38,R*1.78);g.quadraticCurveTo(R*.6,R*1.42,R*.55,R*1.05);
+      g.quadraticCurveTo(0,R*.96,-R*.55,R*1.05);g.closePath();};
+    g.fillStyle=kit.sh;torso();g.fill();
+    if(kit.stripe){g.save();torso();g.clip();g.fillStyle=kit.stripe;
+      for(const sx of[-.4,-.09,.22])g.fillRect(sx*R,R*1.02,R*.18,R*.8);
+      g.restore();}
+    g.lineWidth=R*.05;g.strokeStyle='rgba(0,0,0,.25)';torso();g.stroke();
+    g.lineWidth=R*.045;g.strokeStyle='rgba(255,255,255,.85)'; // צווארון V
+    g.beginPath();g.moveTo(-R*.14,R*1.05);g.lineTo(0,R*1.16);g.lineTo(R*.14,R*1.05);g.stroke();
+    // מספר
+    g.fillStyle=kit.numCol;g.font='900 '+(R*.36|0)+'px Arial';
     g.textAlign='center';g.textBaseline='middle';
-    g.fillText(kit.num,0,R*.9);
+    g.fillText(kit.num,0,R*1.42);
     // מכנסיים
     g.fillStyle=kit.pants;
-    g.beginPath();g.roundRect(-R*.56,R*1.12,R*1.12,R*.3,R*.09);g.fill();
-    g.lineWidth=R*.04;g.strokeStyle='rgba(0,0,0,.2)';g.stroke();
-  }else{ // יצור חמוד — גוף כהה עם בטן בהירה
+    g.beginPath();g.roundRect(-R*.44,R*1.72,R*.88,R*.38,R*.1);g.fill();
+    g.lineWidth=R*.03;g.strokeStyle='rgba(0,0,0,.2)';
+    g.beginPath();g.moveTo(0,R*1.76);g.lineTo(0,R*2.08);g.stroke();
+    // ידיים: שרוול → זרוע עור → מרפק → אמה → כף
+    for(const sd of[-1,1]){
+      const a1=win?(2.45+.22*Math.sin(t*9.2+sd)):(sad?.5+.03*Math.sin(t*1.5):.14+.05*Math.sin(t*1.5+sd*.7));
+      const a2=win?(.45+.18*Math.sin(t*9.2+sd+1.3)):(sad?-1.7:-.3+.05*Math.sin(t*1.5));
+      g.save();g.translate(sd*R*.52,R*1.12);g.rotate(-sd*a1);
+      g.strokeStyle=kit.sh;g.lineWidth=R*.28;
+      g.beginPath();g.moveTo(0,-R*.02);g.lineTo(0,R*.26);g.stroke();
+      g.strokeStyle=SKIN;g.lineWidth=R*.15;
+      g.beginPath();g.moveTo(0,R*.2);g.lineTo(0,R*.55);g.stroke();
+      g.translate(0,R*.55);g.rotate(-sd*a2);
+      g.lineWidth=R*.14;
+      g.beginPath();g.moveTo(0,0);g.lineTo(0,R*.5);g.stroke();
+      g.fillStyle=SKIN;g.beginPath();g.arc(0,R*.55,R*.11,0,TAU);g.fill();
+      g.restore();
+    }
+  }else{ /* ===== יצור חמוד ===== */
+    const legK=win?Math.sin(t*9.2):0;
+    g.strokeStyle='#38445a';g.lineWidth=R*.22;
+    g.beginPath();g.moveTo(-R*.3,R*1.32);g.lineTo(-R*.34+legK*R*.14,R*1.88);g.stroke();
+    g.beginPath();g.moveTo(R*.3,R*1.32);g.lineTo(R*.34-legK*R*.14,R*1.88);g.stroke();
+    g.fillStyle='#222a36';
+    g.beginPath();g.ellipse(-R*.4+legK*R*.14,R*1.94,R*.22,R*.1,-.1,0,TAU);g.fill();
+    g.beginPath();g.ellipse(R*.4-legK*R*.14,R*1.94,R*.22,R*.1,.1,0,TAU);g.fill();
     g.fillStyle='#2e3a4c';
     g.beginPath();g.roundRect(-R*.58,R*.48,R*1.16,R*.92,R*.4);g.fill();
     g.fillStyle='rgba(255,255,255,.13)';
     g.beginPath();g.ellipse(0,R*1,R*.32,R*.3,0,0,TAU);g.fill();
+    g.strokeStyle='#2e3a4c';g.lineWidth=R*.19;
+    for(const sd of[-1,1]){
+      g.save();g.translate(sd*R*.64,R*.6);
+      g.rotate(-sd*(win?(2.55+Math.sin(t*9.2+sd)*.3):(pose==='idle'?(.45+Math.sin(t*1.5+sd)*.08):(.32+Math.sin(t*1.5)*.05))));
+      g.beginPath();g.moveTo(0,0);g.lineTo(0,R*.62);g.stroke();
+      g.fillStyle='#26303f';
+      g.beginPath();g.arc(0,R*.68,R*.12,0,TAU);g.fill();
+      g.restore();
+    }
   }
-  // ידיים — מונפות למעלה ומנופפות בניצחון, שמוטות הצידה בהפסד
-  g.strokeStyle=kit?kit.sh:'#2e3a4c';g.lineWidth=R*.19;
-  for(const sd of[-1,1]){
-    g.save();g.translate(sd*R*.64,R*.6);
-    g.rotate(-sd*(win?(2.55+Math.sin(t*9.2+sd)*.3):(.32+Math.sin(t*1.5)*.05)));
-    g.beginPath();g.moveTo(0,0);g.lineTo(0,R*.62);g.stroke();
-    g.fillStyle=kit?'#e8b98a':'#26303f'; // כף יד
-    g.beginPath();g.arc(0,R*.68,R*.12,0,TAU);g.fill();
-    g.restore();
-  }
-  // הראש = הכדור עצמו (הפרצוף מגיע מ-drawCreature; לכדורגלנים — הפנים האמיתיות)
-  g.save();g.rotate(win?Math.sin(t*9.2)*.05:.13);
-  drawCreature(g,0,0,R,idx,win?'happy':'sad',t);
+  g.restore(); // סוף scale(o)
+  // הראש = הכדור (הפנים מ-drawCreature; לכדורגלנים — התמונה האמיתית)
+  g.save();
+  if(sad){g.translate(0,R*.1);g.rotate(.16);}
+  else g.rotate(win?Math.sin(t*9.2)*.05:Math.sin(t*1.5)*.04);
+  drawCreature(g,0,0,R,idx,sad?'sad':'happy',t);
   g.restore();
-  if(!win){ // 💧 דמעות נופלות
+  if(sad){ // 💧 דמעות
     g.fillStyle='rgba(122,196,255,.85)';
     for(const sd of[-1,1]){
       const tk2=((t*1.3+(sd>0?.5:0))%1);
@@ -7369,8 +7415,8 @@ function drawBuddy(g,cx,cy,R,idx,mood,t){
     }
     g.globalAlpha=1;
   }
-  if(kit&&win){ // ⚽ כדור מסתובב לרגליו של הכדורגלן
-    g.save();g.translate(R*.8,R*1.86);g.rotate(t*6);
+  if(kit&&win&&o>.9){ // ⚽ כדור מסתובב על הקרקע ליד הרגליים
+    g.save();g.rotate(-sway);g.translate(R*.95,R*2.9+jump);g.rotate(t*6);
     g.fillStyle='#f4f4f0';g.beginPath();g.arc(0,0,R*.24,0,TAU);g.fill();
     g.fillStyle='#16181c';pent(g,0,0,R*.1,0);g.fill();
     g.lineWidth=1.2;g.strokeStyle='rgba(0,0,0,.4)';
@@ -7379,19 +7425,164 @@ function drawBuddy(g,cx,cy,R,idx,mood,t){
   }
   g.restore();
 }
-/* 🐾 הבאדי מלווה את מסכי הניצחון וההפסד */
+/* ⚪ כדור סגור מתגלגל (בלי פרצוף-תזוזה — הטקסטורה קפואה והסיבוב עושה הכל) */
+function drawRollBall(g,x,y,R,idx,rot,sx,sy){
+  g.save();g.translate(x,y);g.scale(sx||1,sy||1);g.rotate(rot);
+  g.beginPath();g.arc(0,0,R,0,TAU);g.save();g.clip();
+  try{(SKINS[idx]||SKINS[0]).draw(g,R,.4,THEMES[0]);}catch(e){g.fillStyle='#78848f';g.fillRect(-R,-R,R*2,R*2);}
+  g.restore();
+  g.lineWidth=R*.05;g.strokeStyle='rgba(0,0,0,.25)';
+  g.beginPath();g.arc(0,0,R,0,TAU);g.stroke();
+  g.restore();
+}
+/* 💥 סינמטיק הכישלון: הכדור טס, נמרח על קיר, מחליק למטה — ונפתח ליצור בוכה */
+let failSfx=false;
+function drawFailCine(g,tt,tG){
+  g.clearRect(0,0,160,215);
+  const setA=Math.min(1,tt*4);
+  g.save();
+  if(tt>=.55&&tt<=.75){const sh=(0.75-tt)/.2;g.translate(Math.sin(tt*90)*5*sh,Math.cos(tt*70)*3*sh);}
+  // הקיר והרצפה
+  g.globalAlpha=setA;
+  g.fillStyle='#2c3950';g.beginPath();g.roundRect(136,20,14,130,4);g.fill();
+  g.strokeStyle='rgba(255,255,255,.12)';g.lineWidth=2;
+  g.beginPath();g.roundRect(136,20,14,130,4);g.stroke();
+  g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=1.5;
+  for(const y of[55,90,125]){g.beginPath();g.moveTo(136,y);g.lineTo(150,y);g.stroke();}
+  g.strokeStyle='rgba(255,255,255,.15)';g.lineWidth=2;
+  g.beginPath();g.moveTo(10,150);g.lineTo(150,150);g.stroke();
+  g.globalAlpha=1;
+  const rotHit=(106+34)/30;
+  if(tt<.55){ // A: טיסה פנימה
+    const k=tt/.55,x=-34+140*(.3*k+.7*k*k),rot=(x+34)/30;
+    g.globalAlpha=.08;drawRollBall(g,x-28,106,30,skinSel,rot-1);
+    g.globalAlpha=.18;drawRollBall(g,x-14,106,30,skinSel,rot-.5);
+    g.globalAlpha=1;drawRollBall(g,x,106,30,skinSel,rot);
+  }else if(tt<.72){ // B: הטחה — מעיכה על הקיר
+    if(!failSfx){failSfx=true;try{tone(90,.08,'square',.3);noiseHit(.1,.25,300,.8);if(navigator.vibrate)navigator.vibrate(40);}catch(e){}}
+    let sx,sy;
+    if(tt<.585){const k=(tt-.55)/.035;sx=1-.6*k;sy=1+.45*k;}
+    else{const k=eOutCubic((tt-.585)/.135);sx=.4+.45*k;sy=1.45-.39*k;}
+    g.save();g.translate(136,106);g.scale(sx,sy);
+    drawRollBall(g,-30,0,30,skinSel,rotHit);g.restore();
+  }else if(tt<1.05){ // C: החלקה על הקיר
+    const k=(tt-.72)/.33,y=106+44*k*k;
+    g.save();g.translate(136,Math.min(y,120));g.scale(.85,1.06-.06*k);
+    drawRollBall(g,-30,0,30,skinSel,rotHit);g.restore();
+  }else if(tt<1.2){ // D: התייצבות על הרצפה
+    const w=Math.sin(Math.PI*(tt-1.05)/.15);
+    g.save();g.translate(110,150);g.scale(1+.12*w,1-.12*w);
+    drawRollBall(g,0,-30,30,skinSel,rotHit);g.restore();
+  }else if(tt<1.4){ // E: נפתח ליצור עצוב — הרגליים נוחתות בדיוק על הרצפה
+    const p=cl01((tt-1.2)/.2),e2=eOutCubic(p);
+    const Rf=KIT[(SKINS[skinSel]||{}).vkey]?33:38,Yf=150-Rf*buddyFT(skinSel);
+    drawBuddy(g,110+(80-110)*e2,120+(Yf-120)*e2,30+(Rf-30)*e2,skinSel,'sad',tG,eOutBack(p));
+  }else{ // F: יושב ובוכה ליד הקיר שפגע בו
+    const Rf=KIT[(SKINS[skinSel]||{}).vkey]?33:38,Yf=150-Rf*buddyFT(skinSel);
+    drawBuddy(g,80,Yf,Rf,skinSel,'sad',tG,1);
+  }
+  // ניצוצות פגיעה
+  if(tt>=.55&&tt<=.85){
+    const p=(tt-.55)/.3;
+    g.strokeStyle='#ffd76a';g.lineWidth=2;g.globalAlpha=1-p;
+    for(const a of[2.53,Math.PI,3.75]){
+      g.beginPath();
+      g.moveTo(136+Math.cos(a)*(6+14*p),106+Math.sin(a)*(6+14*p));
+      g.lineTo(136+Math.cos(a)*(14+20*p),106+Math.sin(a)*(14+20*p));g.stroke();
+    }
+    if(tt<.63){g.fillStyle='#fff';g.globalAlpha=.8*(1-p);
+      g.beginPath();g.arc(136,106,8*(1-p),0,TAU);g.fill();}
+    g.globalAlpha=1;
+  }
+  g.restore();
+}
+/* 🏆 סינמטיק הפודיום: המדרגות עולות, שני יצורונים עומדים לידך,
+   אתה מתגלגל פנימה ככדור — קופץ — ונפתח באוויר ליצור שנוחת ורוקד */
+let rrCine=null,rrLand=false;
+function drawPodiumCine(g,t,tG){
+  const W3=340,H3=260;
+  g.clearRect(0,0,W3,H3);
+  const c=rrCine;if(!c)return;
+  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=2;g.globalAlpha=Math.min(1,t*3);
+  g.beginPath();g.moveTo(12,244);g.lineTo(328,244);g.stroke();g.globalAlpha=1;
+  const steps=[{cx:70,h:64,st:.15,place:2},{cx:170,h:92,st:.3,place:1},{cx:270,h:42,st:.05,place:3}];
+  for(const s of steps){
+    const k=cl01((t-s.st)/.4),sc=Math.max(.001,eOutBack(k));
+    g.save();g.translate(s.cx,244);g.scale(1,Math.min(1.06,sc));
+    if(s.place===1){const gr=g.createLinearGradient(0,-s.h,0,0);
+      gr.addColorStop(0,'rgba(246,180,14,.85)');gr.addColorStop(1,'rgba(246,180,14,.45)');g.fillStyle=gr;}
+    else g.fillStyle='rgba(126,200,242,.15)';
+    g.beginPath();g.roundRect(-46,-s.h,92,s.h,[12,12,0,0]);g.fill();
+    g.strokeStyle='rgba(255,255,255,.14)';g.lineWidth=1.5;g.stroke();
+    g.restore();
+    if(k>=1){
+      g.globalAlpha=Math.min(1,(t-s.st-.4)*4);
+      g.fillStyle=s.place===1?'#12253f':'#a9c6e2';
+      g.font='900 24px Arial';g.textAlign='center';g.textBaseline='middle';
+      g.fillText(String(s.place),s.cx,244-s.h/2);
+      g.globalAlpha=1;
+    }
+  }
+  const meStep=c.win?steps[1]:steps[0],rvStep=c.win?steps[0]:steps[1],botStep=steps[2];
+  // שני היצורונים שלצידך
+  const rvR=c.win?13:15,btR=13;
+  const rvY=244-rvStep.h-buddyFT(c.rvIdx)*rvR,btY=244-botStep.h-buddyFT(c.botIdx)*btR;
+  const rvPop=eOutBack(cl01((t-.85)/.25)),btPop=eOutBack(cl01((t-.95)/.25));
+  const rvMood=t>=2.47?(c.win?'sad':'win'):'idle';
+  if(rvPop>0.01){g.save();g.translate(rvStep.cx,rvY);g.scale(rvPop,rvPop);g.translate(-rvStep.cx,-rvY);
+    drawBuddy(g,rvStep.cx,rvY,rvR,c.rvIdx,rvMood,tG,1);g.restore();}
+  if(btPop>0.01){g.save();g.translate(botStep.cx,btY);g.scale(btPop,btPop);g.translate(-botStep.cx,-btY);
+    drawBuddy(g,botStep.cx,btY,btR,c.botIdx,'idle',tG,1);g.restore();}
+  // אתה: מתגלגל → כורע → מזנק → נפתח באוויר → נוחת → רוקד
+  const tx=meStep.cx,stepTop=244-meStep.h,cyEnd=stepTop-buddyFT(skinSel)*20,rotEnd=(tx+24)/20;
+  if(t>=.7&&t<1.7){
+    const k=(t-.7)/1,x=-24+(tx+24)*eOutQuad(k);
+    if(k<.5){g.globalAlpha=.15;drawRollBall(g,x-16,224,20,skinSel,(x-16+24)/20);g.globalAlpha=1;}
+    drawRollBall(g,x,224,20,skinSel,(x+24)/20);
+  }else if(t>=1.7&&t<1.8){
+    const k=(t-1.7)/.1;
+    g.save();g.translate(tx,244);g.scale(1+.12*k,1-.18*k);
+    drawRollBall(g,0,-20,20,skinSel,rotEnd);g.restore();
+  }else if(t>=1.8&&t<2.32){
+    const k=(t-1.8)/.52,y=(1-k)*224+k*cyEnd-80*Math.sin(Math.PI*k);
+    const p=cl01((k-.4)/.4);
+    if(k<.4)drawRollBall(g,tx,y,20,skinSel,rotEnd+3*k);
+    else drawBuddy(g,tx,y,20,skinSel,'idle',tG,eOutBack(p));
+  }else if(t>=2.32&&t<2.47){
+    if(!rrLand){rrLand=true;try{tone(520,.08,'square',.25);noiseHit(.07,.18,500,.8);if(navigator.vibrate)navigator.vibrate(30);}catch(e){}}
+    const cy2=cyEnd+6*Math.sin(Math.PI*(t-2.32)/.15);
+    drawBuddy(g,tx,cy2,20,skinSel,'idle',tG,1);
+  }else if(t>=2.47){
+    drawBuddy(g,tx,cyEnd,20,skinSel,c.win?'win':'idle',tG,1);
+  }
+  // שמות
+  g.font='800 12px -apple-system,Arial';g.textAlign='center';g.fillStyle='#eaf4ff';
+  const la=cl01((t-.7)*2);
+  g.globalAlpha=la;
+  g.fillText((c.win?c.me:c.op)+' 👑',170,82);
+  g.fillText(c.win?c.op:c.me,70,122);
+  g.fillText('🤖',270,150);
+  g.globalAlpha=1;
+}
+/* 🐾 מנהל הסצנות: מזהה פתיחת מסך ומריץ את הסינמטיק מהפריים הראשון */
+let failPrev=false,failT0=0,rrPrev=false,rrT0=0;
 (function petLoop(){
   requestAnimationFrame(petLoop);
-  const t=performance.now()/1000;
+  const now=performance.now(),tG=now/1000;
   try{
     if(!$('doneOv').classList.contains('hidden')){
       const c=$('winPet'),g=c.getContext('2d');
-      g.clearRect(0,0,c.width,c.height);drawBuddy(g,80,68,38,skinSel,'win',t);
+      g.clearRect(0,0,c.width,c.height);drawBuddy(g,80,68,38,skinSel,'win',tG);
     }
-    if(!$('failOv').classList.contains('hidden')){
-      const c=$('failPet'),g=c.getContext('2d');
-      g.clearRect(0,0,c.width,c.height);drawBuddy(g,80,64,38,skinSel,'sad',t);
-    }
+    const fv=!$('failOv').classList.contains('hidden');
+    if(fv&&!failPrev){failT0=now;failSfx=false;}
+    failPrev=fv;
+    if(fv)drawFailCine($('failPet').getContext('2d'),(now-failT0)/1000,tG);
+    const pcv=document.getElementById('rrPodCv');
+    const rv=!$('raceResOv').classList.contains('hidden')&&rrCine&&pcv;
+    if(rv&&!rrPrev){rrT0=now;rrLand=false;}
+    rrPrev=!!rv;
+    if(rv)drawPodiumCine(pcv.getContext('2d'),(now-rrT0)/1000,tG);
   }catch(e){}
 })();
 /* ✨ קונפטי — חגיגה קלה בקנבס ייעודי, נעצר לבד */
