@@ -315,11 +315,27 @@
     }
     return d;
   }
+  function logErr(txt){
+    try{ // 🧾 יומן שגיאות במכשיר — 5 אחרונות, עם גרסה ושעה (לאבחון מרחוק)
+      var v=(document.getElementById('lbTitle')||{}).textContent||'';
+      var log=[];try{log=JSON.parse(localStorage.getItem('mazeErrLog')||'[]');}catch(x){}
+      log.push({t:Date.now(),v:v.replace(/[^v0-9]/g,''),e:txt.slice(0,500)});
+      localStorage.setItem('mazeErrLog',JSON.stringify(log.slice(-5)));
+    }catch(x){}
+    try{
+      var d=box();d.textContent+=txt+'\n';
+      d.onclick=function(){d.remove();}; // הקשה סוגרת
+    }catch(x){}
+  }
   window.addEventListener('error',function(e){
-    try{box().textContent+='⚠ '+(e.message||e.type)+(e.filename?'  @'+String(e.filename).split('/').pop()+':'+e.lineno:'')+'\n';}catch(x){}
+    var st='';
+    try{if(e.error&&e.error.stack)st='\n  '+String(e.error.stack).split('\n').slice(0,4).join('\n  ');}catch(x){}
+    logErr('⚠ '+(e.message||e.type)+(e.filename?'  @'+String(e.filename).split('/').pop()+':'+e.lineno:'')+st);
   });
   window.addEventListener('unhandledrejection',function(e){
-    try{var r=e.reason;box().textContent+='⚠ promise: '+((r&&(r.message||r.toString()))||'?')+'\n';}catch(x){}
+    var r=e.reason,st='';
+    try{if(r&&r.stack)st='\n  '+String(r.stack).split('\n').slice(0,4).join('\n  ');}catch(x){}
+    logErr('⚠ promise: '+((r&&(r.message||r.toString()))||'?')+st);
   });
 })();
 </script>
@@ -328,7 +344,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v100</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v101</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
