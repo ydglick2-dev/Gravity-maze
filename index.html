@@ -50,7 +50,8 @@
   /* מרכוז כשקצר, גלילה מלאה כשארוך (flex-center חותך את הראש בגלישה) */
   .overlay > :first-child { margin-top:auto; }
   .overlay > :last-child { margin-bottom:auto; }
-  .overlay.hidden, .overlay.hidden * { opacity:0; pointer-events:none !important; }
+  .overlay.hidden { opacity:0; } /* התוכן יורש את הדעיכה — סגירה חלקה ולא קפיצה */
+  .overlay.hidden, .overlay.hidden * { pointer-events:none !important; }
   h1 { font-size:36px; font-weight:900; letter-spacing:1px;
        background:linear-gradient(180deg,#ffe9b8,#ffb84d);
        -webkit-background-clip:text; background-clip:text; color:transparent;
@@ -63,7 +64,7 @@
   .btn { border:none; border-radius:999px; padding:15px 42px; font-size:19px; font-weight:900;
     color:#1b1430; background:linear-gradient(180deg,var(--g1,#ffd257),var(--g2,#ffb020));
     box-shadow:0 8px 26px rgba(255,176,32,.35), inset 0 1px 0 rgba(255,255,255,.55);
-    cursor:pointer; }
+    cursor:pointer; transition:transform .09s ease, box-shadow .12s ease; }
   .btn.sec { color:#e7ecf6; background:rgba(255,255,255,.07);
     box-shadow:0 0 0 1px rgba(255,255,255,.14), 0 4px 14px rgba(0,0,0,.35);
     font-size:16px; padding:12px 28px; backdrop-filter:blur(6px); }
@@ -74,7 +75,7 @@
   .skCard { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:18px; }
   .chip.on { background:linear-gradient(180deg,#ffd257,#ffb020) !important; color:#1b1430 !important; font-weight:900; }
   .overlay h1 { font-weight:900; letter-spacing:.5px; }
-  .btn:active { transform:translateY(3px); }
+  .btn:active { transform:translateY(3px); box-shadow:0 3px 10px rgba(255,176,32,.3), inset 0 1px 0 rgba(255,255,255,.4); }
   .chip:active, .skCard:active { transform:scale(.95); }
   .chip, .skCard { transition:transform .08s ease; }
   .overlay:not(.hidden) { animation:ovIn .22s ease; }
@@ -95,7 +96,8 @@
   .lv.t1 { box-shadow:inset 0 0 0 1.5px rgba(122,224,255,.5), 0 0 14px rgba(122,224,255,.18); }
   .lv.t2 { box-shadow:inset 0 0 0 1.5px rgba(255,122,92,.5), 0 0 14px rgba(255,107,74,.18); }
   .lv:active { transform:scale(.94); }
-  .lv.lock { opacity:.32; pointer-events:none; filter:grayscale(1); }
+  .lv.lock { opacity:.32; filter:grayscale(1); }
+  .lv { transition:transform .08s ease; }
   .chip { border:none; border-radius:999px; padding:10px 18px; font-size:15px; font-weight:800;
     color:#dfe7f2; background:rgba(255,255,255,.08); cursor:pointer;
     box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.2); }
@@ -206,6 +208,49 @@
   @keyframes popIn { 0%{transform:scale(.4);opacity:0} 70%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
   @keyframes psShine { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   @keyframes psReady { 0%,100%{box-shadow:inset 0 0 0 2px #ffd257} 50%{box-shadow:inset 0 0 0 2.5px #ffd257,0 0 20px rgba(255,210,87,.55)} }
+  /* ✨ שכבת האנימציה הגלובלית — כל המשחק נע */
+  @keyframes ovIn { from{opacity:0;transform:translateY(26px) scale(.97)} to{opacity:1;transform:none} }
+  .overlay:not(.hidden) { animation: ovIn .32s cubic-bezier(.22,1,.36,1); }
+  @keyframes oopsShake { 0%,100%{transform:none} 20%{transform:translateX(-9px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(3px)} }
+  #failOv:not(.hidden) { animation: ovIn .32s cubic-bezier(.22,1,.36,1), oopsShake .45s .18s; }
+  @keyframes tileIn { from{opacity:0;transform:translateY(18px) scale(.92)} to{opacity:1;transform:none} }
+  #menuOv:not(.hidden) .mTile { animation: tileIn .38s cubic-bezier(.2,1,.4,1) both; }
+  #menuOv:not(.hidden) .mTile:nth-child(2){animation-delay:.03s} #menuOv:not(.hidden) .mTile:nth-child(3){animation-delay:.06s}
+  #menuOv:not(.hidden) .mTile:nth-child(4){animation-delay:.09s} #menuOv:not(.hidden) .mTile:nth-child(5){animation-delay:.12s}
+  #menuOv:not(.hidden) .mTile:nth-child(6){animation-delay:.15s} #menuOv:not(.hidden) .mTile:nth-child(7){animation-delay:.18s}
+  #menuOv:not(.hidden) .mTile:nth-child(8){animation-delay:.21s} #menuOv:not(.hidden) .mTile:nth-child(9){animation-delay:.24s}
+  #menuOv:not(.hidden) .mTile:nth-child(10){animation-delay:.27s} #menuOv:not(.hidden) .mTile:nth-child(11){animation-delay:.3s}
+  #menuOv:not(.hidden) .mTile:nth-child(12){animation-delay:.33s}
+  @keyframes rowIn { from{opacity:0;transform:translateX(14px)} to{opacity:1;transform:none} }
+  .achRow { animation: rowIn .3s cubic-bezier(.2,1,.4,1) both; }
+  .achRow:nth-child(2){animation-delay:.03s} .achRow:nth-child(3){animation-delay:.06s} .achRow:nth-child(4){animation-delay:.09s}
+  .achRow:nth-child(5){animation-delay:.12s} .achRow:nth-child(6){animation-delay:.15s} .achRow:nth-child(7){animation-delay:.18s}
+  .achRow:nth-child(8){animation-delay:.21s} .achRow:nth-child(9){animation-delay:.24s} .achRow:nth-child(n+10){animation-delay:.27s}
+  @keyframes cardIn { from{opacity:0;transform:translateY(14px) scale(.94)} to{opacity:1;transform:none} }
+  .skCard { animation: cardIn .3s cubic-bezier(.2,1,.4,1) both; }
+  .skCard:nth-child(2){animation-delay:.025s} .skCard:nth-child(3){animation-delay:.05s} .skCard:nth-child(4){animation-delay:.075s}
+  .skCard:nth-child(5){animation-delay:.1s} .skCard:nth-child(6){animation-delay:.125s} .skCard:nth-child(7){animation-delay:.15s}
+  .skCard:nth-child(8){animation-delay:.175s} .skCard:nth-child(9){animation-delay:.2s} .skCard:nth-child(n+10){animation-delay:.22s}
+  @keyframes selGlow { 0%,100%{box-shadow:inset 0 0 0 2px #ffd257,0 0 12px rgba(255,210,87,.3)} 50%{box-shadow:inset 0 0 0 2px #ffd257,0 0 26px rgba(255,210,87,.6)} }
+  .skCard.sel { animation: cardIn .3s both, selGlow 1.8s .3s ease-in-out infinite; }
+  @keyframes toastIn { 0%{transform:translateY(16px) scale(.88)} 60%{transform:translateY(-3px) scale(1.04)} 100%{transform:none} }
+  @keyframes popNum { 50%{transform:scale(1.25)} }
+  #lbTro,#lbCoin,#lbGem,#lbChest,#mnuGem,#mnuCoin,#mnuTro { display:inline-block; }
+  .chip { transition:transform .08s ease, box-shadow .2s ease, color .15s ease; }
+  @keyframes chipPop { 0%{transform:scale(.85)} 60%{transform:scale(1.1)} 100%{transform:scale(1)} }
+  .chip.on { animation:chipPop .22s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes heartDrop { 0%{transform:translateY(-46px) scale(1.4);opacity:0} 55%{transform:translateY(7px) scale(.94);opacity:1} 75%{transform:translateY(-5px) rotate(-7deg)} 100%{transform:none;opacity:1} }
+  #failOv:not(.hidden) .big { animation:heartDrop .7s cubic-bezier(.34,1.56,.64,1) both; }
+  #summonOv:not(.hidden) .big { animation:float 1.3s ease-in-out infinite; }
+  #raceResOv:not(.hidden) .big { animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
+  #lvOpp:not(:empty) { animation:toastIn .45s cubic-bezier(.2,1,.4,1); }
+  #selectOv:not(.hidden) .wrow { animation:tileIn .3s cubic-bezier(.2,1,.4,1) both; }
+  #selectOv:not(.hidden) .wrow:nth-of-type(2){animation-delay:.03s} #selectOv:not(.hidden) .wrow:nth-of-type(3){animation-delay:.06s}
+  #selectOv:not(.hidden) .wrow:nth-of-type(4){animation-delay:.09s} #selectOv:not(.hidden) .wrow:nth-of-type(5){animation-delay:.12s}
+  #selectOv:not(.hidden) .wrow:nth-of-type(n+6){animation-delay:.15s}
+  #selectOv:not(.hidden) .world-label { animation:rowIn .3s both; }
+  @keyframes ldg { from{opacity:.3} to{opacity:1} }
+  .ldg { animation:ldg .9s ease-in-out infinite alternate; color:#aeb8c8; }
   @keyframes goalFly { 0%{transform:translate(140px,180px) rotate(0)} 100%{transform:translate(0,0) rotate(-380deg)} }
   #doneOv h1, #doneOv #medalBig, #doneOv #starsBig { animation: popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
   #doneOv #starsBig { animation-delay:.12s }
@@ -256,7 +301,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v89</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v90</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -338,7 +383,7 @@
       <div id="menuPassBar" style="cursor:pointer;position:relative;background:rgba(7,16,33,.8);border:1px solid rgba(246,180,14,.35);border-radius:20px;padding:14px 16px;flex:1;text-align:right">
         <div id="mpbBadge" style="display:none;position:absolute;top:-12px;inset-inline-start:12px;background:linear-gradient(90deg,var(--g1,#ffd65c),var(--g2,#f6b40e));color:#12253f;font-size:11px;font-weight:900;border-radius:999px;padding:4px 10px"></div>
         <div style="display:flex;align-items:center;gap:8px;color:#fff;font-weight:800;font-size:15px"><span>🏟️</span> <span data-en="Season Pass">פס העונה</span></div>
-        <div style="height:6px;border-radius:3px;background:rgba(126,200,242,.15);margin-top:10px;overflow:hidden"><div id="mpbBar" style="width:0;height:100%;background:linear-gradient(90deg,var(--g1,#ffd65c),var(--g2,#f6b40e));border-radius:3px"></div></div>
+        <div style="height:6px;border-radius:3px;background:rgba(126,200,242,.15);margin-top:10px;overflow:hidden"><div id="mpbBar" style="width:0;height:100%;background:linear-gradient(90deg,var(--g1,#ffd65c),var(--g2,#f6b40e));border-radius:3px;transition:width .55s cubic-bezier(.2,.8,.3,1.1)"></div></div>
         <div id="mpbT" style="color:#a9c6e2;font-size:11px;font-weight:600;margin-top:7px"></div>
       </div>
       <button id="dailyBtn" style="cursor:pointer;border:1px solid rgba(126,200,242,.18);background:rgba(7,16,33,.8);border-radius:18px;padding:12px 16px;text-align:center">
@@ -1733,6 +1778,7 @@ function loadLevel(i){
   if(cachedTh!==lv.th){buildLayers(lv.th);initAmbient(lv.th);}
   const s=P(lv.start);
   ball.x=s.x;ball.y=s.y;ball.vx=0;ball.vy=0;ball.rot=0;ball.squash=0;
+  ball.spawnT=.38; // 🐣 צמיחת פתיחה
   falling=0;fallPt=null;winPause=0;portalCd=0;
   starGot=(lv.stars||[]).map(()=>false);
   keyGot=(lv.keys||[]).map(()=>false);
@@ -1750,6 +1796,8 @@ function loadLevel(i){
 function respawn(){
   const s=P(L().start);
   ball.x=s.x;ball.y=s.y;ball.vx=0;ball.vy=0;
+  ball.spawnT=.38; // 🐣 הכדור צומח פנימה במקום להבליח
+  try{shock(s.x,s.y,'rgba(255,255,255,.5)',md()*.12);}catch(e){}
   falling=0;fallPt=null;portalCd=0;flashR=.8;
   starGot=(L().stars||[]).map(()=>false);
   swState=(L().switches||[]).map(()=>({open:false,inside:false}));
@@ -1757,17 +1805,29 @@ function respawn(){
   updateHud();
 }
 function updateHud(){
+  const el=$('hudInfo');
+  let txt;
   if(runMode){
-    $('hudInfo').textContent='❤️'.repeat(Math.max(0,runLives))+'🤍'.repeat(Math.max(0,3-runLives))+
+    txt='❤️'.repeat(Math.max(0,runLives))+'🤍'.repeat(Math.max(0,3-runLives))+
       ' · '+(runLive?'🏁':'🏃')+' '+(Math.floor(runDist))+tr('מ׳','m');
-    return;
+  }else{
+    const got=starGot.filter(Boolean).length,tot=starGot.length;
+    const lives=Math.max(0,3-lvDeaths);
+    const where=customLv?'🎲':(levelIdx+1)+'/'+LEVELS.length;
+    txt='❤️'.repeat(lives)+'🤍'.repeat(3-lives)+' · ★'+got+'/'+tot+
+      (comboN>=2?' · 🔥×'+comboN:'')+' · '+where+' · '+
+      (gotOrientation?'📡':(touchMode?'👆':'⏳'));
   }
-  const got=starGot.filter(Boolean).length,tot=starGot.length;
-  const lives=Math.max(0,3-lvDeaths);
-  const where=customLv?'🎲':(levelIdx+1)+'/'+LEVELS.length;
-  $('hudInfo').textContent=
-    '❤️'.repeat(lives)+'🤍'.repeat(3-lives)+' · ★'+got+'/'+tot+' · '+where+' · '+
-    (gotOrientation?'📡':(touchMode?'👆':'⏳'));
+  // 💓 שינוי בחיים/כוכבים/קומבו — ה-HUD קופץ; ירידת לב — הבזק אדום
+  if(el._pt!==undefined&&el._pt!==txt&&!runMode){
+    try{
+      const hurt=(txt.match(/❤️/g)||[]).length<((el._pt.match(/❤️/g))||[]).length;
+      el.style.animation='none';void el.offsetWidth;el.style.animation='popNum .32s ease';
+      if(hurt){el.style.textShadow='0 0 14px rgba(255,60,60,.95)';setTimeout(()=>{el.style.textShadow='';},400);}
+    }catch(e){}
+  }
+  el._pt=txt;
+  el.textContent=txt;
 }
 
 /* ============ INPUT ============ */
@@ -1994,7 +2054,7 @@ function physics(dt,t){
       ghostRec.push([(ball.x-board.x)/board.w,(ball.y-board.y)/board.h]);
   }
   if(portalCd>0)portalCd-=dt;
-  if(comboT>0){comboT-=dt;if(comboT<=0)comboN=0;}
+  if(comboT>0){comboT-=dt;if(comboT<=0){comboN=0;try{updateHud();}catch(e){}}}
 
   const scale=md()/400,lv=L();
   ball.vx+=effX()*2800*scale*dt;
@@ -2056,6 +2116,7 @@ function physics(dt,t){
   }
   ball.rot+=Math.hypot(ball.vx,ball.vy)*dt/ball.r;
   ball.squash=Math.max(0,ball.squash-dt*2.2);
+  if(ball.spawnT>0)ball.spawnT=Math.max(0,ball.spawnT-dt);
 
   // switches (edge-trigger)
   (lv.switches||[]).forEach((sw,i)=>{
@@ -2094,7 +2155,7 @@ function physics(dt,t){
     if(keyGot[i])return;
     const p=P(k.k);
     if(Math.hypot(ball.x-p.x,ball.y-p.y)<keyR()){
-      keyGot[i]=true;sfx.key();setTimeout(sfx.gate,250);
+      keyGot[i]=.0001;sfx.key();setTimeout(sfx.gate,250); // ערך זעיר-אמת: השער כבר פתוח, הציור דוהה בהדרגה
       const g=R(k.g);
       // 🗝 שדרוג: פרץ במפתח + פיצוץ זהב בשער שנפתח רגע אחריו
       shock(p.x,p.y,'rgba(255,225,150,.85)',md()*.2);
@@ -2288,32 +2349,43 @@ function draw(t){
   ctx.setLineDash([9,7]);ctx.lineDashOffset=-t*26;
   ctx.beginPath();ctx.arc(g.x,g.y,gr*pulse,0,TAU);ctx.stroke();
   ctx.restore();
-  // switch gates
+  // switch gates — נפתחים/נסגרים בהחלקה במקום בקפיצת פריים
   (L().switches||[]).forEach((sw,i)=>{
+    const st2=swState[i];
+    if(st2.a===undefined)st2.a=st2.open?0:1;
+    st2.a+=((st2.open?0:1)-st2.a)*Math.min(1,.16); // ~150ms מעבר רך (רץ כל פריים)
+    const a=st2.a;
     for(const gt of sw.g){
-      const r=R(gt),open=swState[i].open;
+      const r=R(gt);
       ctx.save();
       ctx.setLineDash([7,6]);ctx.lineDashOffset=t*20;
-      ctx.strokeStyle=hexA(T.accent,open?.15:.9);ctx.lineWidth=2;
+      ctx.strokeStyle=hexA(T.accent,.15+.75*a);ctx.lineWidth=2;
       rr(ctx,r.x,r.y,r.w,r.h,3);ctx.stroke();
-      if(!open){
-        ctx.fillStyle=hexA(T.accent,.28);rr(ctx,r.x,r.y,r.w,r.h,3);ctx.fill();
-        ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.3;
+      if(a>.02){ // המילוי מתכווץ אנכית כשהשער נפתח
+        ctx.fillStyle=hexA(T.accent,.28*a);
+        rr(ctx,r.x,r.y+r.h*(1-a)/2,r.w,Math.max(1,r.h*a),3);ctx.fill();
+        ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.3*a;
         ctx.drawImage(glow(T.accent),r.x,r.y-4,r.w,r.h+8);
       }
       ctx.restore();
     }
   });
-  // key gates
+  // key gates — הבריחים צונחים והשער נמוג כשנאסף המפתח
   (L().keys||[]).forEach((k,i)=>{
-    if(keyGot[i])return;
+    let kv=keyGot[i];
+    if(kv===true||kv>=1)return;
+    if(kv&&kv<1)keyGot[i]=kv=Math.min(1,kv+.045); // דהייה ~20 פריימים
+    const fade=kv||0;
     const r=R(k.g);
+    ctx.save();
+    ctx.globalAlpha=1-fade;
     rr(ctx,r.x,r.y,r.w,r.h,3);ctx.fillStyle='rgba(60,44,12,.95)';ctx.fill();
     ctx.strokeStyle='#ffd98a';ctx.lineWidth=2;
-    const n=Math.max(2,r.w/14|0);
+    const n=Math.max(2,r.w/14|0),drop=r.h*fade*1.4;
     for(let j=1;j<n;j++){ctx.beginPath();
-      ctx.moveTo(r.x+r.w*j/n,r.y+2);ctx.lineTo(r.x+r.w*j/n,r.y+r.h-2);ctx.stroke();}
+      ctx.moveTo(r.x+r.w*j/n,r.y+2+drop);ctx.lineTo(r.x+r.w*j/n,r.y+r.h-2+drop);ctx.stroke();}
     rr(ctx,r.x,r.y,r.w,r.h,3);ctx.strokeStyle='rgba(255,217,138,.9)';ctx.stroke();
+    ctx.restore();
   });
   // walls & movers
   for(const w of(L().walls||[]))drawWall(R(w),T);
@@ -3066,9 +3138,10 @@ const SKINS=[
    c.globalAlpha=1;c.restore();skShade(c,r);}}
 ];
 function drawBall(T){
-  const scale=falling?Math.max(.05,1-falling*1.9):1;
+  const scale=falling?Math.max(.05,1-falling*1.9)
+    :(ball.spawnT>0?Math.max(.25,1.12-ball.spawnT*2.4):1); // צמיחה עם אוברשוט קטן
   const r=ball.r*scale;
-  drawGlow(ball.x,ball.y,r*4.4,T.accent,.3);
+  drawGlow(ball.x,ball.y,r*(4.4+Math.sin(lvTime*2.5)*.4),T.accent,.27+.06*Math.sin(lvTime*2.5)); // 🫁 הילה נושמת
   ctx.beginPath();
   ctx.ellipse(ball.x+r*.35+dTiltX*4,ball.y+r*.55+dTiltY*4,r*1.05,r*.72,0,0,TAU);
   ctx.fillStyle='rgba(0,0,0,.4)';ctx.fill();
@@ -3742,7 +3815,37 @@ function loop(ts){
 /* ============ UI FLOW ============ */
 function showToast(msg){
   const el=$('toast');el.textContent=msg;el.style.opacity=1;
+  try{el.style.animation='none';void el.offsetWidth;el.style.animation='toastIn .34s cubic-bezier(.2,1.4,.4,1)';}catch(e){} // קפיצת כניסה
   clearTimeout(el._t);el._t=setTimeout(()=>el.style.opacity=0,1400);
+}
+/* ⭐ כוכבי מסך הניצחון קופצים אחד-אחד, עם צליל עולה לכל כוכב */
+function starsBigAnim(got,total){
+  try{
+    const sb=$('starsBig');sb.innerHTML='';
+    for(let si=0;si<total;si++){
+      const sp2=document.createElement('span');
+      sp2.textContent=si<got?'★':'☆';
+      sp2.style.cssText='display:inline-block;animation:popIn .4s cubic-bezier(.2,1.6,.4,1) both;animation-delay:'+(.25+si*.22)+'s'+(si<got?'':';color:#5a6478');
+      sb.appendChild(sp2);
+      if(si<got)setTimeout(()=>{tone(660+si*180,.12,'square',.28);if(navigator.vibrate)navigator.vibrate(14);},400+si*220);
+    }
+  }catch(e){$('starsBig').textContent='★'.repeat(got)+'☆'.repeat(Math.max(0,total-got));}
+}
+/* 🔢 מונים חיים: המספר מתגלגל לערך החדש עם פופ — במקום להתחלף בבת אחת */
+function tickNum(el,pre,val){
+  val=val|0;
+  const cur=el._tv===undefined?val:el._tv;
+  if(el._tr)cancelAnimationFrame(el._tr);
+  el._tv=val;
+  if(cur===val){el.textContent=pre+val;return;}
+  try{el.style.animation='none';void el.offsetWidth;el.style.animation='popNum .32s ease';}catch(e){}
+  const t0=performance.now(),from=cur,dd=val-from;
+  const step=now=>{
+    const k=Math.min(1,(now-t0)/450),e2=1-Math.pow(1-k,3);
+    el.textContent=pre+Math.round(from+dd*e2);
+    if(k<1)el._tr=requestAnimationFrame(step);
+  };
+  el._tr=requestAnimationFrame(step);
 }
 function finishLevel(){
   if(customLv&&customLv._daily){
@@ -3760,7 +3863,7 @@ function finishLevel(){
     checkAch();
     $('medalBig').textContent=md2||'🎲';
     $('doneTitle').textContent=tr('אתגר יומי הושלם!','Daily challenge complete!');
-    $('starsBig').textContent='★'.repeat(starGot.filter(Boolean).length)+'☆'.repeat(Math.max(0,starGot.length-starGot.filter(Boolean).length));
+    starsBigAnim(starGot.filter(Boolean).length,starGot.length);
     $('doneText').textContent=tr('זמן: ','Time: ')+fmt(lvTime)+' '+md2+bonus+tr(' · מחר מחכה אתגר חדש',' · a new challenge awaits tomorrow');
     $('nextBtn').textContent=tr('לתפריט','To Menu');
     save();$('doneOv').classList.remove('hidden');return;
@@ -3770,7 +3873,7 @@ function finishLevel(){
     recStop(false);
     $('medalBig').textContent='🧩';
     $('doneTitle').textContent=tr('השלב המותאם הושלם!','Custom level complete!');
-    $('starsBig').textContent='★'.repeat(starGot.filter(Boolean).length);
+    starsBigAnim(starGot.filter(Boolean).length,starGot.length);
     $('doneText').textContent=tr('זמן: ','Time: ')+fmt(lvTime);
     $('nextBtn').textContent=tr('לתפריט','To Menu');
     $('doneOv').classList.remove('hidden');
@@ -3822,7 +3925,7 @@ function finishLevel(){
   const last=levelIdx+1>=LEVELS.length;
   $('medalBig').textContent=last?'🏆':medal;
   $('doneTitle').textContent=last?tr('סוף הפרק הראשון!','End of Chapter One!'):tr('שלב ','Level ')+(levelIdx+1)+tr(' הושלם!',' complete!');
-  $('starsBig').textContent='★'.repeat(got)+'☆'.repeat(Math.max(0,starGot.length-got));
+  starsBigAnim(got,starGot.length);
   let txt=tr('זמן: ','Time: ')+fmt(lvTime)+' '+medal+(lvDeaths?tr(' · נפילות: ',' · falls: ')+lvDeaths:tr(' · בלי נפילות!',' · no falls!'))+' · +'+_cg+'🪙'+(troGain?' · +'+troGain+'🏆':'');
   if(last){
     const tot=session.reduce((a,x)=>a+x.stars,0);
@@ -3830,8 +3933,9 @@ function finishLevel(){
   }
   $('doneText').textContent=txt;
   const _pg=8+got*4+(firstClear?20:0)+(firstClear&&(levelIdx+1)%10===0?30:0);
-  { // 🏅 צ'יפי פרסים (עיצוב עונה 1)
-    const chip=t2=>'<span style="background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px">'+t2+'</span>';
+  { // 🏅 צ'יפי פרסים — קופצים בזה אחר זה, אחרי הכוכבים
+    let _ci=0;
+    const chip=t2=>'<span style="display:inline-block;background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:'+(.95+(_ci++)*.15)+'s">'+t2+'</span>';
     $('winChips').innerHTML=chip('+'+_cg+' 🪙')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫');
   }
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('המשך לשלב ','Continue to level ')+(levelIdx+2)+' ‹';
@@ -3857,6 +3961,14 @@ function startRun(i){
   $('raceBar').style.display='none';
   loadLevel(i);
   running=true;paused=false;
+  try{ // 🎬 איריס פתיחה: השלב נחשף מהמרכז החוצה + שם השלב קופץ
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:11;pointer-events:none;background:radial-gradient(circle at 50% 45%,transparent 0%,rgba(4,6,12,.92) 55%);transition:opacity .5s ease-out';
+    document.body.appendChild(d);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{d.style.opacity='0';}));
+    setTimeout(()=>d.remove(),560);
+    const bn=$('bName');bn.style.animation='none';void bn.offsetWidth;bn.style.animation='popIn .45s cubic-bezier(.2,1.4,.4,1)';
+  }catch(e){}
   if(!customLv&&L().boss)setTimeout(()=>bossIntro(L().name),350); // ⚔️ כניסת בוס דרמטית
   recStop(false);recStart(); // 🎥 הקלטה חדשה לכל שלב
   closeLobbyNet();
@@ -3882,6 +3994,11 @@ function buildGrid(){
         b.innerHTML=lock?'🔒':((i+1)+'<small>'+
           (st.done?(('★'.repeat(st.stars))||'✓')+' '+medalFor(i,st.best):'·')+'</small>');
         if(!lock)b.onclick=()=>{initAudio();startRun(i);};
+        else b.onclick=()=>{ // 🔒 נעול — מנער את הראש במקום לשתוק
+          try{b.animate([{transform:'translateX(0)'},{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'translateX(0)'}],{duration:180,iterations:2});}catch(e){}
+          if(navigator.vibrate)navigator.vibrate(25);
+          showToast(tr('🔒 סיימו את השלב הקודם כדי לפתוח','🔒 Finish the previous level first'));
+        };
         row.appendChild(b);
       }
       frag.appendChild(row);
@@ -3899,7 +4016,17 @@ $('pauseBtn').onclick=()=>{if(!running||cineMode)return;
   if(runLive){showToast(tr('אין השהיה במרוץ חי 😉','No pausing in a live race 😉'));return;}
   paused=true;hushRoll();
   $('sensSlider').value=SENS*100;$('pauseOv').classList.remove('hidden');};
-$('resumeBtn').onclick=()=>{$('pauseOv').classList.add('hidden');paused=false;lastT=performance.now();};
+$('resumeBtn').onclick=()=>{ // ⏱ 3-2-1 לפני שהכדור חוזר לחיים — שלא תמות עם האצבע על הכפתור
+  $('pauseOv').classList.add('hidden');
+  if(!running||runLive){paused=false;lastT=performance.now();return;}
+  let c3=3;
+  const tk=()=>{
+    if(!paused||!running)return; // בוטל בינתיים
+    if(c3>0){showToast(c3+'…');tone(460+c3*90,.09,'sine',.25);c3--;setTimeout(tk,420);}
+    else{paused=false;lastT=performance.now();showToast(tr('צא לדרך! 🚀','Go! 🚀'));}
+  };
+  tk();
+};
 $('restartBtn').onclick=()=>{$('pauseOv').classList.add('hidden');
   if(runMode){startRunner(runLive,runSeed,runTarget);return;}
   startRun(customLv||levelIdx);};
@@ -4075,10 +4202,10 @@ function applySave(d){
 }
 function refreshTro(){
   $('troLine').textContent='🏆 '+trophies+' · 🪙 '+coins+' · 💎 '+gems;
-  $('lbTro').textContent='🏆 '+trophies;
-  $('lbCoin').textContent='🪙 '+coins;
-  $('lbChest').textContent='🎁 '+chests;
-  $('lbGem').textContent='💎 '+gems;
+  tickNum($('lbTro'),'🏆 ',trophies);
+  tickNum($('lbCoin'),'🪙 ',coins);
+  tickNum($('lbChest'),'🎁 ',chests);
+  tickNum($('lbGem'),'💎 ',gems);
 }
 function addTro(n,gifted){
   trophies+=n;troLife+=n;
@@ -4365,10 +4492,12 @@ function buildQuests(){
     row.className='achRow'+(qDone[i]?' got':'');
     const pct=Math.min(100,qProg[i]/q.target*100);
     row.innerHTML='<span>'+(qDone[i]?'✅':'📜')+'</span><div><b>'+q.txt(q.target)+'</b>'+
-      '<div class="qBarWrap"><div class="qBar" style="width:'+pct+'%"></div></div>'+
+      '<div class="qBarWrap"><div class="qBar" data-w="'+pct+'" style="width:0%"></div></div>'+
       '<small>'+qProg[i]+'/'+q.target+'</small></div><span class="skPrice">+'+(q.gem?q.gem+'💎':q.rew+'🪙')+'</span>';
     g.appendChild(row);
   });
+  // 📊 הפסים מתמלאים בזה אחר זה בפתיחה — לא נולדים מלאים
+  requestAnimationFrame(()=>{g.querySelectorAll('.qBar').forEach((b,i2)=>{b.style.transitionDelay=(i2*70)+'ms';b.style.width=b.dataset.w+'%';});});
   $('questCyc').textContent=tr('עוד ','')+(6-qCyc)+tr(' השלמות = 🎁 תיבה',' more completions = 🎁 chest');
   $('dwLine').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
 }
@@ -4484,6 +4613,12 @@ const ICE={iceServers:[
   {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
 ]};
 let joinTries=0,joinWatch=null,hostDial=null;
+/* 🔢 קוד החדר קופץ ספרה-ספרה — רגע ההזמנה מרגיש כמו אירוע */
+function lvCodeShow(code){
+  try{
+    $('lvCode').innerHTML=[...String(code)].map((c,i)=>'<span style="display:inline-block;animation:popIn .4s cubic-bezier(.2,1.4,.4,1) '+(i*.08)+'s both">'+c+'</span>').join('');
+  }catch(e){$('lvCode').textContent=code;}
+}
 function makeCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';
   for(let i=0;i<5;i++)s+=A[(Math.random()*A.length)|0];return s;}
 function havePeerLib(){return typeof Peer!=='undefined';}
@@ -4528,6 +4663,7 @@ function onMsg(raw){
   if(m.t==='hello'){
     oppName=(m.name||'יריב').slice(0,12);
     $('lvOpp').textContent='🔴 '+oppName+tr(' מחובר!',' connected!');
+    if(navigator.vibrate)navigator.vibrate([20,30,20]); // רגע החיבור מורגש
     if(liveRole==='host'){$('lvHostGo').style.display='flex';buildChips();lvStatus(tr('בחר מרחק ולחץ התחל','Pick a distance and press start'));}
     if(liveRole==='host'&&summonAuto){ // 🚀 זימון: יוצאים ישר לדו-קרב, בלי לחיצה נוספת
       summonAuto=false;
@@ -4603,7 +4739,7 @@ function hostPeer(){
   peer.on('error',err=>{
     if(err.type==='peer-unavailable')return; // חיוג לאורח שעוד לא נרשם — צפוי
     if(err.type==='unavailable-id'&&hostTries<3){
-      hostTries++;roomCode=makeCode();$('lvCode').textContent=roomCode;
+      hostTries++;roomCode=makeCode();lvCodeShow(roomCode);
       try{peer.destroy();}catch(e){}
       hostPeer();return;
     }
@@ -4642,7 +4778,7 @@ $('lvCreate').onclick=async()=>{
   initAudio();await enableSensors();
   myName=cleanName($('raceName').value);save();
   cleanupLive();liveRole='host';hostTries=0;roomCode=makeCode();
-  $('lvCode').textContent=roomCode;
+  lvCodeShow(roomCode);
   $('lvChoose').style.display='none';$('lvHostPanel').style.display='flex';
   lvStatus(tr('פותח חדר…','Opening room…'));
   hostPeer();
@@ -4878,7 +5014,7 @@ function showResult(icon,title,text){
 }
 function rrPodiumShow(win){ // 🏟️ פודיום כמו בעיצוב
   const me=myName||curUser||tr('אתה','You'),op=oppName||tr('יריב','Rival');
-  const step=(nm,place,tall)=>'<div style="display:flex;flex-direction:column;align-items:center;gap:6px">'+
+  const step=(nm,place,tall)=>'<div style="display:flex;flex-direction:column;align-items:center;gap:6px;animation:popIn .5s cubic-bezier(.2,1.4,.4,1) both;animation-delay:'+(place===1?'.25s':'.05s')+'">'+
     avHTML(nm,44)+'<b style="font-size:13px;color:#eaf4ff">'+esc(nm)+(place===1?' 👑':'')+'</b>'+
     '<div style="width:86px;height:'+(tall?86:56)+'px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;'+
     (place===1?'background:linear-gradient(180deg,rgba(246,180,14,.85),rgba(246,180,14,.45));color:#12253f'
@@ -5145,9 +5281,14 @@ function buildSkins(){
         emojiPop(ccx,ccy,['✨'],5,90); // בחירה — נצנוץ קטן
         return;
       }
-      if(s.wc&&!owned)return showToast(tr('🏆 מסי נפתח עם 3 גביעי מונדיאל — תיבת מונדיאל בכל שלב 50!','🏆 Messi unlocks with 3 World Cups — a box every 50 levels!'));
-      if(s.fs&&!owned)return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));
-      if((s.rar|0)>=4&&!s.pow)return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));
+      const deny=()=>{ // 🔒 פריט חסום — הכרטיס מנער את הראש
+        try{card.animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(7px)'},{transform:'translateX(0)'}],{duration:200,iterations:2});}catch(e){}
+        tone(140,.12,'sawtooth',.2);
+        if(navigator.vibrate)navigator.vibrate(30);
+      };
+      if(s.wc&&!owned){deny();return showToast(tr('🏆 מסי נפתח עם 3 גביעי מונדיאל — תיבת מונדיאל בכל שלב 50!','🏆 Messi unlocks with 3 World Cups — a box every 50 levels!'));}
+      if(s.fs&&!owned){deny();return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));}
+      if((s.rar|0)>=4&&!s.pow){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
       if(coins>=s.price){
         coins-=s.price;cat.ow.push(i);cat.setSel(i);
         checkAch();save();refreshTro();buildSkins();sfx.key();
@@ -5854,7 +5995,7 @@ function myLiveStats(){
 async function buildFriends(){
   $('frMsg').textContent='';
   const g=$('frList');
-  g.innerHTML='<div style="color:#aeb8c8">'+tr('טוען…','Loading…')+'</div>';
+  g.innerHTML='<div class="ldg">'+tr('טוען…','Loading…')+'</div>';
   const d=await regCached();
   g.innerHTML='';
   if(!friends.length){
@@ -5876,7 +6017,11 @@ async function buildFriends(){
     row.appendChild(inner);
     const x=document.createElement('button');
     x.className='chip';x.textContent='✕';
-    x.onclick=()=>{friends=friends.filter(f=>f!==n);save();buildFriends();};
+    x.onclick=()=>{ // השורה מתקפלת החוצה לפני שנמחקת
+      const doDel=()=>{friends=friends.filter(f=>f!==n);save();buildFriends();};
+      try{row.animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateX(50px)'}],{duration:220,easing:'ease'});setTimeout(doDel,230);}
+      catch(e){doDel();}
+    };
     row.appendChild(x);
     g.appendChild(row);
   });
@@ -5963,7 +6108,7 @@ async function buildTables(fresh){
   const g=$('tbList');
   // ברענון רקע לא מוחקים את הרשימה הקיימת — בלי הבהוב ובלי איבוד גלילה
   const hadRows=!!g.querySelector('.achRow');
-  if(!hadRows)g.innerHTML='<div style="color:#aeb8c8">'+tr('טוען…','Loading…')+'</div>';
+  if(!hadRows)g.innerHTML='<div class="ldg">'+tr('טוען…','Loading…')+'</div>';
   const d=await regCached(fresh);
   if(!d){if(!hadRows)g.innerHTML='<div style="color:#aeb8c8">'+tr('הטבלאות דורשות אינטרנט','Leaderboards need internet')+'</div>';return;}
   const me=myLiveStats();
@@ -5987,6 +6132,7 @@ async function buildTables(fresh){
       +'<div style="flex:1"><b>'+esc(r.name)+(r.me?' <span style="color:#7ae0ff">('+tr('אתם!','you!')+')</span>':'')+'</b><br><small>🏆 '+r.tro+' · 🪙 '+r.co+' · ✅ '+(r.edone||0)+' · ⭐ '+(r.estars||0)+
       (r.me?' · <span style="color:#7ae0ff">'+tr('עכשיו','now')+'</span>':(r.svT?' · <span style="color:#8a94a8">🕐 '+agoTxt(r.svT)+'</span>':''))+
       '</small></div><span class="skPrice" style="color:#ffd257;font-weight:900">'+IC+' '+V(r)+'</span>';
+    if(hadRows)row.style.animation='none'; // רענון רקע — בלי אנימציית כניסה מחדש
     g.appendChild(row);
   });
   g.scrollTop=_sc;
@@ -6119,7 +6265,7 @@ function wsInbox(){
 /* 👀 לוח "משחקים עכשיו" לאדמין */
 async function buildWatch(){
   const g=$('watchList');
-  g.innerHTML='<div style="color:#aeb8c8">'+tr('טוען…','Loading…')+'</div>';
+  g.innerHTML='<div class="ldg">'+tr('טוען…','Loading…')+'</div>';
   const d=await regFetch();
   if(!d){g.innerHTML='<div style="color:#aeb8c8">'+tr('דרוש אינטרנט','Internet required')+'</div>';return;}
   regCache=d;regCacheAt=Date.now();
@@ -6434,7 +6580,10 @@ function applyUser(name){
   if(name&&!myName)myName=name.slice(0,12);
   if(name)setTimeout(wsInbox,400); // 🔌 חיבור לדחיפה מיידית מהשרת
 }
-function authMsg(m){$('authErr').textContent=m||'';}
+function authMsg(m){
+  const e=$('authErr');e.textContent=m||'';
+  if(m){try{e.style.animation='none';void e.offsetWidth;e.style.animation='oopsShake .45s';}catch(e2){}if(navigator.vibrate)navigator.vibrate(30);}
+}
 async function doAuth(reg){
   const u=cleanName($('authUser').value),p=$('authPass').value||'';
   if(u.length<2)return authMsg(tr('שם משתמש: לפחות 2 תווים','Username: at least 2 characters'));
@@ -7429,9 +7578,9 @@ function menuPassSync(){
     bd.textContent=tr('פרס מחכה!','Reward!');
     bd.style.display=passClaimable()>0?'block':'none';
     $('menuDaily').textContent=tr('מתאפס בעוד ','Resets in ')+dwResetStr();
-    $('mnuGem').textContent='💎 '+gems;
-    $('mnuCoin').textContent='🪙 '+coins;
-    $('mnuTro').textContent='🏆 '+trophies;
+    tickNum($('mnuGem'),'💎 ',gems);
+    tickNum($('mnuCoin'),'🪙 ',coins);
+    tickNum($('mnuTro'),'🏆 ',trophies);
     $('playBtn').textContent=tr('שחק · שלב ','Play · Level ')+Math.min(unlocked+1,1000);
     refreshUserChip();
   }catch(e){}
@@ -7443,6 +7592,9 @@ $('menuPassBar').onclick=()=>{
   buildPass();syncLobbyUI();
 };
 setInterval(menuPassSync,30000);
+setInterval(()=>{ // ⏳ שעון האתגר היומי מתקתק חי בלובי
+  try{if(!$('menuOv').classList.contains('hidden'))$('menuDaily').textContent=tr('מתאפס בעוד ','Resets in ')+dwResetStr();}catch(e){}
+},1000);
 /* 🎁 הפרס עף מהשורה אל כותרת הפס — איסוף שמרגישים */
 function passFly(icon,rect,delay){
   try{
