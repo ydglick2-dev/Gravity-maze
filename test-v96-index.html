@@ -269,7 +269,7 @@
     filter:drop-shadow(0 0 12px rgba(255,210,90,.6)); }
   #medalBig { font-size:52px; filter:drop-shadow(0 0 14px rgba(255,255,255,.35)); }
 /* 👾 קרב בוס */
-#fireWrap{position:fixed;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:11;
+#fireWrap{position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:11;
   display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
 #fireWrap.hidden{display:none}
 #bossAmmo{display:flex;gap:5px;justify-content:center}
@@ -2359,7 +2359,7 @@ function bossPhysics(dt,t){
   if(bossInvT>0)bossInvT-=dt;
   const mv=bossMode==='windup'?.3:bossMode==='dying'?0:1;
   bossPh+=dt*(zone===9?.7:.55)*mv;
-  bossX=.5+.22*Math.sin(bossPh);
+  bossX=.5+.34*Math.sin(bossPh);
   bossAim=Math.atan2(ball.y-G.cy,ball.x-G.cx);
   bossStT-=dt;
   if(bossMode==='dying'){
@@ -4621,10 +4621,8 @@ function finishLevel(){
   }
 }
 function startRun(i){
-  cineMode='';cineHold=false;cineCb=null;timeScale=1; // 🎬 קולנועית ישנה לא דולפת לריצה חדשה
   ['menuOv','selectOv','pauseOv','doneOv','failOv'].forEach(id=>$(id).classList.add('hidden'));
   $('hud').style.display='flex';$('hint').style.display='block';
-  clearTimeout($('hint')._t);$('hint')._t=setTimeout(()=>{$('hint').style.display='none';},4000); // 💡 הטיפ מציץ ונעלם
   $('raceBar').style.display='none';
   loadLevel(i);
   running=true;paused=false;
@@ -4737,10 +4735,8 @@ $('nextBtn').onclick=()=>{
 };
 $('replayBtn').onclick=()=>{$('doneOv').classList.add('hidden');startRun(customLv||levelIdx);};
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden&&running&&!runLive&&!cineMode){paused=true;hushRoll();$('pauseOv').classList.remove('hidden');} // קולנועית לא נקטעת ע"י auto-pause
-  if(document.hidden)for(const k in kbDown)delete kbDown[k]; // מקשים לא נתקעים
+  if(document.hidden&&running&&!runLive){paused=true;hushRoll();$('pauseOv').classList.remove('hidden');}
 });
-window.addEventListener('blur',()=>{for(const k in kbDown)delete kbDown[k];try{updKb();}catch(e){}}); // ⌨️ איבוד פוקוס משחרר מקשים
 
 /* ============ SAVE / LIVES / RACE / DAILY ============ */
 /* ==== 🌐 שרת אונליין (אופציונלי) ====
@@ -9054,7 +9050,18 @@ function initAuth(){
   else if(cu==='__guest__'){isAdmin=false;$('adminBtn').style.display='none';applyUser(null);}
   else{refreshUserChip();$('authOv').classList.remove('hidden');}
 }
-initAuth();
+
+window.__dbg={
+  boss:(i)=>{unlocked=1000;document.querySelectorAll('.overlay').forEach(o=>o.classList.add('hidden'));startRun(i);},
+  st:()=>({mode:bossMode,hp:bossHp,mx:bossMaxHp,ammo:bossAmmo,shots:bossShots.length,remn:bossRemn.length,inv:bossInvT,deaths:lvDeaths,run:running,win:winPause>0,fireHidden:document.getElementById('fireWrap').classList.contains('hidden'),fireDisabled:document.getElementById('fireBtn').disabled,falling:falling>0}),
+  tp:(x,y)=>{ball.x=board.x+x*board.w;ball.y=board.y+y*board.h;ball.vx=0;ball.vy=0;},
+  grab:()=>{if(bossRemn.length){const m=bossRemn[0];ball.x=m.x;ball.y=m.y;ball.vx=0;ball.vy=0;return true;}return false;},
+  makeRemn:(n)=>{for(let i=0;i<n;i++)bossSpawnRemn(board.x+(.2+.15*i)*board.w,board.y+.7*board.h);},
+  fire:()=>{const b=document.getElementById('fireBtn');b.onpointerdown(new PointerEvent('pointerdown'));},
+  shot:()=>{bossShots.push({x:ball.x,y:ball.y-2,vx:0,vy:1,life:4,r:ball.r*.8,grav:0,rot:0});},
+  noInv:()=>{bossInvT=0;ball.spawnT=0;},
+  freezeBoss:()=>{bossStT=999;bossMode='idle';bossShots.length=0;}
+};initAuth();
 if(((troLife/25)|0)>troClaimed){claimTroRoad();save();refreshTro();} // תשלום-עבר בעלייה
 {const bm=document.getElementById('bootMsg');if(bm)bm.remove();} // המשחק עלה בהצלחה
 if(!storageOK)setTimeout(()=>{
