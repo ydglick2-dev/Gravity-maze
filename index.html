@@ -282,6 +282,17 @@
 #fireBtn:disabled{filter:grayscale(1) brightness(.55);cursor:default}
 #fireBtn:not(:disabled):active{transform:scale(.86)}
 #fireBtn.ready{animation:fireReady 1s ease-in-out infinite}
+#supCnt{font-weight:900;font-size:12px;color:#c9b8ff;background:rgba(8,12,20,.65);
+  padding:1px 8px;border-radius:10px;box-shadow:inset 0 0 0 1.5px rgba(201,184,255,.35)}
+#supBtn{pointer-events:auto;width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;
+  background:radial-gradient(circle at 35% 30%,#b48cff,#5a2ea6 72%);color:#fff;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.25),0 4px 14px rgba(0,0,0,.5);
+  transition:transform .1s,filter .25s}
+#supBtn:disabled{filter:grayscale(1) brightness(.5);cursor:default}
+#supBtn:not(:disabled):active{transform:scale(.86)}
+#supBtn.ready{animation:supReady .9s ease-in-out infinite}
+@keyframes supReady{0%,100%{box-shadow:inset 0 0 0 2px rgba(255,255,255,.3),0 0 10px rgba(180,140,255,.5)}
+  50%{box-shadow:inset 0 0 0 2.5px #e7dcff,0 0 26px rgba(160,110,255,.95);transform:scale(1.1)}}
 @keyframes fireReady{0%,100%{box-shadow:inset 0 0 0 2px rgba(255,255,255,.3),0 0 10px rgba(255,110,70,.4)}
   50%{box-shadow:inset 0 0 0 2.5px #ffd257,0 0 26px rgba(255,90,60,.9);transform:scale(1.07)}}
 </style>
@@ -317,7 +328,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v99</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v100</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -344,6 +355,8 @@
   <div class="pill" id="hudInfo"></div>
 </div>
 <div id="fireWrap" class="hidden" dir="ltr">
+  <div id="supCnt">0/5</div>
+  <button id="supBtn" disabled>⚡</button>
   <div id="bossAmmo">×0</div>
   <button id="fireBtn" disabled>🎯</button>
 </div>
@@ -1901,7 +1914,8 @@ function loadLevel(i){
   keyGot=(lv.keys||[]).map(()=>false);
   swState=(lv.switches||[]).map(()=>({open:false,inside:false}));
   lvTime=0;lvDeaths=0;comboN=0;comboT=0;
-  bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;bossCycN=0;
+  bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;bossCycN=0;bossSupN=0;supShieldT=0;supRapidT=0;
+  try{supUi();}catch(e){}
   if(lv.boss&&!customLv){bossMaxHp=bossZone()===9?60:16+bossZone()*4;bossHp=bossMaxHp;bossHpShown=bossMaxHp;bossMode='idle';bossStT=1.2;} // 💪 פס חיים ארוך
   else{bossMaxHp=0;bossHp=0;}
   try{$('fireWrap').classList.toggle('hidden',!(lv.boss&&!customLv));bossAmmoUi();}catch(e){}
@@ -2354,7 +2368,18 @@ const BOSS_SW=[.50,.45,.48,.55,.50,.46,.44,.48,.46,.55]; // רוחב המפלצ�
 let bossHp=0,bossMaxHp=0,bossMode='idle',bossStT=0,bossPh=0,bossX=.5,
     bossShots=[],bossRemn=[],bossAmmo=0,bossInvT=0,bossPShots=[],bossPat=0,
     bossHurtT=0,bossDieT=0,bossRage=0,bossAim=0,bossStrN=0,bossStrT=0,bossSpA=0,
-    bossHpShown=0,bossAimDrag=null,bossCycN=0;
+    bossHpShown=0,bossAimDrag=null,bossCycN=0,
+    bossSupN=0,supShieldT=0,supRapidT=0; // ⚡ סופר: נטען ב-5 פגיעות
+/* ⚡ מכות-העל — לכל סקין סופר משלו (לפי אינדקס; כדורגלנים = מטח-על) */
+const SUPERS=[
+ {e:'🛡',n:'מגן-על',en:'Super Shield',d:['6 שניות חסינות מלאה!','6s of full immunity!']},
+ {e:'♾️',n:'אש בלי סוף',en:'Endless Fire',d:['4 שניות יריות חינם!','4s of free shots!']},
+ {e:'💥',n:'מטח-על',en:'Mega Barrage',d:['8 יריות במניפה!','8-shot fan!']},
+ {e:'😴',n:'שיר ערש',en:'Lullaby',d:['הבוס נרדם 3.5 שניות!','Boss sleeps 3.5s!']},
+ {e:'❤️',n:'ריפוי מלא',en:'Full Heal',d:['כל הלבבות חוזרים!','All hearts back!']},
+ {e:'🧲',n:'מגנט-על',en:'Super Magnet',d:['כל השאריות נאספות!','All remnants collected!']},
+ {e:'⚡',n:'נובה',en:'Nova',d:['מוחק קליעים + 3 נזק!','Clears shots + 3 dmg!']}];
+const superIdxOf=si=>{const sk=SKINS[si]||{};return sk.face?2:si%SUPERS.length;};
 const bossOn=()=>!!(L().boss&&bossMaxHp>0&&!customLv);
 const bossZone=()=>Math.min(9,(levelIdx/100)|0); // בוס מס' 1-10 לפי מאה השלבים
 function bossGeo(){
@@ -2388,17 +2413,19 @@ function bossSpawnRemn(x,y){
   bossRemn.push({x:rx,y:ry,life:8,ph:Math.random()*6.3}); // 8ש — זמן נשימה לילדים
 }
 function bossAmmoUi(){
-  const el=$('bossAmmo');
-  el.textContent=BOSS_EMO[bossZone()]+' ×'+bossAmmo;
+  const el=$('bossAmmo'),rapid=supRapidT>0;
+  el.textContent=rapid?'♾️':BOSS_EMO[bossZone()]+' ×'+bossAmmo;
   try{el.style.animation='none';void el.offsetWidth;el.style.animation='chipPop .3s cubic-bezier(.2,1.5,.4,1)';}catch(e){}
   const b=$('fireBtn');
-  b.disabled=bossAmmo<1;b.classList.toggle('ready',bossAmmo>=1);
+  b.disabled=!rapid&&bossAmmo<1;b.classList.toggle('ready',rapid||bossAmmo>=1);
 }
 function bossPhysics(dt,t){
   const lv=L(),T=THEMES[lv.th],zone=bossZone();
   const G=bossGeo();
   bossHurtT=Math.max(0,bossHurtT-dt);
   if(bossInvT>0)bossInvT-=dt;
+  if(supShieldT>0)supShieldT-=dt;
+  if(supRapidT>0){supRapidT-=dt;if(supRapidT<=0)bossAmmoUi();} // ♾️ נגמר — הכפתור חוזר לרגיל
   const mv=bossMode==='windup'?.3:(bossMode==='dying'||bossMode==='rest')?0:1; // 😴 במנוחה — קפוא
   bossPh+=dt*(zone===9?.7:.55)*mv;
   bossX=.5+.22*Math.sin(bossPh);
@@ -2471,7 +2498,7 @@ function bossPhysics(dt,t){
     if(!dead)for(const mvr of(lv.movers||[])){if(_sIn(moverRect(mvr,t))){dead=true;break;}}
     if(!dead)for(const ph2 of(lv.phase||[]))if(phaseOn(ph2,t)&&_sIn(R([ph2.x,ph2.y,ph2.w,ph2.h]))){dead=true;break;}
     if(dead){if(s.y>board.y+board.h*.18)bossSpawnRemn(s.x,s.y);bossShots.splice(i,1);continue;}
-    if(falling===0&&winPause===0&&ball.spawnT<=0&&bossInvT<=0&&bossMode!=='dying'&&
+    if(falling===0&&winPause===0&&ball.spawnT<=0&&bossInvT<=0&&supShieldT<=0&&bossMode!=='dying'&&
        Math.hypot(s.x-ball.x,s.y-ball.y)<ball.r+s.r){
       bossShots.splice(i,1);
       falling=.0001;fallPt={x:ball.x,y:ball.y};sfx.fall();shake=6; // מסלול החור — מגן/לבבות חינם
@@ -2506,18 +2533,7 @@ function bossPhysics(dt,t){
     if(!PERF)emit(p.x,p.y,1,{color:'#ffd257',size:3,decay:2.5,sp:40,gl:true});
     if(bossMode!=='dying'&&Math.hypot(p.x-G.cx,p.y-G.cy)<G.S*.38){ // פגיעה בגוף המפלצת
       bossPShots.splice(i,1);
-      bossHp--;bossRage=Math.min(6,bossRage+1);bossHurtT=.35;
-      shock(p.x,p.y,'rgba(255,255,255,.9)',md()*.22);
-      emojiPop(G.cx,G.cy,['💥'],5,100);
-      sfx.bossHurt();shake=3;
-      if(navigator.vibrate)navigator.vibrate(35);
-      if(bossHp<=0){
-        bossMode='dying';bossDieT=0;
-        bossShots.length=0;bossRemn.length=0;bossPShots.length=0;
-        try{$('fireWrap').classList.add('hidden');}catch(e){}
-        sfx.bossDie();shake=10;timeScale=.4;
-        emojiPop(G.cx,G.cy,['💥','✨','👑'],14,150);
-      }
+      bossApplyHit(p.x,p.y,G,p.sup);
       continue;
     }
     if(p.t>2||p.x<board.x-20||p.x>board.x+board.w+20||p.y<board.y-60){ // החטאה — הירייה אבדה
@@ -2526,6 +2542,66 @@ function bossPhysics(dt,t){
     }
   }
 }
+/* 💥 נזק לבוס — כולל טעינת הסופר ומוות */
+function bossApplyHit(px,py,G,noCharge){
+  if(bossMode==='dying'||bossHp<=0)return;
+  bossHp--;bossRage=Math.min(6,bossRage+1);bossHurtT=.35;
+  if(!noCharge){bossSupN=Math.min(5,bossSupN+1);supUi();} // ⚡ פגיעה רגילה טוענת סופר; נזק-סופר לא (בלי לולאה אינסופית)
+  if(bossSupN>=5&&!localStorage.getItem('gm_supHint')){
+    localStorage.setItem('gm_supHint','1');
+    showToast(tr('⚡ הסופר טעון — לחצו על הכפתור הסגול!','⚡ Super charged — hit the purple button!'));
+  }
+  shock(px,py,'rgba(255,255,255,.9)',md()*.22);
+  emojiPop(G.cx,G.cy,['💥'],5,100);
+  sfx.bossHurt();shake=3;
+  if(navigator.vibrate)navigator.vibrate(35);
+  if(bossHp<=0){
+    bossMode='dying';bossDieT=0;
+    bossShots.length=0;bossRemn.length=0;bossPShots.length=0;
+    try{$('fireWrap').classList.add('hidden');}catch(e){}
+    sfx.bossDie();shake=10;timeScale=.4;
+    emojiPop(G.cx,G.cy,['💥','✨','👑'],14,150);
+  }
+}
+/* ⚡ הפעלת הסופר של הסקין */
+function supUi(){
+  try{
+    $('supCnt').textContent=bossSupN+'/5';
+    const b=$('supBtn');
+    b.textContent=SUPERS[superIdxOf(skinSel)].e;
+    b.disabled=bossSupN<5;b.classList.toggle('ready',bossSupN>=5);
+  }catch(e){}
+}
+function bossSuper(){
+  if(!running||paused||runMode||!bossOn()||bossHp<=0||bossSupN<5||falling>0||winPause>0)return;
+  bossSupN=0;supUi();
+  const si=superIdxOf(skinSel),SS=SUPERS[si],G=bossGeo();
+  showToast(SS.e+' '+tr(SS.n,SS.en)+' — '+tr(SS.d[0],SS.d[1]));
+  tone(320,.2,'square',.32,900);tone(160,.3,'sawtooth',.25,640);noiseHit(.25,.2,1800,1,true);
+  shock(ball.x,ball.y,'rgba(180,140,255,.85)',md()*.4);
+  emojiPop(ball.x,ball.y,[SS.e,'✨'],10,140);
+  if(navigator.vibrate)navigator.vibrate([40,40,80]);
+  if(si===0)supShieldT=6;                         // 🛡 מגן-על
+  else if(si===1){supRapidT=4;bossAmmoUi();}      // ♾️ אש בלי סוף
+  else if(si===2){                                // 💥 מטח-על: 8 יריות במניפה למעלה
+    for(let k=0;k<8;k++){const a=-Math.PI/2+(k-3.5)*.17;
+      bossPShots.push({x:ball.x,y:ball.y,vx:Math.cos(a)*md()*1.5,vy:Math.sin(a)*md()*1.5,t:0,sup:true});}
+    sfx.playerShoot();
+  }else if(si===3){                               // 😴 שיר ערש
+    bossMode='rest';bossStT=3.5;bossCycN=0;bossShots.length=0;
+  }else if(si===4){                               // ❤️ ריפוי מלא
+    lvDeaths=0;try{updateHud();}catch(e){}flashW=.3;
+  }else if(si===5){                               // 🧲 מגנט-על
+    const got=bossRemn.length;
+    bossAmmo=Math.min(5,bossAmmo+got);bossRemn.length=0;bossAmmoUi();
+    if(got)sfx.pick(3);
+  }else{                                          // ⚡ נובה
+    bossShots.length=0;
+    for(let k=0;k<3;k++)bossApplyHit(G.cx,G.cy,G,true);
+    flashW=Math.max(flashW,.35);
+  }
+}
+$('supBtn').onpointerdown=e=>{e.preventDefault();bossSuper();};
 /* 🎨 ציור: קליעים, שאריות, ירייה, מנעול יעד — בתוך ה-clip, מתחת לכדור */
 function drawBossShots(t){
   const T=THEMES[L().th],idx=bossZone(),emo=BOSS_EMO[idx];
@@ -2595,6 +2671,17 @@ function drawBossShots(t){
     ctx.globalAlpha=.4+.4*Math.sin(t*18);
     ctx.strokeStyle='#bfe3ff';ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r*1.5,0,TAU);ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  // 🛡 מגן-על — בועת זהב כפולה
+  if(supShieldT>0&&falling===0){
+    const pu=1+.06*Math.sin(t*6),warn=supShieldT<1.2?(.4+.6*Math.abs(Math.sin(supShieldT*10))):1;
+    ctx.globalAlpha=.75*warn;
+    ctx.strokeStyle='#ffd257';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r*1.9*pu,0,TAU);ctx.stroke();
+    ctx.globalAlpha=.35*warn;
+    ctx.strokeStyle='#fff3c0';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r*2.3*pu,t,t+TAU*.7);ctx.stroke();
     ctx.globalAlpha=1;
   }
   ctx.restore();
@@ -2974,8 +3061,12 @@ function drawBossMonster(g,S,idx,st,t){
 }
 /* 🎯 ירי מכוון בסגנון בראול: גוררים את הכפתור לכיוון — או מקישים לירי ישר למעלה */
 function bossTryFire(dx,dy){
-  if(!running||paused||runMode||bossAmmo<1||!bossOn()||bossHp<=0||falling>0||winPause>0)return;
-  bossAmmo--;bossAmmoUi();
+  if(!running||paused||runMode||!bossOn()||bossHp<=0||falling>0||winPause>0)return;
+  if(bossPShots.length>=12)return;
+  if(supRapidT<=0){ // ♾️ באש-בלי-סוף היריות חינם
+    if(bossAmmo<1)return;
+    bossAmmo--;bossAmmoUi();
+  }
   let ang=-Math.PI/2; // ברירת מחדל: ישר למעלה
   if(dx!==undefined&&(dx*dx+dy*dy)>0)ang=Math.atan2(dy,dx);
   const v=md()*1.5;
@@ -5691,7 +5782,7 @@ async function beginCountdown(x,seed){
 /* ---- ליבת הראנר ---- */
 function startRunner(live,seed,target){
   customLv=null;runMode=true;runLive=!!live;runDead=false;
-  bossMaxHp=0;bossHp=0;bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0; // 👾 קרב בוס לא דולף לראנר (למשל אחרי זימון)
+  bossMaxHp=0;bossHp=0;bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossSupN=0;supShieldT=0;supRapidT=0; // 👾 קרב בוס לא דולף לראנר (למשל אחרי זימון)
   try{$('fireWrap').classList.add('hidden');}catch(e){}
   cineMode='';cineHold=false;cineCb=null;timeScale=1;
   runSeed=seed;runTarget=live?target:1e9;
