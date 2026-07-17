@@ -43,8 +43,8 @@ const applyReducing = (sv, g) => {
   if (!sv) return sv;
   if (g.dnl) sv.un = Math.min(sv.un | 0, Math.max(0, (g.dnl | 0) - 1));
   if (g.clr !== undefined && sv.cl) delete sv.cl[Math.max(0, g.clr | 0)];
-  if (g.dtro) { const n = g.dtro | 0, e = sv.et === undefined ? (sv.tl | 0) : (sv.et | 0); sv.tro = Math.max(0, (sv.tro | 0) - n); sv.et = Math.max(0, e - n); }
-  if (g.dco) { const n = g.dco | 0, e = sv.ec === undefined ? (sv.co | 0) : (sv.ec | 0); sv.co = Math.max(0, (sv.co | 0) - n); sv.ec = Math.max(0, e - n); }
+  if (g.dtro) { const n = g.dtro | 0, p = sv.pt | 0, u = Math.min(p, n); sv.pt = p - u; const e = sv.et === undefined ? (sv.tl | 0) : (sv.et | 0); sv.tro = Math.max(0, (sv.tro | 0) - n); sv.et = Math.max(0, e - (n - u)); }
+  if (g.dco) { const n = g.dco | 0, p = sv.pc | 0, u = Math.min(p, n); sv.pc = p - u; const e = sv.ec === undefined ? (sv.co | 0) : (sv.ec | 0); sv.co = Math.max(0, (sv.co | 0) - n); sv.ec = Math.max(0, e - (n - u)); }
   if (g.dgm) sv.gm = Math.max(0, (sv.gm | 0) - (g.dgm | 0));
   return sv;
 };

@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v75</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v76</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -3556,6 +3556,8 @@ function finishLevel(){
   s.done=true;s.stars=Math.max(s.stars,got);
   // ⏱ זמן-שיא נרשם לכל סיום אמיתי — כולל בדו-קרב (זה מקור האמת של "הושג באמת")
   if(!s.best||lvTime<s.best)s.best=lvTime;
+  // 🎁 סיימת שלב אחרי מתנה מהאדמין? המתנה נחשבת מעכשיו בטבלאות ובפרופיל
+  if(pTro||pCo){eTro+=pTro;eCo+=pCo;pTro=0;pCo=0;}
   if(troGain)addTro(troGain);
   const _le=logEv((levelIdx+1)%10===0?'bs':'lv',levelIdx+1,got);
   recStop(true,levelIdx+1,id=>{if(id){_le[4]=id;save();}});
@@ -3742,7 +3744,7 @@ function logEv(ty,a,b2){
   save();
   return e;
 }
-let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,eDone=0,eStars=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0,wheelD='',wcCups=0;
+let coins=0,gems=0,troLife=0,chests=0,troClaimed=0,lossAcc=0,eTro=0,eCo=0,eDone=0,eStars=0,pTro=0,pCo=0,customLevels={},dailyFail='',qCyc=0,qDate='',qProg=Array(20).fill(0),qDone=Array(20).fill(false),dwD='',dwN=0,wheelD='',wcCups=0;
 let stFalls=0,stTime=0,stDailies=0,stRaceWins=0,stBossClean=false,achEarned=[];
 let raceSel=500,raceMode='run',duelLive=false,raceFrom=1,raceTo=5,duelFrom=1,duelTo=5,duelCur=1,duelOppLv=1,summonAuto=false;
 /* אם הדפדפן חוסם localStorage (iframe/מצב פרטי) — נופלים לאחסון זמני לסשן,
@@ -3765,7 +3767,7 @@ function saveBlob(){
   while(last>0&&!session[last].done&&!session[last].stars&&!session[last].best)last--;
   return {v:2,t:Date.now(),un:unlocked,tro:trophies,nm:myName,dl:dailyLast,
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
-    co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,et:eTro,ec:eCo,edn:eDone,esn:eStars,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
+    co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,et:eTro,ec:eCo,edn:eDone,esn:eStars,pt:pTro,pc:pCo,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
     ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,
     la:lossAcc,gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10),x.edone?1:0,x.estars|0]),
@@ -3797,10 +3799,12 @@ function applySave(d){
     if(d.co===undefined){ // מיגרציה: כלכלה ישנה → מטבעות
       coins=(d.tro|0)*8;gems=0;troLife=d.tro|0;troClaimed=(troLife/25)|0;chests=1;
       eTro=troLife;eCo=coins; // ותיקים לא מוצגים כ-🏆0 בפרופיל/טבלאות
+      pTro=0;pCo=0;
     }else{
       coins=d.co|0;gems=d.gm|0;troLife=d.tl|0;chests=d.ch|0;troClaimed=d.tc|0;
       eTro=d.et===undefined?(d.tl|0):(d.et|0); // שמירות ישנות: קירוב לפי גביעי-חיים
       eCo=d.ec===undefined?(d.co|0):(d.ec|0);
+      pTro=d.pt|0;pCo=d.pc|0; // 🎁 מתנות שממתינות לשלב הראשון אחריהן
       dailyFail=d.df||'';qCyc=d.qc|0;qDate=d.qd||'';
       if(Array.isArray(d.qq))qProg=d.qq.map(n=>n|0);
       if(Array.isArray(d.qz))qDone=d.qz.map(x=>!!x);
@@ -3845,7 +3849,8 @@ function refreshTro(){
 }
 function addTro(n,gifted){
   trophies+=n;troLife+=n;
-  if(!gifted)eTro+=n; // 🏆 "אמיתי" — הטבלאות סופרות רק את זה
+  if(!gifted)eTro+=n; // 🏆 "אמיתי" — נספר בטבלאות מיד
+  else pTro+=n; // 🎁 מתנה — תיחשב בטבלאות אחרי שתסיימו שלב אחד
   claimTroRoad();
   refreshTro();
 }
@@ -6114,7 +6119,7 @@ document.addEventListener('visibilitychange',()=>{
   if(document.hidden&&cloudDirty&&curUser)cloudPush(); // דחיפה אחרונה כשעוזבים
 });
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
-  unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;eDone=0;eStars=0;
+  unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;eDone=0;eStars=0;pTro=0;pCo=0;
   dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;wcCups=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
@@ -6129,12 +6134,13 @@ function applyGift(g,target){
     if(g.dnl)unlocked=Math.min(unlocked,Math.max(0,(g.dnl|0)-1));
     if(g.clv&&g.clv.lv)customLevels[Math.max(0,g.clv.i|0)]=g.clv.lv;
     if('clr' in g)delete customLevels[Math.max(0,g.clr|0)];
-    if(g.tro)addTro(g.tro|0,true); // מתנה — לא נספר בטבלאות
-    if(g.co)coins+=g.co|0;
+    if(g.tro)addTro(g.tro|0,true); // מתנה — נספרת בטבלאות אחרי שתסיימו שלב אחד
+    if(g.co){coins+=g.co|0;pCo+=g.co|0;}
     if(g.gm)gems+=g.gm|0;
     if(g.ch)chests+=g.ch|0;
-    if(g.dtro){const n2=g.dtro|0;trophies=Math.max(0,trophies-n2);eTro=Math.max(0,eTro-n2);}
-    if(g.dco){const n2=g.dco|0;coins=Math.max(0,coins-n2);eCo=Math.max(0,eCo-n2);}
+    // הורדה: קודם מהמתנות הממתינות (שעוד לא נספרו), ורק השאר מהאמיתי
+    if(g.dtro){const n2=g.dtro|0,u=Math.min(pTro,n2);pTro-=u;trophies=Math.max(0,trophies-n2);eTro=Math.max(0,eTro-(n2-u));}
+    if(g.dco){const n2=g.dco|0,u=Math.min(pCo,n2);pCo-=u;coins=Math.max(0,coins-n2);eCo=Math.max(0,eCo-(n2-u));}
     if(g.dgm)gems=Math.max(0,gems-(g.dgm|0));
     if(g.un)unlocked=LEVELS.length-1;
     if(g.unl)unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,(g.unl|0)-1));
@@ -6157,12 +6163,12 @@ function applyGift(g,target){
   if(g.clv&&g.clv.lv){d.cl=(d.cl&&typeof d.cl==='object')?d.cl:{};d.cl[Math.max(0,g.clv.i|0)]=g.clv.lv;}
   if('clr' in g&&d.cl)delete d.cl[Math.max(0,g.clr|0)];
   d.t=Date.now(); // שהשמירה המקומית תנצח את הענן בתיקו
-  if(g.tro){d.tro=(d.tro|0)+(g.tro|0);d.tl=(d.tl|0)+(g.tro|0);}
-  if(g.co)d.co=(d.co|0)+(g.co|0);
+  if(g.tro){d.tro=(d.tro|0)+(g.tro|0);d.tl=(d.tl|0)+(g.tro|0);d.pt=(d.pt|0)+(g.tro|0);}
+  if(g.co){d.co=(d.co|0)+(g.co|0);d.pc=(d.pc|0)+(g.co|0);}
   if(g.gm)d.gm=(d.gm|0)+(g.gm|0);
   if(g.ch)d.ch=(d.ch|0)+(g.ch|0);
-  if(g.dtro){const n2=g.dtro|0,e2=d.et===undefined?(d.tl|0):(d.et|0);d.tro=Math.max(0,(d.tro|0)-n2);d.et=Math.max(0,e2-n2);}
-  if(g.dco){const n2=g.dco|0,e2=d.ec===undefined?(d.co|0):(d.ec|0);d.co=Math.max(0,(d.co|0)-n2);d.ec=Math.max(0,e2-n2);}
+  if(g.dtro){const n2=g.dtro|0,p2=d.pt|0,u=Math.min(p2,n2);d.pt=p2-u;const e2=d.et===undefined?(d.tl|0):(d.et|0);d.tro=Math.max(0,(d.tro|0)-n2);d.et=Math.max(0,e2-(n2-u));}
+  if(g.dco){const n2=g.dco|0,p2=d.pc|0,u=Math.min(p2,n2);d.pc=p2-u;const e2=d.ec===undefined?(d.co|0):(d.ec|0);d.co=Math.max(0,(d.co|0)-n2);d.ec=Math.max(0,e2-(n2-u));}
   if(g.dgm)d.gm=Math.max(0,(d.gm|0)-(g.dgm|0));
   if(g.un)d.un=LEVELS.length-1;
   if(g.unl)d.un=Math.max(d.un|0,Math.min(LEVELS.length-1,(g.unl|0)-1));
@@ -6229,8 +6235,8 @@ async function admGive(g,label){
   if('clr' in g&&d.users[t].sv&&d.users[t].sv.cl)delete d.users[t].sv.cl[Math.max(0,g.clr|0)];
   {const sv2=d.users[t].sv;
    if(sv2){
-     if(g.dtro){const n2=g.dtro|0,e2=sv2.et===undefined?(sv2.tl|0):(sv2.et|0);sv2.tro=Math.max(0,(sv2.tro|0)-n2);sv2.et=Math.max(0,e2-n2);}
-     if(g.dco){const n2=g.dco|0,e2=sv2.ec===undefined?(sv2.co|0):(sv2.ec|0);sv2.co=Math.max(0,(sv2.co|0)-n2);sv2.ec=Math.max(0,e2-n2);}
+     if(g.dtro){const n2=g.dtro|0,p2=sv2.pt|0,u=Math.min(p2,n2);sv2.pt=p2-u;const e2=sv2.et===undefined?(sv2.tl|0):(sv2.et|0);sv2.tro=Math.max(0,(sv2.tro|0)-n2);sv2.et=Math.max(0,e2-(n2-u));}
+     if(g.dco){const n2=g.dco|0,p2=sv2.pc|0,u=Math.min(p2,n2);sv2.pc=p2-u;const e2=sv2.ec===undefined?(sv2.co|0):(sv2.ec|0);sv2.co=Math.max(0,(sv2.co|0)-n2);sv2.ec=Math.max(0,e2-(n2-u));}
      if(g.dgm)sv2.gm=Math.max(0,(sv2.gm|0)-(g.dgm|0));
    }}
   const q=d.gifts[t]||{};
