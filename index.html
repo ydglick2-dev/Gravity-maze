@@ -256,7 +256,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v87</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v88</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5832,6 +5832,7 @@ function statsOf(sv,name){
     et:sv?(sv.et===undefined?(sv.tl|0):(sv.et|0)):0, // הישגים אמיתיים בלבד
     ec:sv?(sv.ec===undefined?(sv.co|0):(sv.ec|0)):0,
     edone:doneR,estars:starsR,
+    svT:sv&&sv.t?((sv.t/60000)|0):0, // מתי נשמר לאחרונה — לחיווי רעננות בטבלה
     done,stars,has:!!sv};
 }
 function myLiveStats(){
@@ -5973,6 +5974,7 @@ async function buildTables(fresh){
     row.innerHTML='<span style="min-width:30px;font-weight:900">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</span>'
       +avHTML(r.name,38)
       +'<div style="flex:1"><b>'+esc(r.name)+(r.me?' <span style="color:#7ae0ff">('+tr('אתם!','you!')+')</span>':'')+'</b><br><small>🏆 '+r.tro+' · 🪙 '+r.co+' · ✅ '+(r.edone||0)+' · ⭐ '+(r.estars||0)+
+      (r.me?' · <span style="color:#7ae0ff">'+tr('עכשיו','now')+'</span>':(r.svT?' · <span style="color:#8a94a8">🕐 '+agoTxt(r.svT)+'</span>':''))+
       '</small></div><span class="skPrice" style="color:#ffd257;font-weight:900">'+IC+' '+V(r)+'</span>';
     g.appendChild(row);
   });
@@ -7154,7 +7156,43 @@ function pickScratch(){
   }
   return Object.assign({label:'+'+pk.v+' '+pk.ic},pk);
 }
+let scPrizeRaf=0;
+/* 🎁 שכבת הפרס חיה: קרניים מסתובבות, זוהר פועם והאייקון מרחף */
+function scPrizeAnim(prize){
+  cancelAnimationFrame(scPrizeRaf);
+  const pg=$('scPrize').getContext('2d');
+  const loop=now=>{
+    if($('scratchOv').classList.contains('hidden'))return; // עזבנו את המסך
+    const t=now/1000;
+    const grd=pg.createLinearGradient(0,0,320,200);
+    grd.addColorStop(0,prize.bg);grd.addColorStop(1,'#0c1220');
+    pg.fillStyle=grd;pg.fillRect(0,0,320,200);
+    pg.save();pg.translate(160,86);pg.rotate(t*.4); // קרני פרס
+    for(let i=0;i<8;i++){pg.rotate(Math.PI/4);pg.globalAlpha=.07+.03*Math.sin(t*2+i);
+      pg.fillStyle='#fff';pg.beginPath();pg.moveTo(0,0);pg.arc(0,0,190,-.16,.16);pg.closePath();pg.fill();}
+    pg.restore();pg.globalAlpha=1;
+    const pu=.5+.5*Math.sin(t*2.6); // זוהר פועם מאחורי האייקון
+    const gl2=pg.createRadialGradient(160,80,6,160,80,64);
+    gl2.addColorStop(0,'rgba(255,255,255,'+(.28+.2*pu)+')');gl2.addColorStop(1,'rgba(255,255,255,0)');
+    pg.fillStyle=gl2;pg.beginPath();pg.arc(160,80,64,0,TAU);pg.fill();
+    pg.save();pg.translate(160,78+Math.sin(t*2.2)*4);pg.rotate(Math.sin(t*1.5)*.07); // האייקון מרחף
+    pg.font='64px system-ui';pg.textAlign='center';pg.textBaseline='middle';
+    pg.fillText(prize.ic,0,0);pg.restore();
+    pg.fillStyle='#fff';pg.font='900 26px system-ui';pg.textAlign='center';pg.textBaseline='middle';
+    pg.shadowColor='rgba(0,0,0,.55)';pg.shadowBlur=8;
+    pg.fillText(prize.label,160,150);pg.shadowBlur=0;
+    for(let k=0;k<3;k++){ // ✨ נצנוצים קופצים
+      const tw=(t*1.1+k*.9)%2.4;
+      if(tw<.5){pg.save();pg.globalAlpha=Math.sin(tw/.5*Math.PI);pg.fillStyle='#fff';
+        const sx=60+((k*127)%200),sy=40+((k*83)%120);
+        pg.fillRect(sx-4,sy-1,8,2);pg.fillRect(sx-1,sy-4,2,8);pg.restore();}
+    }
+    scPrizeRaf=requestAnimationFrame(loop);
+  };
+  scPrizeRaf=requestAnimationFrame(loop);
+}
 function scDrawUsed(){
+  cancelAnimationFrame(scPrizeRaf);
   const g=$('scPrize').getContext('2d');
   g.clearRect(0,0,320,200);
   g.fillStyle='#1a2230';g.fillRect(0,0,320,200);
@@ -7171,15 +7209,15 @@ function scInit(){
   if(!scratchFree()){scDrawUsed();return;}
   const prize=pickScratch();
   $('scCv')._prize=prize;
-  const pg=$('scPrize').getContext('2d');
-  const grd=pg.createLinearGradient(0,0,320,200);
-  grd.addColorStop(0,prize.bg);grd.addColorStop(1,'#0c1220');
-  pg.fillStyle=grd;pg.fillRect(0,0,320,200);
-  pg.font='64px system-ui';pg.textAlign='center';pg.textBaseline='middle';
-  pg.fillText(prize.ic,160,78);
-  pg.fillStyle='#fff';pg.font='900 26px system-ui';
-  pg.shadowColor='rgba(0,0,0,.55)';pg.shadowBlur=8;
-  pg.fillText(prize.label,160,148);pg.shadowBlur=0;
+  scPrizeAnim(prize); // 🎁 הפרס חי מתחת לכיסוי
+  try{ // 🎴 הכרטיס נכנס בסיבוב-חלוקה
+    const card=$('scCv').parentElement;
+    card.animate([
+      {transform:'translateY(70px) rotateY(85deg) scale(.75)',opacity:0},
+      {transform:'translateY(-8px) rotateY(-12deg) scale(1.04)',opacity:1,offset:.7},
+      {transform:'none',opacity:1}
+    ],{duration:620,easing:'cubic-bezier(.2,1,.4,1)'});
+  }catch(e){}
   // 🥈 שכבת כיסוי משודרגת: כסף מטאלי, פסים הולוגרפיים, מסגרת זהב ומדליון
   const g=$('scCv').getContext('2d');
   g.globalCompositeOperation='source-over';
@@ -7240,9 +7278,10 @@ function scFinish(){
   $('scMsg').textContent=tr('זכית: ','You won: ')+prize.label+' 🎉';
   confetti(prize.t==='sk'?150:90);
   sfx.win();
-  // ✨ ברק חוצה את הכרטיס + פרץ אימוג'ים לפי הפרס
+  // ✨ ברק חוצה את הכרטיס + קפיצת שמחה + פרץ אימוג'ים לפי הפרס
   try{
     const wrap=$('scCv').parentElement;
+    wrap.animate([{transform:'scale(1)'},{transform:'scale(1.07) rotate(1.2deg)'},{transform:'scale(.98)'},{transform:'scale(1)'}],{duration:480,easing:'ease-out'});
     const sw2=document.createElement('div');
     sw2.style.cssText='position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.85) 50%,transparent 68%);transform:translateX(-110%);transition:transform .65s ease-out';
     wrap.appendChild(sw2);
