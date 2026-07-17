@@ -256,7 +256,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v88</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v89</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5441,7 +5441,8 @@ function playBoxOpen3D(mx,cb){
 }
 function playBoxOpen2D(mx,cb){
   const ov=$('boxOv'),cv=$('boxCv'),g=cv.getContext('2d');
-  const col=(RAR[mx|0]||RAR[0]).c;
+  // ⬆ הנדירות מטפסת תוך כדי ההקשות: מתחילים מ"רגיל", וכל עליית רמה מאפסת את הספירה
+  let dispR=0,col=(RAR[0]||{c:'#9aa7b5'}).c;
   ov.style.display='flex';
   const W2=cv.width,H2=cv.height,cx=W2/2,cy=H2/2+42;
   let taps=0,shake=0,burstT=0,teasing=false,run=true,rot=0;
@@ -5487,6 +5488,15 @@ function playBoxOpen2D(mx,cb){
     if(navigator.vibrate)navigator.vibrate(mx>=3?[70,50,70,50,120]:[60,40,80]);
     tone(90,.25,'square',.5);setTimeout(()=>tone(1046,.2,'sine',.35),80);
   };
+  const rankUp=()=>{ // ⬆ עליית רמה: התג קופץ לנדירות הבאה — וההקשות מתאפסות
+    dispR++;taps=0;badgePop=1;shake=1.2;squash=.24;
+    col=(RAR[dispR]||RAR[0]).c;
+    addCrack();addCrack();spawnSparks(20);
+    tone(480+dispR*130,.12,'square',.32);
+    setTimeout(()=>tone(680+dispR*150,.16,'square',.34),110);
+    $('boxHint').textContent='⬆ '+tr('עלה ל','Up to ')+'"'+tr((RAR[dispR]||{}).n,(RAR[dispR]||{}).en)+'" — '+tr('עוד 3 הקשות!','3 more taps!');
+    if(navigator.vibrate)navigator.vibrate([30,40,55]);
+  };
   cv.onpointerdown=()=>{
     if(burstT||teasing||!run||!landed)return;
     taps++;shake=1;squash=.22;spawnSparks(8+taps*8);addCrack();addCrack();
@@ -5495,6 +5505,7 @@ function playBoxOpen2D(mx,cb){
     if(navigator.vibrate)navigator.vibrate(28+taps*16);
     $('boxHint').textContent=taps===1?tr('עוד פעמיים!','Two more!'):taps===2?tr('עוד אחת!!','One more!!'):'';
     if(taps>=3){
+      if(dispR<(mx|0)){rankUp();return;} // יש עוד לאן לטפס — מתחילים סיבוב חדש
       badgePop=1;
       if(mx>=3){ // 🌟 טיזר דרמטי לפריט אדיר ומעלה — נסדקת עוד ועוד
         teasing=true;
@@ -5603,11 +5614,11 @@ function playBoxOpen2D(mx,cb){
       star5b(w*.3,h*.4,7,k2*2);g.fill();g.restore();}
     g.restore();
   };
-  /* 🏷 תג הנדירות מעל התיבה — מציג פשוט את הנדירות של הפריט הכי טוב שבפנים */
+  /* 🏷 תג הנדירות מעל התיבה — הנדירות הנוכחית, שמטפסת עם ההקשות */
   const drawBadge=tNow=>{
     if(!landed)return;
-    const rr=RAR[mx|0]||RAR[0];
-    const txt=tr(rr.n,rr.en)+(mx>=5?' 👑':mx>=4?' 🔥':'');
+    const rr=RAR[dispR]||RAR[0];
+    const txt=tr(rr.n,rr.en)+(dispR>=5?' 👑':dispR>=4?' 🔥':'');
     g.save();
     const pop=1+badgePop*.35+Math.sin(tNow*3)*.02;
     g.translate(cx,cy-152);g.scale(pop,pop);
