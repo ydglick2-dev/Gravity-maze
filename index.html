@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v77</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v78</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2427,12 +2427,18 @@ function draw(t){
 }
 /* ============ SKINS · נקנים בגביעים ============ */
 function skShade(c,r){
-  const g=c.createRadialGradient(-r*.4,-r*.45,r*.1,0,0,r*1.15);
-  g.addColorStop(0,'rgba(255,255,255,.5)');g.addColorStop(.35,'rgba(255,255,255,.06)');
-  g.addColorStop(.72,'rgba(0,0,0,.1)');g.addColorStop(1,'rgba(0,0,0,.45)');
+  // 💎 תאורת ספרה משודרגת: ספקולר רך, אור מוחזר מהרצפה, וינייטה עמוקה וברק זכוכית
+  const g=c.createRadialGradient(-r*.42,-r*.48,r*.06,0,0,r*1.18);
+  g.addColorStop(0,'rgba(255,255,255,.55)');g.addColorStop(.3,'rgba(255,255,255,.1)');
+  g.addColorStop(.68,'rgba(0,0,0,.08)');g.addColorStop(1,'rgba(0,0,0,.52)');
   c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
-  c.beginPath();c.arc(-r*.35,-r*.4,r*.15,0,TAU);
-  c.fillStyle='rgba(255,255,255,.9)';c.fill();
+  const b=c.createRadialGradient(r*.45,r*.55,r*.05,r*.45,r*.55,r*.65);
+  b.addColorStop(0,'rgba(150,200,255,.14)');b.addColorStop(1,'rgba(150,200,255,0)');
+  c.fillStyle=b;c.fillRect(-r,-r,r*2,r*2);
+  c.fillStyle='rgba(255,255,255,.85)';
+  c.beginPath();c.ellipse(-r*.34,-r*.42,r*.17,r*.1,.5,0,TAU);c.fill();
+  c.fillStyle='rgba(255,255,255,.3)';
+  c.beginPath();c.ellipse(-r*.1,-r*.6,r*.09,r*.045,.6,0,TAU);c.fill();
 }
 function pent(c,x,y,rr,rot){c.beginPath();
   for(let k=0;k<5;k++){const a=rot+k*TAU/5-Math.PI/2;
@@ -2553,16 +2559,25 @@ const FX_EMO=[
  {e:['🎆','🎇','✨','💥'],n:44,m:'burst'},          // זיקוקים
  {e:['🕊️','🕊️','🕊️','🪶'],n:26,m:'fly'},         // יונים
  {e:['💥','☀️','✨','⭐'],n:50,m:'nova'},           // סופרנובה
- {e:['🌀','💫','⭐','✨'],n:40,m:'hole'},           // חור שחור
+ {e:['🌀','💫','⭐','✨'],n:40,m:'hole',c:'🕳️'},    // חור שחור
  {e:['⭐','🌟','✨'],n:48,m:'fall'},                // גשם כוכבים
  {e:['❤️','💖','💗','💕'],n:36,m:'rise'},          // לבבות
  {e:['☄️','☄️','🔥','💥'],n:30,m:'meteor'},        // מטאורים
  {e:['⚡','💥','🔴','🟢','🔵'],n:40,m:'laser'}      // לייזרים
 ];
+/* 💀 אימוג'ים גם לאפקטי ההפסד — לכל אפקט מוות הסט והתנועה שלו */
+const DFX_EMO=[
+ {e:['🌀','💨','✨'],n:26,m:'hole',c:'🌀',d:1700},   // שאיבה
+ {e:['💥','🔥','🧨','💢'],n:34,m:'nova',d:1700},     // פיצוץ
+ {e:['⚡','⚡','🌩️'],n:26,m:'laser',d:1400},         // ברק
+ {e:['❄️','🧊','💠'],n:32,m:'burst',d:1800},         // קרח נשבר
+ {e:['🔥','🔥','✨'],n:30,m:'rise',d:1800},           // להבות
+ {e:['💫','⚫','✨','⭐'],n:30,m:'hole',c:'🕳️',d:1800} // חור שחור
+];
 let emoFxDiv=null;
-function emojiFx(i){
-  const cfg=FX_EMO[i];
-  if(!cfg)return; // אפקטי GOAL וכו' — לא כאן
+function emojiFx(i){const c2=FX_EMO[i];if(c2)emojiBurst(c2);}
+function emojiBurst(cfg){
+  if(!cfg)return;
   try{
     if(emoFxDiv)emoFxDiv.remove();
     const W=innerWidth,H=innerHeight;
@@ -2592,15 +2607,15 @@ function emojiFx(i){
       }
       ps.push(p);wrap.appendChild(s);
     }
-    if(cfg.m==='hole'){ // 🕳️ החור עצמו במרכז
+    if(cfg.c){ // מרכז האפקט (חור שחור / מערבולת)
       const c=document.createElement('span');
-      c.textContent='🕳️';
+      c.textContent=cfg.c;
       c.style.cssText='position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.2);font-size:64px;opacity:0;transition:transform 1.2s ease-out,opacity .5s';
       wrap.appendChild(c);
       setTimeout(()=>{c.style.opacity='1';c.style.transform='translate(-50%,-50%) scale(1.25)';},60);
     }
     document.body.appendChild(wrap);
-    const T0=performance.now(),DUR=cfg.m==='laser'?1900:2700;
+    const T0=performance.now(),DUR=cfg.d||(cfg.m==='laser'?1900:2700);
     let last=T0;
     function step(now){
       const dt=Math.min(.05,(now-last)/1000);last=now;
@@ -2678,14 +2693,42 @@ function playWinFX(x,y,big){
     }
   }
 }
+/* 💀 שכבות הדרמה של ההפסד: ויניטה אדומה + גולגולת מתנפצת למרכז */
+let dVigEl=null;
+function deathVignette(){
+  try{
+    if(dVigEl)dVigEl.remove();
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:43;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,0,0,0) 40%,rgba(190,10,10,.55) 100%);opacity:0;transition:opacity .12s';
+    document.body.appendChild(d);dVigEl=d;
+    requestAnimationFrame(()=>{d.style.opacity='1';});
+    setTimeout(()=>{d.style.transition='opacity .65s';d.style.opacity='0';},260);
+    setTimeout(()=>{d.remove();if(dVigEl===d)dVigEl=null;},1000);
+  }catch(e){}
+}
+function deathSkull(){
+  try{
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:45;pointer-events:none;display:flex;align-items:center;justify-content:center';
+    d.innerHTML='<div style="font-size:86px;filter:drop-shadow(0 6px 26px rgba(255,40,40,.7));animation:popIn .3s cubic-bezier(.2,1.7,.4,1) both">💀</div>';
+    document.body.appendChild(d);
+    setTimeout(()=>{d.style.transition='opacity .3s';d.style.opacity='0';},520);
+    setTimeout(()=>d.remove(),860);
+  }catch(e){}
+}
 function playDeathFX(x,y,T){
-  // 💔 בסיס דרמטי לכל אפקטי המוות: הבזק אדום, רעידה חזקה, גל כהה ורטט
-  flashR=Math.max(flashR,.5);
-  shake=Math.max(shake,.85);
-  shock(x,y,'rgba(255,60,60,.55)',md()*.36);
-  setTimeout(()=>shock(x,y,'rgba(0,0,0,.75)',md()*.5),90);
-  emit(x,y,14,{color:['#ff6b5c','#2a3040'],sp:240,size:2.6,decay:1.7});
-  if(navigator.vibrate)navigator.vibrate([70,40,110]);
+  // 💀 שדרוג ענק: אימוג'ים לכל אפקט, ויניטה אדומה, גולגולת, באס עמוק ורטט כבד
+  flashR=Math.max(flashR,.62);
+  shake=Math.max(shake,1.05);
+  shock(x,y,'rgba(255,60,60,.6)',md()*.4);
+  setTimeout(()=>shock(x,y,'rgba(0,0,0,.8)',md()*.55),90);
+  setTimeout(()=>shock(x,y,'rgba(255,120,60,.35)',md()*.7),180);
+  emit(x,y,20,{color:['#ff6b5c','#2a3040','#ffb35c'],sp:280,size:2.8,decay:1.7});
+  if(navigator.vibrate)navigator.vibrate([90,40,140,40,60]);
+  deathVignette();
+  deathSkull();
+  emojiBurst(DFX_EMO[dSel]||DFX_EMO[1]); // 💀 המוני אימוג'ים של אפקט המוות
+  try{tone(90,.3,'sine',.5);setTimeout(()=>tone(52,.55,'sine',.42),90);}catch(e){} // באס כפול
   switch(dSel){
    case 1:
     shock(x,y,'rgba(255,140,80,.9)',md()*.3);
@@ -4027,6 +4070,43 @@ pushFaceSkin('רונאלדו','Ronaldo','ronaldo.png',5,'סיוווווו! כר�
 pushFaceSkin('נוימאר','Neymar','neymar.png',4,'אולה אולה אולה! נוימאר הקוסם!','neymar');
 pushFaceSkin('אמבפה','Mbappé','mbappe.png',4,'קיליאן אמבפה! מהיר כמו ברק!','mbappe');
 pushFaceSkin('האלנד','Haaland','haaland.png',4,'ארלינג האלנד! המכונה משער!','haaland');
+/* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
+   רים-לייט תלת-ממדי לכולם, טבעת נדירות מסתובבת (אדיר+), ניצוצות מקיפים
+   (מיתי+) והילת זהב פועמת לאגדיים. בלי לשכתב אף ציור. */
+function skinAura(c,r,sk){
+  const t=performance.now()/1000;
+  c.strokeStyle='rgba(255,255,255,.22)';c.lineWidth=r*.055;
+  c.beginPath();c.arc(0,0,r*.93,Math.PI*.6,Math.PI*1.4);c.stroke(); // רים-לייט
+  const rar=sk.rar|0;
+  if(rar>=3){ // טבעת נדירות חיה עם פער מסתובב
+    c.save();c.rotate(t*(rar>=5?1.7:.9));
+    c.strokeStyle=(RAR[rar]||RAR[3]).c;c.globalAlpha=.7;c.lineWidth=r*.055;
+    c.beginPath();c.arc(0,0,r*.9,0,TAU*.8);c.stroke();
+    c.restore();c.globalAlpha=1;
+  }
+  if(rar>=4&&!PERF){ // ✨ ניצוצות מקיפים
+    const n=rar>=5?4:3;
+    for(let k=0;k<n;k++){
+      const a=t*(rar>=5?2.2:1.5)+k*TAU/n;
+      const tw=.55+.45*Math.sin(t*6+k*2.1);
+      c.save();c.translate(Math.cos(a)*r*.78,Math.sin(a)*r*.78);c.rotate(a);
+      c.fillStyle='rgba(255,255,255,'+(.85*tw).toFixed(2)+')';
+      c.beginPath();
+      c.moveTo(0,-r*.1*tw);c.lineTo(r*.035*tw,0);c.lineTo(0,r*.1*tw);c.lineTo(-r*.035*tw,0);
+      c.closePath();c.fill();c.restore();
+    }
+  }
+  if(rar>=5){ // הילת אלוף פועמת
+    const p=.5+.5*Math.sin(t*3);
+    const g=c.createRadialGradient(0,0,r*.55,0,0,r*1.05);
+    g.addColorStop(0,'rgba(255,214,90,0)');g.addColorStop(1,'rgba(255,214,90,'+(.15+.12*p).toFixed(2)+')');
+    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
+  }
+}
+SKINS.forEach(sk=>{
+  const d0=sk.draw;
+  sk.draw=(c,r,rot,T)=>{d0(c,r,rot,T);try{skinAura(c,r,sk);}catch(e){}};
+});
 const POW=()=>((SKINS[skinSel]||{}).pow)||'';
 let shieldUsed=false,winStreak=0;
 function grantPowSkins(){
