@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v78</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v79</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2028,9 +2028,12 @@ function physics(dt,t){
         ball.x=c.x+nx*(br+ball.r);
         const boost=Math.max(Math.hypot(ball.vx,ball.vy)*.7,850*scale)*(L().force||1);
         ball.vx=nx*boost;ball.vy=ny*boost;
-        b.flash=1;sfx.bump();shake=4;
+        b.flash=1;sfx.bump();shake=4.6;
         if(navigator.vibrate)navigator.vibrate(15);
-        emit(ball.x,ball.y,8,{color:THEMES[lv.th].accent2,sp:150,size:3,decay:3,gl:true});
+        // 💥 שדרוג: ניצוץ בנקודת הפגיעה + גל הדף קטן (בקנבס — קורה הרבה, בלי DOM)
+        const _hx=c.x+nx*br,_hy=c.y+ny*br;
+        shock(_hx,_hy,hexA(THEMES[lv.th].accent2,.65),md()*.13);
+        emit(_hx,_hy,12,{color:[THEMES[lv.th].accent2,'#fff'],sp:230,size:2.8,decay:2.7,gl:true});
       }
     }
   }
@@ -2043,8 +2046,11 @@ function physics(dt,t){
     if(inside&&!swState[i].inside){
       swState[i].open=!swState[i].open;sfx.sw();
       showToast(swState[i].open?tr('⚡ מחסום נפתח!','⚡ Barrier opened!'):tr('⚡ מחסום נסגר!','⚡ Barrier closed!'));
-      emit(p.x,p.y,12,{color:THEMES[lv.th].accent,sp:120,size:3,decay:2.4,gl:true});
-      if(navigator.vibrate)navigator.vibrate(20);
+      // ⚡ שדרוג: גל הדף בצבע העולם + ברקים מתעופפים
+      shock(p.x,p.y,hexA(THEMES[lv.th].accent,.8),md()*.22);
+      emojiPop(p.x,p.y,['⚡','✨'],8,100);
+      emit(p.x,p.y,16,{color:THEMES[lv.th].accent,sp:170,size:3,decay:2.2,gl:true});
+      if(navigator.vibrate)navigator.vibrate([15,20,15]);
     }
     swState[i].inside=inside;
   });
@@ -2054,12 +2060,16 @@ function physics(dt,t){
     const p=P(s);
     if(Math.hypot(ball.x-p.x,ball.y-p.y)<starR()+ball.r*.6){
       starGot[i]=true;sfx.star();comboN++;comboT=2.5;questAdd('star',1);updateHud();
-      shock(p.x,p.y,'rgba(255,214,90,.85)',md()*.22); // ⭐ הכוכב מרגיש כמו זכייה
-      emit(p.x,p.y,16,{color:['#ffd257','#fff3c0','#ffab3d'],sp:260,size:2.8,decay:1.7,gl:true});
-      flashW=Math.max(flashW,.14);
-      if(navigator.vibrate)navigator.vibrate(22);
+      // ⭐ שדרוג ענק: פרץ זהב תלת-שכבתי + אימוג'ים מתעופפים + קומבו שמתעצם
+      shock(p.x,p.y,'rgba(255,214,90,.9)',md()*.26);
+      setTimeout(()=>shock(p.x,p.y,'rgba(255,240,180,.55)',md()*.4),110);
+      emit(p.x,p.y,14,{shape:'star',color:['#ffd257','#ffe9a8','#fff'],sp:230,size:2.6,decay:1.5,gl:true});
+      emit(p.x,p.y,18,{color:['#ffd257','#fff3c0','#ffab3d'],sp:290,size:2.8,decay:1.7,gl:true});
+      emit(p.x,p.y,10,{color:['#fff','#ffe27a'],sp:70,size:2.2,decay:1.1,grav:-170,gl:true}); // אבק זהב עולה
+      emojiPop(p.x,p.y,comboN>=3?['⭐','🌟','✨','🔥']:['⭐','✨','🌟'],10+Math.min(10,comboN*2),130);
+      flashW=Math.max(flashW,comboN>=3?.22:.16);
+      if(navigator.vibrate)navigator.vibrate(comboN>=3?[18,25,32]:[14,22]);
       if(comboN>=3)showToast(tr('🔥 קומבו ×','🔥 Combo ×')+comboN+'!');
-      emit(p.x,p.y,14,{color:['#ffe27a','#ffd257','#fff'],sp:120,size:3,decay:2.4,gl:true});
     }
   });
   // keys
@@ -2069,8 +2079,17 @@ function physics(dt,t){
     if(Math.hypot(ball.x-p.x,ball.y-p.y)<keyR()){
       keyGot[i]=true;sfx.key();setTimeout(sfx.gate,250);
       const g=R(k.g);
-      emit(g.x+g.w/2,g.y+g.h/2,18,{color:['#ffd98a','#ffe9b8'],sp:110,size:3,decay:2.2,gl:true});
+      // 🗝 שדרוג: פרץ במפתח + פיצוץ זהב בשער שנפתח רגע אחריו
+      shock(p.x,p.y,'rgba(255,225,150,.85)',md()*.2);
+      emojiPop(p.x,p.y,['🗝️','✨'],9,110);
+      emit(p.x,p.y,12,{color:['#ffe9b8','#ffd257'],sp:190,size:2.6,decay:1.8,gl:true});
+      setTimeout(()=>{
+        shock(g.x+g.w/2,g.y+g.h/2,'rgba(255,214,90,.8)',md()*.3);
+        emojiPop(g.x+g.w/2,g.y+g.h/2,['🔓','✨','💥'],10,80);
+      },250);
+      emit(g.x+g.w/2,g.y+g.h/2,22,{color:['#ffd98a','#ffe9b8'],sp:150,size:3,decay:2,gl:true});
       showToast(tr('🔓 השער נפתח!','🔓 Gate opened!'));
+      if(navigator.vibrate)navigator.vibrate([15,30,25]);
     }
   });
   // portals
@@ -2081,9 +2100,15 @@ function physics(dt,t){
     let dest=null,src=null;
     if(dA<portR()*.7){dest=b;src=a;}else if(dB<portR()*.7){dest=a;src=b;}
     if(dest){
-      emit(src.x,src.y,12,{color:['#7ae0ff','#c17aff'],sp:130,size:3,decay:2.6,gl:true});
+      // 🌀 שדרוג: מערבולת כפולה — נבלעים בצד אחד ומתפרצים בשני
+      shock(src.x,src.y,'rgba(122,224,255,.7)',md()*.2);
+      emit(src.x,src.y,14,{color:['#7ae0ff','#c17aff'],sp:150,size:3,decay:2.6,gl:true});
+      emojiPop(src.x,src.y,['🌀','💫'],7,60);
       ball.x=dest.x;ball.y=dest.y;portalCd=.9;sfx.portal();
-      emit(dest.x,dest.y,12,{color:['#7ae0ff','#c17aff'],sp:130,size:3,decay:2.6,gl:true});
+      shock(dest.x,dest.y,'rgba(193,122,255,.75)',md()*.26);
+      emit(dest.x,dest.y,16,{color:['#7ae0ff','#c17aff','#fff'],sp:170,size:3,decay:2.4,gl:true});
+      emojiPop(dest.x,dest.y,['🌀','✨','💫'],9,90);
+      flashW=Math.max(flashW,.12);
       if(navigator.vibrate)navigator.vibrate([10,30,10]);
     }
   }
@@ -2576,6 +2601,36 @@ const DFX_EMO=[
 ];
 let emoFxDiv=null;
 function emojiFx(i){const c2=FX_EMO[i];if(c2)emojiBurst(c2);}
+/* ✨ פרץ אימוג'ים נקודתי — לכוכבים ולבונוסים (קואורדינטות הלוח = פיקסלים של המסך) */
+function emojiPop(x,y,emos,n,up){
+  try{
+    if(PERF)n=Math.ceil(n*.6);
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:fixed;inset:0;z-index:44;pointer-events:none;overflow:hidden';
+    const ps=[];
+    for(let j=0;j<n;j++){
+      const s=document.createElement('span');
+      s.textContent=emos[(Math.random()*emos.length)|0];
+      s.style.cssText='position:absolute;left:0;top:0;font-size:'+(11+Math.random()*13)+'px;will-change:transform,opacity';
+      const a=Math.random()*TAU,v=90+Math.random()*230;
+      ps.push({el:s,x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-(up||90),r:Math.random()*360,vr:(Math.random()-.5)*460});
+      wrap.appendChild(s);
+    }
+    document.body.appendChild(wrap);
+    const T0=performance.now();let last=T0;
+    function step(now){
+      const dt=Math.min(.05,(now-last)/1000);last=now;
+      const t=(now-T0)/900;
+      for(const p of ps){
+        p.vy+=540*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;
+        p.el.style.opacity=Math.max(0,1-t*t);
+        p.el.style.transform='translate('+p.x+'px,'+p.y+'px) rotate('+p.r+'deg)';
+      }
+      if(now-T0<900)requestAnimationFrame(step);else wrap.remove();
+    }
+    requestAnimationFrame(step);
+  }catch(e){}
+}
 function emojiBurst(cfg){
   if(!cfg)return;
   try{
