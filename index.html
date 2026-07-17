@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v81</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v82</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2637,11 +2637,11 @@ const DFX_EMO=[
 let emoFxDiv=null;
 function emojiFx(i){const c2=FX_EMO[i];if(c2)emojiBurst(c2);}
 /* ✨ פרץ אימוג'ים נקודתי — לכוכבים ולבונוסים (קואורדינטות הלוח = פיקסלים של המסך) */
-function emojiPop(x,y,emos,n,up){
+function emojiPop(x,y,emos,n,up,z){
   try{
     if(PERF)n=Math.ceil(n*.6);
     const wrap=document.createElement('div');
-    wrap.style.cssText='position:fixed;inset:0;z-index:44;pointer-events:none;overflow:hidden';
+    wrap.style.cssText='position:fixed;inset:0;z-index:'+(z||44)+';pointer-events:none;overflow:hidden';
     const ps=[];
     for(let j=0;j<n;j++){
       const s=document.createElement('span');
@@ -2672,7 +2672,7 @@ function emojiBurst(cfg){
     if(emoFxDiv)emoFxDiv.remove();
     const W=innerWidth,H=innerHeight;
     const wrap=document.createElement('div');
-    wrap.style.cssText='position:fixed;inset:0;z-index:44;pointer-events:none;overflow:hidden';
+    wrap.style.cssText='position:fixed;inset:0;z-index:'+(cfg.z||44)+';pointer-events:none;overflow:hidden';
     emoFxDiv=wrap;
     const n=PERF?Math.ceil(cfg.n*.55):cfg.n; // מצב ביצועים — פחות אימוג'ים
     const ps=[];
@@ -5122,16 +5122,29 @@ function buildSkins(){
       :(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙'))));
     card.appendChild(pr);
     card.onclick=()=>{
-      if(owned){cat.setSel(i);save();buildSkins();showToast(tr(s.name,s.en||s.name)+' ✓');return;}
+      const rc=card.getBoundingClientRect(),ccx=rc.left+rc.width/2,ccy=rc.top+rc.height/2;
+      if(owned){
+        cat.setSel(i);save();buildSkins();showToast(tr(s.name,s.en||s.name)+' ✓');
+        emojiPop(ccx,ccy,['✨'],5,90); // בחירה — נצנוץ קטן
+        return;
+      }
       if(s.wc&&!owned)return showToast(tr('🏆 מסי נפתח עם 3 גביעי מונדיאל — תיבת מונדיאל בכל שלב 50!','🏆 Messi unlocks with 3 World Cups — a box every 50 levels!'));
       if(s.fs&&!owned)return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));
       if((s.rar|0)>=4&&!s.pow)return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));
       if(coins>=s.price){
         coins-=s.price;cat.ow.push(i);cat.setSel(i);
         checkAch();save();refreshTro();buildSkins();sfx.key();
+        emojiPop(ccx,ccy,['🪙','✨'],10,130); // 🪙 המטבעות עפים מהקנייה
         if(shopTab==='skin')showReveal({kind:'skin',idx:i,rar:s.rar|0,label:tr(s.name,s.en||s.name),story:loreOf(i)});
         else showReveal({kind:'fx',icon:s.icon,rar:s.rar|0,label:tr(s.name,s.en||s.name)});
-      }else showToast(tr('חסרים ','Missing ')+(s.price-coins)+tr('🪙 — פתחו תיבות!','🪙 — open chests!'));
+      }else{
+        showToast(tr('חסרים ','Missing ')+(s.price-coins)+tr('🪙 — פתחו תיבות!','🪙 — open chests!'));
+        try{ // אין כסף — הכרטיס מנער את הראש
+          card.animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(7px)'},{transform:'translateX(0)'}],{duration:200,iterations:2});
+        }catch(e){}
+        tone(140,.12,'sawtooth',.22);
+        if(navigator.vibrate)navigator.vibrate([30,30,30]);
+      }
     };
     g.appendChild(card);
   });
@@ -5242,7 +5255,10 @@ function openChest(){
   const drops=rollChest();
   checkAch();save();refreshTro();
   const mx=drops.reduce((m,d)=>Math.max(m,d.rar|0),0);
-  playBoxOpen(mx,()=>megaReveal(drops)); // 📦 הקשות, סדקים, טיזר ופיצוץ
+  playBoxOpen(mx,()=>{ // 📦 הקשות, סדקים, טיזר ופיצוץ
+    emojiBurst({e:['🎁','✨','🎊'],n:18,m:'nova',d:1300,z:75}); // רסיסי מתנה מהפיצוץ
+    megaReveal(drops);
+  });
 }
 /* 📦 פתיחת תיבה בסגנון בראול סטארס: מקישים 3 פעמים — התיבה רועדת, נסדקת,
    דולפת אור בצבע הנדירות הכי גבוהה שבפנים, ואז מתפוצצת. לנדירות אדיר+ יש
@@ -5606,7 +5622,9 @@ function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
   gems-=cost;chests+=n;
   $('chestCount').textContent='🎁 '+chests+' · 💎 '+gems;
   showToast('🎁 +'+n+'!');
-  tone(880,.12,'sine',.3);
+  tone(880,.12,'sine',.3);setTimeout(()=>tone(1174,.16,'sine',.3),120);
+  emojiBurst({e:['💎','🎁','✨'],n:14,m:'burst',d:1200}); // 💎 קנייה מרגישה כמו זכייה
+  if(navigator.vibrate)navigator.vibrate([15,25,20]);
   save();refreshTro();
 }
 $('buyG1').onclick=()=>buyChestsGem(1,20);
@@ -6852,6 +6870,12 @@ function showReveal(o,cb){
         landed=true;
         confetti(o.rar>=3?170:100);
         sfx.win();
+        // 🎊 פרץ אימוג'ים לפי נדירות — מעל מסך החשיפה
+        const _re=o.rar>=5?['👑','🌟','💛','✨']:o.rar>=4?['🔥','💥','✨']:o.rar>=3?['💜','🌟','✨']:['🎉','✨'];
+        emojiBurst({e:_re,n:o.rar>=5?36:o.rar>=4?28:o.rar>=3?22:14,m:o.rar>=4?'nova':'burst',d:o.rar>=4?2000:1500,z:75});
+        if(o.rar>=5){ // 👑 פנפרת אגדי עולה
+          tone(392,.18,'square',.3);setTimeout(()=>tone(523,.18,'square',.3),150);setTimeout(()=>tone(659,.38,'square',.35),300);
+        }
         if(o.kind==='skin')skinShout(o.idx); // 🎙 "אנקרה מסי!" כבר בחשיפה
         if(navigator.vibrate)navigator.vibrate(o.rar>=4?[50,60,50,60,110]:[35,60,35]);
         $('rvName').textContent=o.label;
