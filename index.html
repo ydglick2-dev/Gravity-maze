@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v79</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v80</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2558,6 +2558,41 @@ function skinShout(idx){
     shoutBanner(sk.shout);
   }catch(e){}
 }
+/* ⚔️ בוסים: כניסה דרמטית וחגיגת הכתרה על הניצחון */
+function bossIntro(nm){
+  try{
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:45;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px';
+    d.innerHTML='<div style="font-size:64px;animation:popIn .45s cubic-bezier(.2,1.7,.4,1) both">⚔️</div>'+
+      '<div style="font-size:25px;font-weight:900;color:#ffd257;-webkit-text-stroke:1px #5c0e0e;text-shadow:0 4px 18px rgba(0,0,0,.85);animation:popIn .5s .12s cubic-bezier(.2,1.7,.4,1) both">'+esc(tr(nm,BOSS_EN[nm]||nm))+'</div>';
+    document.body.appendChild(d);
+    setTimeout(()=>{d.style.transition='opacity .45s';d.style.opacity='0';},1500);
+    setTimeout(()=>d.remove(),2050);
+    const v=document.createElement('div'); // ויניטה סגולה-אפלה של אימה
+    v.style.cssText='position:fixed;inset:0;z-index:43;pointer-events:none;background:radial-gradient(ellipse at center,rgba(120,20,120,0) 45%,rgba(90,10,60,.5) 100%);opacity:0;transition:opacity .4s';
+    document.body.appendChild(v);
+    requestAnimationFrame(()=>{v.style.opacity='1';});
+    setTimeout(()=>{v.style.opacity='0';},1400);
+    setTimeout(()=>v.remove(),2100);
+    emojiBurst({e:['⚔️','🛡️','🔥'],n:20,m:'nova',d:1500});
+    tone(98,.5,'sawtooth',.3,30);setTimeout(()=>tone(74,.7,'sawtooth',.28,20),450); // צופר קרב
+    shake=Math.max(shake,.6);
+    if(navigator.vibrate)navigator.vibrate([60,50,90]);
+  }catch(e){}
+}
+function bossDefeatFx(){
+  try{
+    const d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:45;pointer-events:none;display:flex;align-items:center;justify-content:center';
+    d.innerHTML='<div style="text-align:center;animation:popIn .5s cubic-bezier(.2,1.7,.4,1) both"><div style="font-size:70px">👑</div><div style="font-size:30px;font-weight:900;color:#ffd257;-webkit-text-stroke:1.2px #5c2e0e;text-shadow:0 5px 22px rgba(0,0,0,.85)">'+tr('הבוס הובס!','BOSS DEFEATED!')+'</div></div>';
+    document.body.appendChild(d);
+    setTimeout(()=>{d.style.transition='opacity .5s';d.style.opacity='0';},1650);
+    setTimeout(()=>d.remove(),2250);
+    emojiBurst({e:['👑','⚔️','💥','✨','🏆'],n:34,m:'nova',d:2100});
+    crowdRoar(); // שאגת קהל — ניצחון על בוס זה אירוע
+    if(navigator.vibrate)navigator.vibrate([50,40,80,40,120]);
+  }catch(e){}
+}
 function goalFxShow(kind){
   try{
     const d=document.createElement('div');
@@ -3701,7 +3736,7 @@ function finishLevel(){
   const _cg=Math.round((3+((levelIdx/10)|0)*.5)*(POW()==='rich'?1.5:1));
   addCoins(_cg);
 
-  if((levelIdx+1)%10===0&&lvDeaths===0)stBossClean=true;
+  if((levelIdx+1)%10===0){bossDefeatFx();if(lvDeaths===0)stBossClean=true;} // 👑 הכתרה על ניצחון בוס
   questAdd('level',1);
   const gk=gKeyFor();
   if(gk&&ghostRec.length>1){
@@ -3747,6 +3782,7 @@ function startRun(i){
   $('raceBar').style.display='none';
   loadLevel(i);
   running=true;paused=false;
+  if(!customLv&&L().boss)setTimeout(()=>bossIntro(L().name),350); // ⚔️ כניסת בוס דרמטית
   recStop(false);recStart(); // 🎥 הקלטה חדשה לכל שלב
   closeLobbyNet();
   syncLobbyUI();
@@ -4695,6 +4731,7 @@ function runCrash(){
   shake=8;flashR=.9;sfx.fall();
   const by2=board.y+board.h*.8;
   playDeathFX(ball.x,by2,THEMES[Math.max(0,runThemeIdx)]);
+  emojiPop(ball.x,by2-40,['💔','💥'],9,150); // הלב שנשבר עף מהמכה
   ball.squash=.3;ball.sqa=0;
   if(navigator.vibrate)navigator.vibrate(90);
   updateHud();
@@ -4803,7 +4840,20 @@ function runFrame(dt,t){
     const tier=(runDist/100)|0;
     if(tier!==runTier){
       runTier=tier;
-      if(tier>0){showToast(tr('⚡ מהירות +10% (','⚡ Speed +10% (')+(tier*100)+tr('מ׳)','m)'));tone(600+tier*45,.12,'square',.26);}
+      if(tier>0){
+        showToast(tr('⚡ מהירות +10% (','⚡ Speed +10% (')+(tier*100)+tr('מ׳)','m)'));
+        tone(600+tier*45,.12,'square',.26);
+        // ⚡ שדרוג: פס תאוצה — ברקים ומשבי רוח חוצים את המסך + הבזק
+        emojiBurst({e:['⚡','💨'],n:14,m:'laser',d:1000});
+        flashW=Math.max(flashW,.14);
+        if(navigator.vibrate)navigator.vibrate([12,20,12]);
+        if(tier%5===0){ // 🎆 אבן דרך כל 500 מ׳ — זיקוקים ותרועה
+          emojiBurst({e:['🎆','🎇','✨'],n:24,m:'burst',d:1600});
+          tone(660,.14,'square',.3);setTimeout(()=>tone(880,.2,'square',.32),140);setTimeout(()=>tone(1108,.26,'square',.3),300);
+          showToast('🎆 '+(tier*100)+tr(' מטר! טירוף!',' meters! Insane!'));
+          shake=Math.max(shake,.5);
+        }
+      }
     }
     const tv=Math.min(5*Math.pow(1.1,tier),17.5); // +10% לכל 100מ׳
     runV+=(tv-runV)*Math.min(1,dt*1.6);
