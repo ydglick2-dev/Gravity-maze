@@ -319,7 +319,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v96</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v97</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -1062,6 +1062,12 @@ function bossLevel(zone,diff){
      lv.stars=[[.88,.45],[.12,.14],[.88,.14]];}
   ];
   B[zone]();
+  /* 👾 v97: זירת בוס נקייה — בלי מפת מכשולים. הקרב הוא נגד המפלצת בלבד:
+     להתחמק מהקליעים, לאסוף שאריות ולירות. נשארים רק התחלה, יעד וכוכבים. */
+  lv.walls=[];lv.holes=[];
+  delete lv.spinners;delete lv.fans;delete lv.portals;delete lv.magnets;
+  delete lv.bumpers;delete lv.movers;delete lv.phase;delete lv.keys;
+  delete lv.switches;delete lv.ice;
   lv.par=Math.round(24+diff*40);
   return lv;
 }
@@ -1480,9 +1486,35 @@ function mhat(t0,vol){
   }catch(e){}
 }
 const MELO=[0,3,5,7,10,12,7,5],MBASS=[0,0,10,7];
+/* 👾 מוזיקת בוס מותחת — רק בשלבי בוס: באס פריגי דוחף, טריטון, דרון נמוך,
+   היי-האט צפוף, וכל פגיעה בבוס מעלה את הכל בחצי-טון (המתח מטפס) */
+const BOSS_BASS=[0,0,1,0,0,3,1,0];
+function schedBossStep(st,t0,th){
+  const root=MROOT[th%10],bar=(st>>4)&3,s16=st&15;
+  const rage=(typeof bossRage!=='undefined')?Math.min(3,bossRage):0;
+  const rk=Math.pow(2,rage/12*.5);
+  if(s16%4===0)mnote(140,t0,.13,'sine',.5,42);           // בעיטה בכל רבע
+  if(s16===14)mnote(120,t0,.1,'sine',.3,40);              // בעיטת-רפאים מסונקפת
+  if(s16%2===1)mhat(t0,.09+.04*rage);                     // האט דוחף
+  if(s16===4||s16===12)mhat(t0,.24);
+  if(s16%2===0)mnote((root/2)*rk*Math.pow(2,BOSS_BASS[s16>>1]/12),t0,.19,'sawtooth',.11);
+  if(s16===0){
+    mnote((root/4)*rk,t0,MSPB*16,'sawtooth',.05);          // דרון
+    if(bar&1)mnote((root/4)*rk*Math.pow(2,.5),t0,MSPB*8,'sawtooth',.03); // טריטון
+  }
+  if(bar>=2&&s16%4===2){                                   // ארפג'יו מינור עולה — "משהו מתקרב"
+    const iv=[0,3,7,12][(s16>>2)&3];
+    mnote(root*rk*Math.pow(2,iv/12),t0,.16,'triangle',.05+.01*bar);
+  }
+  try{if(bossMode==='windup')mhat(t0,.16);}catch(e){}      // טלגרף — האט קדחתני
+}
 function schedStep(st,t0){
-  let th=0;
-  try{th=running?(runMode?Math.max(0,runThemeIdx):((customLv?customLv.th:L().th)||0)):0;}catch(e){}
+  let th=0,boss=false;
+  try{
+    th=running?(runMode?Math.max(0,runThemeIdx):((customLv?customLv.th:L().th)||0)):0;
+    boss=running&&!runMode&&!customLv&&L().boss&&bossMaxHp>0&&bossHp>0;
+  }catch(e){}
+  if(boss)return schedBossStep(st,t0,th);
   const root=MROOT[th%10],bar=(st>>4)&3,s16=st&15;
   if(s16===0||s16===8)mnote(150,t0,.14,'sine',.42,45); // בעיטה
   if(s16%4===2)mhat(t0,.1);
