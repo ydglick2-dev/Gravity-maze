@@ -256,7 +256,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v86</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v87</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5193,7 +5193,11 @@ function grantTier(t){
     WFX.forEach((it,i)=>{if((it.rar|0)===tier&&!it.fs&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
     DFX.forEach((it,i)=>{if((it.rar|0)===tier&&!dOw.includes(i))cands.push({k:'dfx',i,it});});
     if(!cands.length)continue;
-    const c=cands[(Math.random()*cands.length)|0];
+    // ⚽ סקיני כדורגלנים נדירים באמת: רק 10% מהפילים בדרגה שלהם
+    const faces=cands.filter(c2=>c2.k==='skin'&&c2.it.face),rest=cands.filter(c2=>!(c2.k==='skin'&&c2.it.face));
+    let pool2=rest.length?rest:faces;
+    if(faces.length&&rest.length&&Math.random()<.10)pool2=faces;
+    const c=pool2[(Math.random()*pool2.length)|0];
     if(c.k==='skin'){
       skinOwned.push(c.i);
       const drop={icon:'🎨',label:tr(c.it.name,c.it.en||c.it.name),rar:tier,
@@ -5441,9 +5445,8 @@ function playBoxOpen2D(mx,cb){
   ov.style.display='flex';
   const W2=cv.width,H2=cv.height,cx=W2/2,cy=H2/2+42;
   let taps=0,shake=0,burstT=0,teasing=false,run=true,rot=0;
-  let dropT=0,landed=false,bounceV=0,bounceY=0,squash=0;
-  let badgeIdx=0,badgeLock=false,badgeCyc=0,badgePop=0;
-  const sparks=[],coins2=[],cracks=[],stars2=[],dust=[];
+  let dropT=0,landed=false,bounceV=0,bounceY=0,squash=0,badgePop=0;
+  const sparks=[],coins2=[],cracks=[],stars2=[],dust=[],frags=[];
   // 🫧 אבק-אור מרחף ברקע — אווירה
   for(let i=0;i<16;i++)dust.push({x:Math.random()*W2,y:Math.random()*H2,
     r:1+Math.random()*2.2,sp:6+Math.random()*14,ph:Math.random()*6.3});
@@ -5457,8 +5460,25 @@ function playBoxOpen2D(mx,cb){
   const spawnStars=n=>{for(let i=0;i<n;i++){const a=Math.random()*TAU,v=120+Math.random()*260;
     stars2.push({x:cx,y:cy-20,vx:Math.cos(a)*v,vy:Math.sin(a)*v-140,
       life:.8+Math.random()*.7,r:5+Math.random()*7,rot:Math.random()*6.3,vr:(Math.random()-.5)*9});}};
+  // 💥 התיבה מתנפצת לרסיסים אמיתיים — עץ, זהב והמנעול
+  const makeFrags=()=>{
+    const w=172,h=118;
+    const defs=[
+      [-w/2,-h*.14,w*.34,h*.33,'w'],[-w/2+w*.34,-h*.14,w*.33,h*.33,'w'],[w/2-w*.33,-h*.14,w*.33,h*.33,'w'],
+      [-w/2,h*.19,w*.5,h*.33,'w'],[0,h*.19,w*.5,h*.33,'w'],
+      [-w/2-7,-h*.54,(w+14)/2,h*.4,'l'],[0,-h*.54,(w+14)/2,h*.4,'l'],
+      [-w/2,h*.38,w/2,h*.09,'g'],[0,h*.38,w/2,h*.09,'g'],
+      [-20,-h*.16,40,42,'k']];
+    defs.forEach(d3=>{
+      const fx=d3[0]+d3[2]/2,fy=d3[1]+d3[3]/2;
+      const a=Math.atan2(fy,fx)+(Math.random()-.5)*.6,v=280+Math.random()*320;
+      frags.push({x:cx+fx,y:cy+fy,w:d3[2],h:d3[3],ty:d3[4],
+        vx:Math.cos(a)*v,vy:Math.sin(a)*v-200,rot:(Math.random()-.5)*.4,vr:(Math.random()-.5)*10});
+    });
+  };
   const burst=()=>{
-    burstT=.0001;badgeLock=true;badgePop=1;$('boxHint').textContent='';
+    burstT=.0001;badgePop=1;$('boxHint').textContent='';
+    makeFrags();
     sfx.win();confetti(mx>=3?170:95);
     for(let i=0;i<28;i++)coins2.push({x:cx,y:cy-14,vx:(Math.random()-.5)*280,vy:-280-Math.random()*230,
       r:8+Math.random()*7,a:Math.random()*6.3,va:(Math.random()-.5)*9});
@@ -5469,19 +5489,18 @@ function playBoxOpen2D(mx,cb){
   };
   cv.onpointerdown=()=>{
     if(burstT||teasing||!run||!landed)return;
-    taps++;shake=1;squash=.22;spawnSparks(8+taps*8);addCrack();
-    badgeCyc=0; // הרולטה של הנדירות מאיצה עם כל הקשה
+    taps++;shake=1;squash=.22;spawnSparks(8+taps*8);addCrack();addCrack();
     tone(120-taps*16,.12,'square',.5);
     tone(560+taps*170,.05,'triangle',.22);
     if(navigator.vibrate)navigator.vibrate(28+taps*16);
     $('boxHint').textContent=taps===1?tr('עוד פעמיים!','Two more!'):taps===2?tr('עוד אחת!!','One more!!'):'';
     if(taps>=3){
-      badgeLock=true;badgePop=1; // 🏷 הנדירות האמיתית ננעלת
-      if(mx>=3){ // 🌟 טיזר דרמטי לפריט אדיר ומעלה
+      badgePop=1;
+      if(mx>=3){ // 🌟 טיזר דרמטי לפריט אדיר ומעלה — נסדקת עוד ועוד
         teasing=true;
         $('boxHint').textContent=tr('רגע... יש כאן משהו מיוחד! ✨','Wait... something special! ✨');
         let i2=0;
-        const tz=setInterval(()=>{tone(380+i2*130,.09,'sine',.3);i2++;},110);
+        const tz=setInterval(()=>{tone(380+i2*130,.09,'sine',.3);i2++;addCrack();},110);
         setTimeout(()=>{clearInterval(tz);teasing=false;burst();},1050);
       }else burst();
     }
@@ -5505,14 +5524,7 @@ function playBoxOpen2D(mx,cb){
     // צל קרקע
     g.save();g.globalAlpha=.42;g.fillStyle='#000';
     g.beginPath();g.ellipse(0,h*.52+10,w*.56*(1+squash*.4),12,0,0,TAU);g.fill();g.restore();
-    const openA=Math.min(.11,openK*.04); // רק נרמז שנפתח — לא נשבר
-    // זוהר שנשפך מהחריץ
-    if(taps>0||teasing){
-      g.save();g.globalAlpha=Math.min(.95,taps*.28+(teasing?.45:0));
-      g.fillStyle=col;g.shadowColor=col;g.shadowBlur=40+(teasing?42:0);
-      g.beginPath();g.ellipse(0,-h*.14,w*.42,7+openA*120,0,0,TAU);g.fill();
-      g.restore();
-    }
+    const openA=Math.min(.09,openK*.032); // רק נרמז שנפתח — בלי אור, רק סדקים
     // ==== גוף ====
     const bodyG=g.createLinearGradient(0,-h*.14,0,h*.52);
     bodyG.addColorStop(0,'#b5722f');bodyG.addColorStop(.45,'#8a4f1d');bodyG.addColorStop(1,'#5a300f');
@@ -5527,16 +5539,19 @@ function playBoxOpen2D(mx,cb){
     // מסגרת כהה עבה — הסילואט
     g.lineWidth=5;g.strokeStyle='#2a1606';
     g.beginPath();g.roundRect(-w/2,-h*.14,w,h*.66,[5,5,18,18]);g.stroke();
-    // ⚡ סדקי אור נקיים — חתוכים לגוף בלבד
+    // 🪨 סדקים אמיתיים — כהים עם קצה מואר, חתוכים לגוף בלבד
     if(cracks.length){
       g.save();
       g.beginPath();g.roundRect(-w/2+3,-h*.14,w-6,h*.63,[5,5,16,16]);g.clip();
-      g.strokeStyle=col;g.shadowColor=col;g.shadowBlur=13;g.lineWidth=3;g.lineCap='round';g.lineJoin='round';
-      cracks.forEach(cr=>{
-        g.beginPath();g.moveTo(cr[0],-h*.14);
-        g.lineTo(cr[0]+cr[1],-h*.14+h*.24);
-        g.lineTo(cr[0]+cr[2],-h*.14+h*.5);g.stroke();
-      });
+      g.lineCap='round';g.lineJoin='round';
+      const drawCr=(off,st,lw)=>{g.strokeStyle=st;g.lineWidth=lw;
+        cracks.forEach(cr=>{
+          g.beginPath();g.moveTo(cr[0]+off,-h*.14);
+          g.lineTo(cr[0]+cr[1]+off,-h*.14+h*.24);
+          g.lineTo(cr[0]+cr[2]+off,-h*.14+h*.5);g.stroke();
+        });};
+      drawCr(1.4,'rgba(255,220,160,.3)',1.4); // קצה מואר דק
+      drawCr(0,'#1c0e05',3.4);                 // הסדק עצמו
       g.restore();
     }
     // ==== מכסה כיפה ====
@@ -5588,21 +5603,19 @@ function playBoxOpen2D(mx,cb){
       star5b(w*.3,h*.4,7,k2*2);g.fill();g.restore();}
     g.restore();
   };
-  /* 🏷 תג הנדירות מעל התיבה — רולטה שמסתובבת ונעולת ברגע האמת */
+  /* 🏷 תג הנדירות מעל התיבה — מציג פשוט את הנדירות של הפריט הכי טוב שבפנים */
   const drawBadge=tNow=>{
     if(!landed)return;
-    const idx=badgeLock?(mx|0):badgeIdx;
-    const rr=RAR[idx]||RAR[0];
-    const txt=(badgeLock?'':'❔ ')+tr(rr.n,rr.en)+(badgeLock&&mx>=5?' 👑':badgeLock&&mx>=4?' 🔥':'');
+    const rr=RAR[mx|0]||RAR[0];
+    const txt=tr(rr.n,rr.en)+(mx>=5?' 👑':mx>=4?' 🔥':'');
     g.save();
-    const pop=1+badgePop*.35+(badgeLock?Math.sin(tNow*5)*.03:0);
+    const pop=1+badgePop*.35+Math.sin(tNow*3)*.02;
     g.translate(cx,cy-152);g.scale(pop,pop);
     g.font='900 19px -apple-system,Arial';
     const tw3=g.measureText(txt).width+34;
-    g.globalAlpha=badgeLock?1:.85;
     g.fillStyle='rgba(7,16,33,.88)';
     g.strokeStyle=rr.c;g.lineWidth=2.5;
-    if(badgeLock){g.shadowColor=rr.c;g.shadowBlur=18;}
+    g.shadowColor=rr.c;g.shadowBlur=16;
     g.beginPath();g.roundRect(-tw3/2,-19,tw3,38,19);g.fill();g.stroke();
     g.shadowBlur=0;
     g.fillStyle=rr.c;g.textAlign='center';g.textBaseline='middle';
@@ -5617,11 +5630,6 @@ function playBoxOpen2D(mx,cb){
     if(shake>0)shake=Math.max(0,shake-dt*3.2);
     if(squash>0)squash=Math.max(0,squash-dt*2.6);
     if(badgePop>0)badgePop=Math.max(0,badgePop-dt*3);
-    if(!badgeLock&&landed){ // רולטת נדירויות
-      badgeCyc+=dt;
-      const cyc=Math.max(.09,.3-taps*.07);
-      if(badgeCyc>=cyc){badgeCyc=0;badgeIdx=(badgeIdx+1)%RAR.length;}
-    }
     g.clearRect(0,0,W2,H2);
     // 🫧 אבק-אור
     g.save();
@@ -5670,35 +5678,29 @@ function playBoxOpen2D(mx,cb){
       g.restore();
     }else{
       burstT+=dt;
-      // 🌟 עמוד אור מהתיבה
-      const pl=Math.max(0,1-burstT*.8);
-      if(pl>0){
-        g.save();g.globalAlpha=pl*.75;
-        const pg2=g.createLinearGradient(0,0,0,cy);
-        pg2.addColorStop(0,'rgba(255,255,255,0)');pg2.addColorStop(.4,col);pg2.addColorStop(1,'#fff');
-        g.fillStyle=pg2;
-        g.beginPath();g.moveTo(cx-46*pl,0);g.lineTo(cx+46*pl,0);
-        g.lineTo(cx+16,cy-30);g.lineTo(cx-16,cy-30);g.closePath();g.fill();
+      // 💥 התיבה מתנפצת: הרסיסים עפים, מסתובבים ונופלים
+      for(const f of frags){
+        f.vy+=780*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.rot+=f.vr*dt;
+        g.save();g.translate(f.x,f.y);g.rotate(f.rot);
+        g.globalAlpha=Math.max(0,Math.min(1,(1.45-burstT)*1.6));
+        if(f.ty==='g'||f.ty==='k'){
+          const fg=g.createLinearGradient(0,-f.h/2,0,f.h/2);
+          fg.addColorStop(0,'#ffe9a0');fg.addColorStop(1,'#a06a12');
+          g.fillStyle=fg;
+        }else{
+          const fg=g.createLinearGradient(0,-f.h/2,0,f.h/2);
+          fg.addColorStop(0,f.ty==='l'?'#d6934e':'#a86028');fg.addColorStop(1,f.ty==='l'?'#7c451c':'#5a300f');
+          g.fillStyle=fg;
+        }
+        g.beginPath();g.roundRect(-f.w/2,-f.h/2,f.w,f.h,6);g.fill();
+        g.lineWidth=3;g.strokeStyle='#2a1606';g.stroke();
+        if(f.ty==='k'){ // המנעול שומר על חור המפתח גם בתעופה
+          g.fillStyle='#3a230c';g.beginPath();g.arc(0,-2,4,0,TAU);g.fill();g.fillRect(-2.2,-1,4.4,8);
+        }
         g.restore();
       }
-      // המכסה עף עם שובל
-      g.save();g.translate(cx-30+burstT*46,cy-90-burstT*320);g.rotate(-burstT*5.2);
-      g.save();g.globalAlpha=.3;g.fillStyle=col;
-      g.beginPath();g.roundRect(-90,-4,180,46,[26,26,10,10]);g.fill();g.restore();
-      const lg3=g.createLinearGradient(0,-24,0,18);
-      lg3.addColorStop(0,'#d6934e');lg3.addColorStop(1,'#7c451c');
-      g.fillStyle=lg3;g.beginPath();g.roundRect(-90,-24,180,46,[26,26,6,6]);g.fill();
-      g.lineWidth=5;g.strokeStyle='#2a1606';g.stroke();
-      g.restore();
-      // גוף נשאר פתוח וזוהר
-      g.save();g.translate(cx,cy);
-      const bodyG2=g.createLinearGradient(0,-60,0,62);
-      bodyG2.addColorStop(0,'#8a4f1d');bodyG2.addColorStop(1,'#3d2008');
-      g.fillStyle=bodyG2;g.beginPath();g.roundRect(-86,-58,172,120,[8,8,18,18]);g.fill();
-      g.lineWidth=5;g.strokeStyle='#2a1606';g.stroke();
-      g.globalAlpha=Math.min(1,burstT*3);g.fillStyle=col;g.shadowColor=col;g.shadowBlur=70;
-      g.beginPath();g.ellipse(0,-58,78,28+burstT*34,0,0,TAU);g.fill();g.restore();
-      // הבזק לבן
+      g.globalAlpha=1;
+      // הבזק לבן קצר של הפיצוץ
       const fl=Math.max(0,.95-burstT*1.5);
       if(fl>0){g.globalAlpha=fl;g.fillStyle='#fff';g.fillRect(0,0,W2,H2);g.globalAlpha=1;}
       if(burstT>1.45){run=false;ov.style.display='none';cv.onpointerdown=null;cb();return;}
@@ -5715,7 +5717,7 @@ function playBoxOpen2D(mx,cb){
       p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=430*dt;p.rot+=p.vr*dt;p.life-=dt;
       if(p.life<=0){stars2.splice(i,1);continue;}
       g.save();g.globalAlpha=Math.max(0,Math.min(1,p.life*1.4));
-      g.fillStyle=col;g.shadowColor=col;g.shadowBlur=10;
+      g.fillStyle='#ffd257';g.shadowColor='#ffd257';g.shadowBlur=10; // ⭐ זהב — בלי אור בצבע הנדירות
       star5b(p.x,p.y,p.r,p.rot);g.fill();g.restore();}
     // מטבעות מתעופפים אחרי הפיצוץ
     for(let i=coins2.length-1;i>=0;i--){const p=coins2[i];
