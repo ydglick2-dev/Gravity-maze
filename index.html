@@ -301,7 +301,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v94</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v95</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5373,10 +5373,11 @@ function pickUnowned(cat,ow){
   for(;idx<w.length-1&&pick>=w[idx];idx++)pick-=w[idx];
   return locked[idx].i;
 }
-/* 🎁 איזון תיבות בסגנון בראול סטארס: סיכוי לפריט לפי נדירות + "מזל" שגדל
-   בכל תיבה בלי פריט (Pity) ומתאפס כשנופל פריט — בדיוק כמו Luck Value. */
-const DROP_PCT=[[5,.35],[4,.9],[3,2.2],[2,4.5],[1,9]]; // [נדירות, אחוז לגלגול]
-let pity=0;
+/* ⭐ סטאר דרופ: הסיכויים הרשמיים של סופרסל (עמוד Starr Drop Chances) —
+   נדיר 50% · נדיר במיוחד 28% · אדיר 15% · מדהים 5% · אגדי 2%. כל תיבה
+   מכילה פריט מובטח בנדירות שמוגרלת לפי הסיכויים האלה — בדיוק כמו בבראול. */
+const DROP_PCT=[[5,2],[4,5],[3,15],[2,28],[1,50]]; // [נדירות, אחוז] — מצטבר מהנדיר ביותר
+let pity=0; // נשמר לתאימות שמירות ישנות — כבר לא בשימוש (פריט מובטח בכל תיבה)
 function grantTier(t){
   // אוסף מועמדים בנדירות המבוקשת; אם אין — מטפסים למעלה ואז יורדים
   const order=[t];
@@ -5408,35 +5409,25 @@ function grantTier(t){
 }
 function rollChest(){
   const drops=[];
-  // 🎁 קודם מגלגלים את שני חריצי הפריטים — נדירות התיבה קובעת את תקרת המטבעות
-  const slots=[];let gotItem=false;
-  for(let s2=0;s2<2;s2++){
-    const luck=1+pity*.35;
-    const r=Math.random()*100;
-    let acc=0,hit=0;
-    for(const[tier,pc] of DROP_PCT){acc+=pc*luck;if(r<acc){hit=tier;break;}}
-    if(hit){
-      const d=grantTier(hit);
-      if(d){slots.push(d);gotItem=true;continue;}
-    }
-    slots.push(null); // חריץ ריק → מילוי מטבעות/יהלום בהמשך
-  }
-  pity=gotItem?0:pity+1;
-  const mxR=slots.reduce((m,d)=>d?Math.max(m,d.rar|0):m,0);
+  // ⭐ מגרילים את נדירות התיבה לפי הסיכויים הרשמיים של סטאר דרופ
+  const r=Math.random()*100;
+  let tier=1,acc=0;
+  for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
+  const item=grantTier(tier); // פריט מובטח (null רק אם כל האוסף כבר אצלך)
+  const mxR=item?item.rar|0:0;
   // 🪙 תקרת המטבעות עולה עם נדירות התיבה: אדיר +25%, מדהים +50%, אגדי +100%
   const capMul=mxR>=5?2:mxR>=4?1.5:mxR>=3?1.25:1;
   let coinCap=Math.round(30*capMul);
   const n=Math.round((10+((Math.random()*13)|0))*capMul);
   addCoins(n);coinCap-=n;drops.push({icon:'🪙',label:'+'+n,rar:0});
   if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
-  for(const d of slots){
-    if(d){drops.push(d);if(d._extra)drops.push(d._extra);continue;}
-    if(coinCap>=5){
-      const m=Math.min(coinCap,Math.round((5+((Math.random()*9)|0))*capMul));
-      addCoins(m);coinCap-=m;drops.push({icon:'🪙',label:'+'+m,rar:0});
-    }else{
-      gems+=1;drops.push({icon:'💎',label:'+1',rar:1});
-    }
+  if(item){
+    drops.push(item);if(item._extra)drops.push(item._extra);
+  }else if(coinCap>=5){ // האוסף מלא — פיצוי מטבעות/יהלום
+    const m=Math.min(coinCap,Math.round((5+((Math.random()*9)|0))*capMul));
+    addCoins(m);coinCap-=m;drops.push({icon:'🪙',label:'+'+m,rar:0});
+  }else{
+    gems+=1;drops.push({icon:'💎',label:'+1',rar:1});
   }
   return drops;
 }
@@ -5989,7 +5980,7 @@ $('chestBtn').onclick=()=>{
   $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
   $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
   $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
-  $('chestOdds').textContent=tr('סיכויי פריט: ','Item odds: ')+'🟢9% · 🔵4.5% · 🟣2.2% · 🔴0.9% · 🟡0.35%'+tr(' · מזל +35% לכל תיבה בלי פריט','· luck +35% per itemless box')+(pity?tr(' (מזל כרגע: ×','(current luck: ×')+(1+pity*.35).toFixed(2)+')':'');
+  $('chestOdds').textContent=tr('⭐ פריט מובטח בכל תיבה! סיכויי נדירות (רשמי בראול): ','⭐ Guaranteed item! Rarity odds (official Brawl): ')+'🟢50% · 🔵28% · 🟣15% · 🔴5% · 🟡2%';
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
