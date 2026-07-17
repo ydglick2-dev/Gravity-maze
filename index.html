@@ -317,7 +317,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v98</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v99</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -1199,8 +1199,8 @@ function fallback(i){
   return lv;
 }
 function genLevel(i){
-  if((i+1)%10===0){ // בוס
-    const lv=bossLevel(((i/10)|0)%10,CURVE(i));
+  if((i+1)%100===0){ // 👾 בוס — רק כל 100 שלבים (100, 200, ... 1000)
+    const lv=bossLevel(Math.min(9,(i/100)|0),CURVE(i));
     const r=mulberry(555+i);
     if(validateFix(lv,r))return lv;
     return fallback(i);
@@ -1901,7 +1901,7 @@ function loadLevel(i){
   keyGot=(lv.keys||[]).map(()=>false);
   swState=(lv.switches||[]).map(()=>({open:false,inside:false}));
   lvTime=0;lvDeaths=0;comboN=0;comboT=0;
-  bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;
+  bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;bossCycN=0;
   if(lv.boss&&!customLv){bossMaxHp=bossZone()===9?60:16+bossZone()*4;bossHp=bossMaxHp;bossHpShown=bossMaxHp;bossMode='idle';bossStT=1.2;} // 💪 פס חיים ארוך
   else{bossMaxHp=0;bossHp=0;}
   try{$('fireWrap').classList.toggle('hidden',!(lv.boss&&!customLv));bossAmmoUi();}catch(e){}
@@ -2354,9 +2354,9 @@ const BOSS_SW=[.50,.45,.48,.55,.50,.46,.44,.48,.46,.55]; // רוחב המפלצ�
 let bossHp=0,bossMaxHp=0,bossMode='idle',bossStT=0,bossPh=0,bossX=.5,
     bossShots=[],bossRemn=[],bossAmmo=0,bossInvT=0,bossPShots=[],bossPat=0,
     bossHurtT=0,bossDieT=0,bossRage=0,bossAim=0,bossStrN=0,bossStrT=0,bossSpA=0,
-    bossHpShown=0,bossAimDrag=null;
+    bossHpShown=0,bossAimDrag=null,bossCycN=0;
 const bossOn=()=>!!(L().boss&&bossMaxHp>0&&!customLv);
-const bossZone=()=>((levelIdx/10)|0)%10;
+const bossZone=()=>Math.min(9,(levelIdx/100)|0); // בוס מס' 1-10 לפי מאה השלבים
 function bossGeo(){
   const idx=bossZone(),S=BOSS_SW[idx]*board.w;
   const cx=board.x+bossX*board.w,cy=board.y+board.h*.15;
@@ -2399,7 +2399,7 @@ function bossPhysics(dt,t){
   const G=bossGeo();
   bossHurtT=Math.max(0,bossHurtT-dt);
   if(bossInvT>0)bossInvT-=dt;
-  const mv=bossMode==='windup'?.3:bossMode==='dying'?0:1;
+  const mv=bossMode==='windup'?.3:(bossMode==='dying'||bossMode==='rest')?0:1; // 😴 במנוחה — קפוא
   bossPh+=dt*(zone===9?.7:.55)*mv;
   bossX=.5+.22*Math.sin(bossPh);
   bossAim=Math.atan2(ball.y-G.cy,ball.x-G.cx);
@@ -2437,8 +2437,11 @@ function bossPhysics(dt,t){
     }else if(bossMode==='shoot'){
       const frac=bossMaxHp?bossHp/bossMaxHp:1;
       bossMode='cool';bossStT=(1.5-.09*zone)*(.55+.45*frac); // 🔥 קצב אש גבוה, מתגבר עם הנזק
+    }else if(bossMode==='cool'){
+      if(++bossCycN>=4){bossCycN=0;bossMode='rest';bossStT=3;} // 😴 כל 4 מטחים: 3ש מנוחה — בלי תנועה ובלי ירי
+      else{bossMode='idle';bossStT=.25;}
     }
-    else{bossMode='idle';bossStT=.25;}
+    else{bossMode='idle';bossStT=.25;} // התעורר מהמנוחה
   }
   if(bossMode==='shoot'){ // זרמי מטר/ספירלה
     bossStrT-=dt;
@@ -2608,6 +2611,7 @@ function drawBossBody(t){
   if(st.mode==='windup'){sc=1+.22*st.ph*st.ph;tx+=Math.sin(t*42)*.012*G.S*st.ph;}
   if(st.mode==='shoot'){ty-=.07*G.S*(1-st.ph);scy=.9+.1*st.ph;}
   if(bossHurtT>0){tx+=(Math.random()-.5)*.05*G.S;ty+=(Math.random()-.5)*.05*G.S;}
+  if(st.mode==='rest'&&bossStT<.4)tx+=Math.sin(t*50)*.012*G.S; // מתנער רגע לפני שמתעורר
   if(st.mode==='dying'){alpha=1-st.ph*st.ph;rot=Math.sin(st.ph*26)*.25*(1-st.ph);sc*=1+.15*Math.sin(st.ph*40)*(1-st.ph);
     if(bossZone()===9){ // 🌌 סופרנובה לבוס הסופי
       if(st.ph<.5)sc*=1+.6*st.ph;else sc*=Math.max(.02,1.3-2.56*(st.ph-.5));
@@ -2621,6 +2625,14 @@ function drawBossBody(t){
     ctx.beginPath();ctx.arc(0,0,.62*G.S*(1-st.ph)+.2*G.S,0,TAU);ctx.stroke();
   }
   drawBossMonster(ctx,G.S,G.idx,st,t);
+  if(st.mode==='rest'){ // 💤 ישן — חלון הזהב לאסוף ולירות!
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    const zb=Math.sin(t*2.2);
+    ctx.font=Math.round(G.S*(.14+.03*zb))+'px sans-serif';
+    ctx.globalAlpha=alpha*(.75+.25*zb);
+    ctx.fillText('💤',G.S*.32,-G.S*.36-zb*7);
+    ctx.globalAlpha=alpha;
+  }
   // הבזק פגיעה לבן
   if(bossHurtT>0){
     ctx.globalAlpha=bossHurtT*1.3;
@@ -2668,7 +2680,7 @@ function bossEye(g,x,y,r,st,t,idx){
     g.beginPath();g.moveTo(-r*.6,-r*.6);g.lineTo(r*.6,r*.6);g.moveTo(r*.6,-r*.6);g.lineTo(-r*.6,r*.6);g.stroke();
     g.restore();return;
   }
-  const blink=((t+idx)%3.4<.12)||st.mode==='shoot';
+  const blink=((t+idx)%3.4<.12)||st.mode==='shoot'||st.mode==='rest'; // 😴 במנוחה — עיניים עצומות
   if(blink){
     g.strokeStyle='#101520';g.lineWidth=Math.max(2,r*.3);g.lineCap='round';
     g.beginPath();g.arc(0,r*.15,r*.7,Math.PI*.15,Math.PI*.85);g.stroke();
@@ -4664,7 +4676,7 @@ function finishLevel(){
   const got=starGot.filter(Boolean).length;
   const s=session[levelIdx];
   const firstClear=!s.done; // 🏆 גביעים על סיום ראשון — מזין את מסלול הגביעים (תיבה כל 25)
-  const troGain=firstClear?(((levelIdx+1)%10===0)?3:1):0;
+  const troGain=firstClear?(((levelIdx+1)%100===0)?3:1):0;
   // ✅⭐ מונים "אמיתיים" לטבלאות: נספרים לפי דגל נפרד לכל שלב, כך שגם אחרי
   // שהאדמין סימן הכל כהושלם — סיום אמיתי של שלב עדיין נספר
   if(!s.edone){eDone++;s.edone=true;}
@@ -4676,7 +4688,7 @@ function finishLevel(){
   // 🎁 סיימת שלב אחרי מתנה מהאדמין? המתנה נחשבת מעכשיו בטבלאות ובפרופיל
   if(pTro||pCo){eTro+=pTro;eCo+=pCo;pTro=0;pCo=0;}
   if(troGain)addTro(troGain);
-  const _le=logEv((levelIdx+1)%10===0?'bs':'lv',levelIdx+1,got);
+  const _le=logEv((levelIdx+1)%100===0?'bs':'lv',levelIdx+1,got);
   recStop(true,levelIdx+1,id=>{if(id){_le[4]=id;save();}});
   if(duelLive){
     if(duelCur>=duelTo){
@@ -4696,7 +4708,7 @@ function finishLevel(){
   const _cg=Math.round((3+((levelIdx/10)|0)*.5)*(POW()==='rich'?1.5:1));
   addCoins(_cg);
 
-  if((levelIdx+1)%10===0){bossDefeatFx();if(lvDeaths===0)stBossClean=true;} // 👑 הכתרה על ניצחון בוס
+  if((levelIdx+1)%100===0){bossDefeatFx();if(lvDeaths===0)stBossClean=true;} // 👑 הכתרה על ניצחון בוס
   questAdd('level',1);
   const gk=gKeyFor();
   if(gk&&ghostRec.length>1){
@@ -4714,7 +4726,7 @@ function finishLevel(){
     txt+=tr(' — כבשת את כל 100 השלבים! ',' — you conquered all 100 levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
   }
   $('doneText').textContent=txt;
-  const _pg=8+got*4+(firstClear?20:0)+(firstClear&&(levelIdx+1)%10===0?30:0);
+  const _pg=8+got*4+(firstClear?20:0)+(firstClear&&(levelIdx+1)%100===0?30:0);
   { // 🏅 צ'יפי פרסים — קופצים בזה אחר זה, אחרי הכוכבים
     let _ci=0;
     const chip=t2=>'<span style="display:inline-block;background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:'+(.95+(_ci++)*.15)+'s">'+t2+'</span>';
