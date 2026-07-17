@@ -272,11 +272,9 @@
 #fireWrap{position:fixed;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:11;
   display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
 #fireWrap.hidden{display:none}
-#bossAmmo{display:flex;gap:5px;justify-content:center}
-.am{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:13px;background:rgba(8,12,20,.55);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18);
-  filter:grayscale(1) opacity(.35);transition:filter .2s}
-.am.full{filter:none;animation:chipPop .32s cubic-bezier(.2,1.5,.4,1)}
+#bossAmmo{font-weight:900;font-size:15px;color:#ffd257;background:rgba(8,12,20,.65);
+  padding:2px 10px;border-radius:12px;box-shadow:inset 0 0 0 1.5px rgba(255,214,87,.35);
+  text-shadow:0 1px 4px rgba(0,0,0,.7)}
 #fireBtn{pointer-events:auto;width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;
   background:radial-gradient(circle at 35% 30%,#ff8d63,#c81e3c 72%);color:#fff;
   box-shadow:inset 0 0 0 2px rgba(255,255,255,.25),0 4px 14px rgba(0,0,0,.5);
@@ -319,7 +317,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v97</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v98</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -346,7 +344,7 @@
   <div class="pill" id="hudInfo"></div>
 </div>
 <div id="fireWrap" class="hidden" dir="ltr">
-  <div id="bossAmmo"><span class="am"></span><span class="am"></span><span class="am"></span></div>
+  <div id="bossAmmo">×0</div>
   <button id="fireBtn" disabled>🎯</button>
 </div>
 <div id="raceBar"><span id="oppInfo"></span></div>
@@ -1903,8 +1901,8 @@ function loadLevel(i){
   keyGot=(lv.keys||[]).map(()=>false);
   swState=(lv.switches||[]).map(()=>({open:false,inside:false}));
   lvTime=0;lvDeaths=0;comboN=0;comboT=0;
-  bossShots.length=0;bossRemn.length=0;bossPShot=null;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;
-  if(lv.boss&&!customLv){bossMaxHp=bossZone()===9?4:3;bossHp=bossMaxHp;bossMode='idle';bossStT=1.2;}
+  bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;
+  if(lv.boss&&!customLv){bossMaxHp=bossZone()===9?60:16+bossZone()*4;bossHp=bossMaxHp;bossHpShown=bossMaxHp;bossMode='idle';bossStT=1.2;} // 💪 פס חיים ארוך
   else{bossMaxHp=0;bossHp=0;}
   try{$('fireWrap').classList.toggle('hidden',!(lv.boss&&!customLv));bossAmmoUi();}catch(e){}
   particles.length=0;trail.length=0;shake=0;flashW=0;flashR=0;
@@ -1926,7 +1924,7 @@ function respawn(){
   swState=(L().switches||[]).map(()=>({open:false,inside:false}));
   comboN=0;
   bossShots.length=0;
-  if(bossPShot){bossPShot=null;bossAmmo=3;try{bossAmmoUi();}catch(e){}} // 🎯 ירייה שנקטעה במוות — התחמושת מוחזרת
+  // 🎯 יריות בטיסה ממשיכות לעוף גם אחרי נפילה — לא נמחקות
   if(bossOn()&&bossHp>0){bossInvT=1;bossMode='idle';bossStT=1;}
   updateHud();
 }
@@ -2354,8 +2352,9 @@ function physics(dt,t){
 const BOSS_EMO=['🟠','❄️','🔥','⚡','🫧','🪙','✨','🌑','⚙️','🪐'];
 const BOSS_SW=[.50,.45,.48,.55,.50,.46,.44,.48,.46,.55]; // רוחב המפלצת כשבר מרוחב הלוח
 let bossHp=0,bossMaxHp=0,bossMode='idle',bossStT=0,bossPh=0,bossX=.5,
-    bossShots=[],bossRemn=[],bossAmmo=0,bossInvT=0,bossPShot=null,bossPat=0,
-    bossHurtT=0,bossDieT=0,bossRage=0,bossAim=0,bossStrN=0,bossStrT=0,bossSpA=0;
+    bossShots=[],bossRemn=[],bossAmmo=0,bossInvT=0,bossPShots=[],bossPat=0,
+    bossHurtT=0,bossDieT=0,bossRage=0,bossAim=0,bossStrN=0,bossStrT=0,bossSpA=0,
+    bossHpShown=0,bossAimDrag=null;
 const bossOn=()=>!!(L().boss&&bossMaxHp>0&&!customLv);
 const bossZone=()=>((levelIdx/10)|0)%10;
 function bossGeo(){
@@ -2364,8 +2363,9 @@ function bossGeo(){
   return {idx,S,cx,cy,mx:cx,my:cy+S*.26};
 }
 function bossFire1(ang,spF,mx,my,grav){
-  if(bossShots.length>=(PERF?7:10))return;
-  const v=md()*(0.45+0.03*bossZone())*Math.pow(1.06,bossRage)*(spF||1);
+  if(bossShots.length>=(PERF?9:14))return;
+  const frac=bossMaxHp?bossHp/bossMaxHp:1;
+  const v=md()*(0.55+0.045*bossZone())*(1+(1-frac)*.35)*(spF||1); // ⚡ מהיר יותר ככל שהבוס פצוע
   bossShots.push({x:mx,y:my,vx:Math.cos(ang)*v,vy:Math.sin(ang)*v,life:4,r:ball.r*.8,grav:grav||0,rot:Math.random()*6.3});
   sfx.bossShoot();
 }
@@ -2388,15 +2388,11 @@ function bossSpawnRemn(x,y){
   bossRemn.push({x:rx,y:ry,life:8,ph:Math.random()*6.3}); // 8ש — זמן נשימה לילדים
 }
 function bossAmmoUi(){
-  const emo=BOSS_EMO[bossZone()];
-  document.querySelectorAll('#bossAmmo .am').forEach((el,i)=>{
-    el.textContent=emo;
-    const f=i<bossAmmo;
-    if(f&&!el.classList.contains('full'))el.classList.add('full');
-    else if(!f)el.classList.remove('full');
-  });
+  const el=$('bossAmmo');
+  el.textContent=BOSS_EMO[bossZone()]+' ×'+bossAmmo;
+  try{el.style.animation='none';void el.offsetWidth;el.style.animation='chipPop .3s cubic-bezier(.2,1.5,.4,1)';}catch(e){}
   const b=$('fireBtn');
-  b.disabled=bossAmmo<3;b.classList.toggle('ready',bossAmmo>=3);
+  b.disabled=bossAmmo<1;b.classList.toggle('ready',bossAmmo>=1);
 }
 function bossPhysics(dt,t){
   const lv=L(),T=THEMES[lv.th],zone=bossZone();
@@ -2421,31 +2417,40 @@ function bossPhysics(dt,t){
     }
   }else if(bossStT<=0){
     if(bossMode==='idle'){
-      bossMode='windup';bossStT=.6;sfx.bossWindup();
+      bossMode='windup';bossStT=.45;sfx.bossWindup(); // ⚔️ טלגרף קצר — קשה יותר
       const r=Math.random();
-      bossPat=zone<2?0:zone<4?(r<.7?0:1):zone<6?(r<.5?0:(r<.8?1:2)):zone<9?(r<.4?0:(r<.75?1:2)):(bossPat+1)%4;
+      bossPat=zone<2?(r<.7?0:1):zone<5?(r<.45?0:(r<.8?1:2)):zone<7?(r<.35?0:(r<.7?1:2)):zone<9?(r<.3?0:(r<.6?1:(r<.85?2:3))):(bossPat+1)%4;
     }else if(bossMode==='windup'){
       bossMode='shoot';bossStrN=0;bossStrT=0;bossSpA=bossAim;
-      if(bossPat===0){bossFire1(Math.atan2(ball.y-G.my,ball.x-G.mx),1,G.mx,G.my);bossStT=.1;}
-      else if(bossPat===1){
+      if(bossPat===0){ // מכוון — ומעולם 3 יריית כפל מהירה
         const a0=Math.atan2(ball.y-G.my,ball.x-G.mx);
-        for(const da of[-.436,0,.436])bossFire1(a0+da,.9,G.mx,G.my);
+        bossFire1(a0,1,G.mx,G.my);
+        if(zone>=2)setTimeout(()=>{if(bossMode!=='dying'&&running)bossFire1(Math.atan2(ball.y-G.my,ball.x-G.mx),1.05,G.mx,G.my);},220);
         bossStT=.1;
-      }else if(bossPat===2)bossStT=.8;   // מטר — נורה בזרם
-      else bossStT=1.44;                 // ספירלה
-    }else if(bossMode==='shoot'){bossMode='cool';bossStT=(2.6-.15*zone)*Math.pow(.85,bossRage);}
-    else{bossMode='idle';bossStT=.35;}
+      }else if(bossPat===1){ // מניפה — 3, ומעולם 5: 5
+        const a0=Math.atan2(ball.y-G.my,ball.x-G.mx);
+        const das=zone>=5?[-.7,-.35,0,.35,.7]:[-.436,0,.436];
+        for(const da of das)bossFire1(a0+da,.92,G.mx,G.my);
+        bossStT=.1;
+      }else if(bossPat===2)bossStT=1;    // מטר — נורה בזרם
+      else bossStT=1.56;                 // ספירלה
+    }else if(bossMode==='shoot'){
+      const frac=bossMaxHp?bossHp/bossMaxHp:1;
+      bossMode='cool';bossStT=(1.5-.09*zone)*(.55+.45*frac); // 🔥 קצב אש גבוה, מתגבר עם הנזק
+    }
+    else{bossMode='idle';bossStT=.25;}
   }
   if(bossMode==='shoot'){ // זרמי מטר/ספירלה
     bossStrT-=dt;
-    if(bossPat===2&&bossStrT<=0&&bossStrN<(zone<7?4:zone<9?5:6)){
-      bossStrT=.16;bossStrN++;
-      const sx=board.x+(0.1+Math.random()*0.8)*board.w;
-      bossFire1(Math.PI/2,.8,sx,board.y+10,.5*md());
+    const mtN=zone<5?5:zone<9?6:8;
+    if(bossPat===2&&bossStrT<=0&&bossStrN<mtN){
+      bossStrT=.13;bossStrN++;
+      const sx=board.x+(0.08+Math.random()*0.84)*board.w;
+      bossFire1(Math.PI/2,.85,sx,board.y+10,.55*md());
     }
-    if(bossPat===3&&bossStrT<=0&&bossStrN<9){
-      bossStrT=.16;bossStrN++;bossSpA+=.7;
-      bossFire1(bossSpA,.6,G.mx,G.my);
+    if(bossPat===3&&bossStrT<=0&&bossStrN<12){
+      bossStrT=.13;bossStrN++;bossSpA+=.6;
+      bossFire1(bossSpA,.62,G.mx,G.my);
     }
   }
   // קליעים
@@ -2478,43 +2483,43 @@ function bossPhysics(dt,t){
     if(m.life<=0){bossRemn.splice(i,1);continue;}
     if(falling===0&&winPause===0&&Math.hypot(m.x-ball.x,m.y-ball.y)<ball.r*1.9){
       bossRemn.splice(i,1);
-      if(bossAmmo<3){
-        bossAmmo++;sfx.pick(bossAmmo);
+      if(bossAmmo<5){ // ⚡ כל שארית = ירייה (עד 5 במחסנית)
+        bossAmmo++;sfx.pick(Math.min(3,bossAmmo));
         shock(ball.x,ball.y,hexA(T.accent,.7),ball.r*3.5);
         emojiPop(ball.x,ball.y,[BOSS_EMO[G.idx]],6,110);
         bossAmmoUi();
-        if(bossAmmo>=3){
-          try{
-            const r=$('fireBtn').getBoundingClientRect();
-            emojiPop(r.left+r.width/2,r.top,[BOSS_EMO[G.idx],'🎯'],5,60,46);
-            if(!localStorage.getItem('gm_fireHint')){localStorage.setItem('gm_fireHint','1');showToast(tr('הכפתור טעון — לחצו! 🎯','Loaded — press the button! 🎯'));}
-          }catch(e){}
+        if(!localStorage.getItem('gm_fireHint2')){
+          localStorage.setItem('gm_fireHint2','1');
+          showToast(tr('🎯 גררו את הכפתור לכיוון — או הקישו לירי ישר למעלה!','🎯 Drag the button to aim — or tap to fire straight up!'));
         }
       }else emit(m.x,m.y,6,{color:'#ffd257',sp:90,size:2.5,decay:2,gl:!PERF});
       if(navigator.vibrate)navigator.vibrate(14);
     }
   }
-  // הירייה של השחקן — מונחית, תמיד פוגעת
-  if(bossPShot){
-    const p=bossPShot;p.t+=dt;
-    const dx=G.mx-p.x,dy=G.my-p.y,d=Math.hypot(dx,dy)||1;
-    const sp=md()*1.1;
-    p.x+=dx/d*sp*dt;p.y+=dy/d*sp*dt;
+  // 🎯 יריות השחקן — טיסה חופשית בכיוון שכוונת: פוגע רק אם קלעת!
+  for(let i=bossPShots.length-1;i>=0;i--){
+    const p=bossPShots[i];p.t+=dt;
+    p.x+=p.vx*dt;p.y+=p.vy*dt;
     if(!PERF)emit(p.x,p.y,1,{color:'#ffd257',size:3,decay:2.5,sp:40,gl:true});
-    if(d<G.S*.2||p.t>1.2){
-      bossPShot=null;
-      bossHp--;bossRage++;bossHurtT=.5;
-      shock(G.mx,G.my,'rgba(255,255,255,.9)',md()*.3);
-      emojiPop(G.cx,G.cy,['💥','✨'],10,120);
-      sfx.bossHurt();shake=5;
-      if(navigator.vibrate)navigator.vibrate(50);
+    if(bossMode!=='dying'&&Math.hypot(p.x-G.cx,p.y-G.cy)<G.S*.38){ // פגיעה בגוף המפלצת
+      bossPShots.splice(i,1);
+      bossHp--;bossRage=Math.min(6,bossRage+1);bossHurtT=.35;
+      shock(p.x,p.y,'rgba(255,255,255,.9)',md()*.22);
+      emojiPop(G.cx,G.cy,['💥'],5,100);
+      sfx.bossHurt();shake=3;
+      if(navigator.vibrate)navigator.vibrate(35);
       if(bossHp<=0){
         bossMode='dying';bossDieT=0;
-        bossShots.length=0;bossRemn.length=0;
+        bossShots.length=0;bossRemn.length=0;bossPShots.length=0;
         try{$('fireWrap').classList.add('hidden');}catch(e){}
         sfx.bossDie();shake=10;timeScale=.4;
         emojiPop(G.cx,G.cy,['💥','✨','👑'],14,150);
-      }else{bossMode='idle';bossStT=.9;} // הלם קצר
+      }
+      continue;
+    }
+    if(p.t>2||p.x<board.x-20||p.x>board.x+board.w+20||p.y<board.y-60){ // החטאה — הירייה אבדה
+      emit(p.x,p.y,8,{color:['#ffd257','#fff'],sp:120,size:2.5,decay:2.4,gl:!PERF});
+      bossPShots.splice(i,1);
     }
   }
 }
@@ -2557,14 +2562,30 @@ function drawBossShots(t){
     ctx.fillText(emo,0,0);
     ctx.restore();
   }
-  // הירייה של השחקן — שביט זהוב
-  if(bossPShot){
-    const p=bossPShot;
+  // יריות השחקן — שביטים זהובים בטיסה חופשית
+  for(const p of bossPShots){
     const gl=ctx.createRadialGradient(p.x,p.y,1,p.x,p.y,ball.r*2.6);
     gl.addColorStop(0,'rgba(255,240,190,.95)');gl.addColorStop(.4,'rgba(255,214,87,.55)');gl.addColorStop(1,'rgba(255,214,87,0)');
     ctx.fillStyle=gl;ctx.beginPath();ctx.arc(p.x,p.y,ball.r*2.6,0,TAU);ctx.fill();
     ctx.font=Math.round(ball.r*2)+'px sans-serif';
     ctx.fillText(emo,p.x,p.y);
+  }
+  // 🎯 חץ כיוון בזמן גרירת הכפתור — כמו בבראול
+  if(bossAimDrag&&bossAmmo>0&&falling===0){
+    const d=bossAimDrag,len=Math.hypot(d.dx,d.dy);
+    const ang=len<18?-Math.PI/2:Math.atan2(d.dy,d.dx);
+    const L2=md()*.42,ax=ball.x+Math.cos(ang)*L2,ay=ball.y+Math.sin(ang)*L2;
+    ctx.save();
+    ctx.strokeStyle='rgba(255,214,87,.85)';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.lineDashOffset=-t*30;
+    ctx.beginPath();ctx.moveTo(ball.x+Math.cos(ang)*ball.r*1.4,ball.y+Math.sin(ang)*ball.r*1.4);ctx.lineTo(ax,ay);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,214,87,.9)'; // ראש חץ
+    ctx.beginPath();
+    ctx.moveTo(ax+Math.cos(ang)*10,ay+Math.sin(ang)*10);
+    ctx.lineTo(ax+Math.cos(ang+2.5)*8,ay+Math.sin(ang+2.5)*8);
+    ctx.lineTo(ax+Math.cos(ang-2.5)*8,ay+Math.sin(ang-2.5)*8);
+    ctx.closePath();ctx.fill();
+    ctx.restore();
   }
   // ✨ הכדור חסין — טבעת מגן מהבהבת
   if(bossInvT>0&&falling===0){
@@ -2610,17 +2631,32 @@ function drawBossBody(t){
     ctx.globalAlpha=alpha;
   }
   ctx.restore();
-  // 💜 לבבות HP מעל המפלצת
+  // ❤️ פס חיים ארוך בראש הלוח — עם פס-רפאים שנשרף ושנתות
   if(bossMode!=='dying'||bossDieT<1){
-    ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.font='16px sans-serif';
-    const hw=22,x0=G.cx-(bossMaxHp-1)*hw/2;
-    const hy=G.cy-G.S*(G.idx===6?.58:.42); // המדוזה גבוהה — הלבבות מעליה
-    for(let i=0;i<bossMaxHp;i++){
-      const beat=i<bossHp?1+.1*Math.max(0,Math.sin(t*3.2+i)):1;
-      ctx.save();ctx.translate(x0+i*hw,hy);ctx.scale(beat,beat);
-      ctx.fillText(i<bossHp?'💜':'🖤',0,0);ctx.restore();
+    bossHpShown+=(bossHp-bossHpShown)*Math.min(1,.12);
+    const bw=Math.min(board.w*.72,300),bh=11;
+    let bx=board.x+(board.w-bw)/2,by=board.y+7;
+    if(bossHurtT>0){bx+=(Math.random()-.5)*bossHurtT*14;by+=(Math.random()-.5)*bossHurtT*10;}
+    ctx.save();
+    ctx.fillStyle='rgba(8,12,20,.75)';
+    rr(ctx,bx-2,by-2,bw+4,bh+4,(bh+4)/2);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1.5;
+    rr(ctx,bx-2,by-2,bw+4,bh+4,(bh+4)/2);ctx.stroke();
+    const gw=Math.max(0,bw*bossHpShown/bossMaxHp),fw=Math.max(0,bw*bossHp/bossMaxHp);
+    if(gw>0){ctx.fillStyle='rgba(255,225,150,.5)';rr(ctx,bx,by,gw,bh,bh/2);ctx.fill();} // רפאים
+    if(fw>0){
+      const hg=ctx.createLinearGradient(bx,0,bx+bw,0);
+      hg.addColorStop(0,'#ff7a5e');hg.addColorStop(1,'#c81e3c');
+      ctx.fillStyle=hg;rr(ctx,bx,by,fw,bh,bh/2);ctx.fill();
+      if(bossHurtT>0){ctx.fillStyle='rgba(255,255,255,'+(bossHurtT*1.4)+')';rr(ctx,bx,by,fw,bh,bh/2);ctx.fill();}
     }
+    ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=1; // שנתות כל 10 נק'
+    for(let k=10;k<bossMaxHp;k+=10){const sx=bx+bw*k/bossMaxHp;
+      ctx.beginPath();ctx.moveTo(sx,by+1);ctx.lineTo(sx,by+bh-1);ctx.stroke();}
+    ctx.fillStyle='#ffd257';ctx.font='900 10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    try{ctx.direction='ltr';}catch(e){} // הדף RTL — שהמספרים לא יתהפכו
+    ctx.fillText(Math.max(0,bossHp)+' / '+bossMaxHp,bx+bw/2,by+bh/2+.5);
+    try{ctx.direction='inherit';}catch(e){}
     ctx.restore();
   }
 }
@@ -2924,16 +2960,39 @@ function drawBossMonster(g,S,idx,st,t){
       g.beginPath();g.arc(0,0,S*.5*(1+st.ph),0,TAU);g.fill();}
   }
 }
-/* 🎯 כפתור הירייה (גם רווח/F במקלדת) */
-function bossTryFire(){
-  if(!running||paused||runMode||bossAmmo<3||!bossOn()||bossHp<=0||bossPShot||falling>0||winPause>0)return;
-  bossAmmo=0;bossAmmoUi();
-  bossPShot={x:ball.x,y:ball.y,t:0};
+/* 🎯 ירי מכוון בסגנון בראול: גוררים את הכפתור לכיוון — או מקישים לירי ישר למעלה */
+function bossTryFire(dx,dy){
+  if(!running||paused||runMode||bossAmmo<1||!bossOn()||bossHp<=0||falling>0||winPause>0)return;
+  bossAmmo--;bossAmmoUi();
+  let ang=-Math.PI/2; // ברירת מחדל: ישר למעלה
+  if(dx!==undefined&&(dx*dx+dy*dy)>0)ang=Math.atan2(dy,dx);
+  const v=md()*1.5;
+  bossPShots.push({x:ball.x,y:ball.y,vx:Math.cos(ang)*v,vy:Math.sin(ang)*v,t:0});
   sfx.playerShoot();
   shock(ball.x,ball.y,'rgba(255,214,87,.8)',ball.r*3);
   if(navigator.vibrate)navigator.vibrate(30);
 }
-$('fireBtn').onpointerdown=e=>{e.preventDefault();bossTryFire();};
+{
+  const fb=$('fireBtn');
+  fb.onpointerdown=e=>{
+    e.preventDefault();
+    if(bossAmmo<1)return;
+    bossAimDrag={x0:e.clientX,y0:e.clientY,dx:0,dy:0};
+    try{fb.setPointerCapture(e.pointerId);}catch(e2){}
+  };
+  fb.onpointermove=e=>{
+    if(!bossAimDrag)return;
+    bossAimDrag.dx=e.clientX-bossAimDrag.x0;bossAimDrag.dy=e.clientY-bossAimDrag.y0;
+  };
+  const rel=e=>{
+    if(!bossAimDrag)return;
+    const d=bossAimDrag,len=Math.hypot(d.dx,d.dy);
+    bossAimDrag=null;
+    if(len<18)bossTryFire();            // הקשה — ישר למעלה
+    else bossTryFire(d.dx,d.dy);        // גרירה — בכיוון הגרירה
+  };
+  fb.onpointerup=rel;fb.onpointercancel=()=>{bossAimDrag=null;};
+}
 window.addEventListener('keydown',e=>{
   if((e.key===' '||e.key==='f'||e.key==='F')&&running&&!runMode&&bossOn()){e.preventDefault();bossTryFire();}
 });
@@ -4695,7 +4754,7 @@ function startRun(i){
     const bn=$('bName');bn.style.animation='none';void bn.offsetWidth;bn.style.animation='popIn .45s cubic-bezier(.2,1.4,.4,1)';
   }catch(e){}
   if(!customLv&&L().boss)setTimeout(()=>bossIntro(L().name),350); // ⚔️ כניסת בוס דרמטית
-  if(!customLv&&L().boss)setTimeout(()=>{if(running&&bossOn())showToast(tr('התחמקו! אספו 3 ','Dodge! Collect 3 ')+BOSS_EMO[bossZone()]+tr(' וירו בחזרה! 🎯',' & fire back! 🎯'));},2400);
+  if(!customLv&&L().boss)setTimeout(()=>{if(running&&bossOn())showToast(tr('התחמקו! כל ','Dodge! Every ')+BOSS_EMO[bossZone()]+tr(' שתאספו = ירייה! 🎯',' you collect = a shot! 🎯'));},2400);
   recStop(false);recStart(); // 🎥 הקלטה חדשה לכל שלב
   closeLobbyNet();
   syncLobbyUI();
@@ -5620,7 +5679,7 @@ async function beginCountdown(x,seed){
 /* ---- ליבת הראנר ---- */
 function startRunner(live,seed,target){
   customLv=null;runMode=true;runLive=!!live;runDead=false;
-  bossMaxHp=0;bossHp=0;bossShots.length=0;bossRemn.length=0;bossPShot=null;bossAmmo=0; // 👾 קרב בוס לא דולף לראנר (למשל אחרי זימון)
+  bossMaxHp=0;bossHp=0;bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0; // 👾 קרב בוס לא דולף לראנר (למשל אחרי זימון)
   try{$('fireWrap').classList.add('hidden');}catch(e){}
   cineMode='';cineHold=false;cineCb=null;timeScale=1;
   runSeed=seed;runTarget=live?target:1e9;
