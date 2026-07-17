@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v82</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v83</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -763,6 +763,21 @@
 const $=id=>document.getElementById(id);
 const canvas=$('game'), ctx=canvas.getContext('2d');
 let W=0,H=0,DPR=1;
+/* 🛡 רשת ביטחון לקנבס: רדיוס שלילי (מקרה קצה של אנימציה) מצויר כ-0 במקום להפיל
+   את כל המשחק ב-IndexSizeError. שומרים את המקרה האחרון לאבחון. */
+try{
+  const _arc=CanvasRenderingContext2D.prototype.arc;
+  CanvasRenderingContext2D.prototype.arc=function(x,y,r,a0,a1,cc){
+    if(!(r>=0)){try{window.__negArc=(new Error('arc r='+r)).stack;}catch(e2){}r=0;}
+    return _arc.call(this,x,y,r,a0,a1,cc);
+  };
+  const _ell=CanvasRenderingContext2D.prototype.ellipse;
+  CanvasRenderingContext2D.prototype.ellipse=function(x,y,rx,ry,ro,a0,a1,cc){
+    if(!(rx>=0))rx=0;
+    if(!(ry>=0))ry=0;
+    return _ell.call(this,x,y,rx,ry,ro,a0,a1,cc);
+  };
+}catch(e){}
 /* ⚡ מצב ביצועים: מנחית blur גלובלית, DPR מופחת, פחות חלקיקים */
 let PERF=false,perfPref='a',__ft=0,__fn=0;
 try{perfPref=localStorage.getItem('mazePerf')||'a';}catch(e){}
