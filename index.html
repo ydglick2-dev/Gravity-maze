@@ -254,7 +254,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v76</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v77</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -405,7 +405,6 @@
   <p class="sub" id="scMsg" style="min-height:22px"></p>
   <div class="row"><button class="btn sec" id="scBack" data-en="⬅ Menu">⬅ תפריט</button></div>
 </div>
-<video id="fxVid" playsinline preload="none" style="display:none;position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:44;pointer-events:none"></video>
 <canvas id="cfx" style="display:none;position:fixed;inset:0;z-index:200;pointer-events:none"></canvas>
 <div id="boxFlash" style="display:none;position:fixed;inset:0;background:#fff;z-index:66;pointer-events:none"></div>
 <div class="overlay hidden" id="sndOv" style="z-index:56;background:rgba(8,10,18,.96)">
@@ -2547,65 +2546,90 @@ function goalFxShow(kind){
     setTimeout(()=>d.remove(),1900);
   }catch(e){}
 }
-/* 🎬 אפקטי הניצחון החדשים: וידאו שהועלה לכל אפקט.
-   הרקע (שחור/לבן) יכול להתחלף באמצע הקליפ — דוגמים פינות כל ~150ms
-   ובוחרים מיזוג בהתאם: שחור=screen (נעלם), לבן=multiply (נעלם). */
-const FXV_BLEND=['screen','screen','multiply','screen','screen','multiply','screen','multiply','multiply'];
-let _fxsC=null,_fxsT=0;
-function fxAutoBlend(v){
+/* ✨ אפקטי הניצחון: המוני אימוג'ים קטנים של האפקט במקום סרטונים.
+   לכל אפקט סט אימוג'ים ותנועה משלו; אפקטי ה-GOAL נשארים כמו שהם. */
+const FX_EMO=[
+ {e:['🪙','🪙','🪙','💰'],n:48,m:'fall'},          // גשם מטבעות
+ {e:['🎆','🎇','✨','💥'],n:44,m:'burst'},          // זיקוקים
+ {e:['🕊️','🕊️','🕊️','🪶'],n:26,m:'fly'},         // יונים
+ {e:['💥','☀️','✨','⭐'],n:50,m:'nova'},           // סופרנובה
+ {e:['🌀','💫','⭐','✨'],n:40,m:'hole'},           // חור שחור
+ {e:['⭐','🌟','✨'],n:48,m:'fall'},                // גשם כוכבים
+ {e:['❤️','💖','💗','💕'],n:36,m:'rise'},          // לבבות
+ {e:['☄️','☄️','🔥','💥'],n:30,m:'meteor'},        // מטאורים
+ {e:['⚡','💥','🔴','🟢','🔵'],n:40,m:'laser'}      // לייזרים
+];
+let emoFxDiv=null;
+function emojiFx(i){
+  const cfg=FX_EMO[i];
+  if(!cfg)return; // אפקטי GOAL וכו' — לא כאן
   try{
-    if(!_fxsC){_fxsC=document.createElement('canvas');_fxsC.width=16;_fxsC.height=9;}
-    const g=_fxsC.getContext('2d',{willReadFrequently:true});
-    g.drawImage(v,0,0,16,9);
-    const d2=g.getImageData(0,0,16,9).data;
-    const pk=[0,15*4,8*4*16+0,8*4*16+15*4];
-    let lum=0;
-    for(const o of pk)lum+=(d2[o]+d2[o+1]+d2[o+2])/3;
-    lum/=pk.length;
-    if(lum>175)v.style.mixBlendMode='multiply';
-    else if(lum<70)v.style.mixBlendMode='screen';
-  }catch(e){}
-}
-function playWinVideo(i){
-  try{
-    const v=$('fxVid');
-    if(!v)return false;
-    v._failed=v._failed||{};
-    if(v._failed[i])return false;
-    v.style.mixBlendMode=FXV_BLEND[i]||'screen';
-    clearInterval(_fxsT);
-    _fxsT=setInterval(()=>{
-      if(v.style.display==='none'||v.paused){clearInterval(_fxsT);return;}
-      fxAutoBlend(v);
-    },140);
-    if(v._cur!==i){
-      v.src='fx-win-'+i+((v._webm&&v._webm[i])?'.webm':'.mp4');
-      v._cur=i;
-    }
-    v.currentTime=0;
-    v.muted=muted;
-    v.style.display='block';
-    v.onended=()=>{v.style.display='none';};
-    v.onerror=()=>{
-      if(!v._webm||!v._webm[i]){ // נסיון שני: WebM (דפדפנים בלי H.264)
-        (v._webm=v._webm||{})[i]=true;
-        v.src='fx-win-'+i+'.webm';
-        v.play().catch(()=>{v._failed[i]=true;v.style.display='none';});
-        return;
+    if(emoFxDiv)emoFxDiv.remove();
+    const W=innerWidth,H=innerHeight;
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:fixed;inset:0;z-index:44;pointer-events:none;overflow:hidden';
+    emoFxDiv=wrap;
+    const n=PERF?Math.ceil(cfg.n*.55):cfg.n; // מצב ביצועים — פחות אימוג'ים
+    const ps=[];
+    for(let j=0;j<n;j++){
+      const s=document.createElement('span');
+      s.textContent=cfg.e[(Math.random()*cfg.e.length)|0];
+      const sz=13+Math.random()*(cfg.m==='laser'?12:22);
+      s.style.cssText='position:absolute;left:0;top:0;font-size:'+sz+'px;opacity:0;will-change:transform,opacity';
+      const p={el:s,r:Math.random()*360,vr:(Math.random()-.5)*280,dl:Math.random()*.55,sc:.7+Math.random()*.7,vx:0,vy:0,g:0,wob:0};
+      switch(cfg.m){
+        case 'fall':p.x=Math.random()*W;p.y=-40-Math.random()*H*.45;p.vx=(Math.random()-.5)*46;p.vy=260+Math.random()*340;break;
+        case 'rise':p.x=Math.random()*W;p.y=H+30+Math.random()*H*.35;p.vx=(Math.random()-.5)*46;p.vy=-(150+Math.random()*230);p.wob=36+Math.random()*46;break;
+        case 'burst':{const bx=W*(.18+Math.random()*.64),by=H*(.12+Math.random()*.5),a=Math.random()*TAU,v=110+Math.random()*310;p.x=bx;p.y=by;p.vx=Math.cos(a)*v;p.vy=Math.sin(a)*v-70;p.g=270;p.dl=Math.random()*1.1;break;}
+        case 'nova':{const a=Math.random()*TAU,v=190+Math.random()*430;p.x=W/2;p.y=H*.42;p.vx=Math.cos(a)*v;p.vy=Math.sin(a)*v;p.dl=Math.random()*.2;break;}
+        case 'hole':{const a=Math.random()*TAU;p.ang=a;p.dist=Math.max(W,H)*(.3+Math.random()*.45);p.cx=W/2;p.cy=H*.44;p.va=2.2+Math.random()*2.4;p.vd=p.dist/1.7;break;}
+        case 'fly':{const dir=Math.random()<.5?1:-1;p.x=dir>0?-60:W+60;p.y=H*.12+Math.random()*H*.62;p.vx=dir*(210+Math.random()*190);p.vy=-(15+Math.random()*70);p.wob=22+Math.random()*30;p.vr=0;p.r=0;break;}
+        case 'meteor':{p.x=Math.random()*W*1.35-W*.15;p.y=-60-Math.random()*H*.55;p.vx=-(230+Math.random()*270);p.vy=370+Math.random()*310;p.r=Math.atan2(p.vy,p.vx)*180/Math.PI+45;p.vr=0;p.dl=Math.random()*.9;break;}
+        case 'laser':{const hz=Math.random()<.6,dir=Math.random()<.5?1:-1;
+          if(hz){p.x=dir>0?-40:W+40;p.y=Math.random()*H;p.vx=dir*(850+Math.random()*750);p.vy=0;}
+          else{p.x=Math.random()*W;p.y=dir>0?-40:H+40;p.vx=0;p.vy=dir*(850+Math.random()*750);}
+          p.vr=0;p.dl=Math.random()*1;break;}
       }
-      v._failed[i]=true;v.style.display='none';
-    };
-    const pr=v.play();
-    if(pr&&pr.catch)pr.catch(()=>{
-      v.muted=true;
-      v.play().catch(()=>{v.style.display='none';});
-    });
-    return true;
-  }catch(e){return false;}
+      ps.push(p);wrap.appendChild(s);
+    }
+    if(cfg.m==='hole'){ // 🕳️ החור עצמו במרכז
+      const c=document.createElement('span');
+      c.textContent='🕳️';
+      c.style.cssText='position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.2);font-size:64px;opacity:0;transition:transform 1.2s ease-out,opacity .5s';
+      wrap.appendChild(c);
+      setTimeout(()=>{c.style.opacity='1';c.style.transform='translate(-50%,-50%) scale(1.25)';},60);
+    }
+    document.body.appendChild(wrap);
+    const T0=performance.now(),DUR=cfg.m==='laser'?1900:2700;
+    let last=T0;
+    function step(now){
+      const dt=Math.min(.05,(now-last)/1000);last=now;
+      const t=(now-T0)/1000;
+      for(const p of ps){
+        if(t<p.dl)continue;
+        if(cfg.m==='hole'){ // ספירלה פנימה — נבלעים בחור
+          p.ang+=p.va*dt;p.dist=Math.max(0,p.dist-p.vd*dt);
+          p.x=p.cx+Math.cos(p.ang)*p.dist;p.y=p.cy+Math.sin(p.ang)*p.dist;
+          p.sc=.25+p.dist/(Math.max(W,H)*.55);
+        }else{
+          if(p.g)p.vy+=p.g*dt;
+          p.x+=p.vx*dt;p.y+=p.vy*dt;
+          if(p.wob)p.x+=Math.sin(t*5+p.r)*p.wob*dt;
+        }
+        p.r+=p.vr*dt;
+        const a=Math.min(1,(t-p.dl)*4)*Math.min(1,Math.max(0,(DUR/1000-t)/.45));
+        p.el.style.opacity=a;
+        p.el.style.transform='translate('+p.x+'px,'+p.y+'px) rotate('+p.r+'deg) scale('+p.sc+')';
+      }
+      if(now-T0<DUR)requestAnimationFrame(step);
+      else{wrap.remove();if(emoFxDiv===wrap)emoFxDiv=null;}
+    }
+    requestAnimationFrame(step);
+  }catch(e){}
 }
 function playWinFX(x,y,big){
   const k=big?2:1;
-  playWinVideo(wSel); // 🎬 האפקט החדש — הווידאו שהועלה
+  emojiFx(wSel); // ✨ המוני אימוג'ים של האפקט (GOAL מטופל למטה)
   // 💥 בסיס עוצמתי לכל האפקטים: הבזק, רעידה, גלי הדף כפולים ורטט
   flashW=Math.max(flashW,big?.5:.32);
   shake=Math.max(shake,big?.7:.45);
