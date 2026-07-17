@@ -344,7 +344,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v101</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v102</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5058,6 +5058,12 @@ function applySave(d){
   try{
     unlocked=Math.min(LEVELS.length-1,d.un|0);
     trophies=d.tro|0;myName=d.nm||'';dailyLast=d.dl||'';wheelD=d.wl||'';pity=d.py|0;passN=d.psn|0;passP=d.psp|0;passC=d.psc|0;wcCups=d.wcc|0;
+    // 🏆 הסבת גביעי מונדיאל ישנים (מסי עבר ל-0.01% מתיבה): 3 גביעים = מסי; 1-2 = 150🪙 לגביע
+    if(wcCups>0&&!skinOwned.includes(MESSI_IDX)){
+      if(wcCups>=3)setTimeout(()=>{try{checkMessi();}catch(e){}},1200);
+      else{const _cc=wcCups*150;coins+=_cc;wcCups=0;
+        setTimeout(()=>{try{showToast(tr('🏆 הגביעים הישנים הוסבו: +','🏆 Old cups converted: +')+_cc+'🪙');}catch(e){}},1500);}
+    }
     skinOwned=Array.isArray(d.ow)?d.ow.filter(n=>n>=0&&n<SKINS.length):[0];
     if(!skinOwned.includes(0))skinOwned.unshift(0);
     skinSel=skinOwned.includes(d.sk|0)?(d.sk|0):0;
@@ -6179,7 +6185,7 @@ function buildSkins(){
     const chestOnly=(s.rar|0)>=4&&!s.pow&&!s.wc; // 🔴🟡 נדירויות גבוהות — רק מתיבות, כמו במוקאפ
     const pr=document.createElement('div');pr.className='skPrice';
     pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select')
-      :(s.wc?('🏆 '+Math.min(wcCups,s.wc)+'/'+s.wc+' '+tr('גביעי מונדיאל','World Cups'))
+      :(s.wc?tr('🍀 0.01% מכל תיבה!','🍀 0.01% from any chest!')
       :(s.fs?tr('⚽ מגיע עם סקין שחקן','⚽ Comes with a player skin')
       :(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙'))));
     card.appendChild(pr);
@@ -6195,7 +6201,7 @@ function buildSkins(){
         tone(140,.12,'sawtooth',.2);
         if(navigator.vibrate)navigator.vibrate(30);
       };
-      if(s.wc&&!owned){deny();return showToast(tr('🏆 מסי נפתח עם 3 גביעי מונדיאל — תיבת מונדיאל בכל שלב 50!','🏆 Messi unlocks with 3 World Cups — a box every 50 levels!'));}
+      if(s.wc&&!owned){deny();return showToast(tr('🐐 מסי נופל רק מתיבות — סיכוי 0.01% לכל פתיחה. בהצלחה!','🐐 Messi only drops from chests — 0.01% per open. Good luck!'));}
       if(s.fs&&!owned){deny();return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));}
       if((s.rar|0)>=4&&!s.pow){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
       if(coins>=s.price){
@@ -6264,11 +6270,19 @@ function grantTier(t){
 }
 function rollChest(){
   const drops=[];
+  // 🐐 מסי! סיכוי 0.01% (1 ל-10,000) בכל תיבה — הדרך היחידה להשיג אותו
+  let messi=null;
+  if(!skinOwned.includes(MESSI_IDX)&&Math.random()<.0001){
+    skinOwned.push(MESSI_IDX);
+    messi={icon:'🐐',label:tr('ליאו מסי!!','Leo Messi!!'),rar:5,
+      rv:{kind:'skin',idx:MESSI_IDX,rar:5,label:tr('ליאו מסי','Leo Messi'),story:loreOf(MESSI_IDX)}};
+    const gfx=grantGoalFx();if(gfx)messi._extra=gfx;
+  }
   // ⭐ מגרילים את נדירות התיבה לפי הסיכויים הרשמיים של סטאר דרופ
   const r=Math.random()*100;
   let tier=1,acc=0;
   for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
-  const item=grantTier(tier); // פריט מובטח (null רק אם כל האוסף כבר אצלך)
+  const item=messi||grantTier(tier); // פריט מובטח (null רק אם כל האוסף כבר אצלך)
   const mxR=item?item.rar|0:0;
   // 🪙 תקרת המטבעות עולה עם נדירות התיבה: אדיר +25%, מדהים +50%, אגדי +100%
   const capMul=mxR>=5?2:mxR>=4?1.5:mxR>=3?1.25:1;
@@ -6288,24 +6302,13 @@ function rollChest(){
 }
 let chestBusy=false;
 /* 🏆 תיבת מונדיאל — כל 50 שלבים. 20% לגביע מונדיאל; 3 גביעים = ליאו מסי! */
-function mondialBox(){
+function mondialBox(){ // 🏆 תיבת בונוס כל 50 שלבים (מסי עבר לתיבות רגילות — 0.01%)
   showToast(tr('🏆 תיבת מונדיאל — שלב ','🏆 World Cup box — level ')+(levelIdx+1)+'!');
   playBoxOpen(5,()=>{
-    const winCup=Math.random()<.2;
-    if(winCup){
-      wcCups=Math.min(3,wcCups+1);
-      logEv('wc',wcCups+'/3');
-      save();refreshTro();
-      showReveal({kind:'fx',icon:'🏆',rar:5,label:tr('גביע מונדיאל! ','World Cup! ')+wcCups+'/3',
-        story:wcCups>=3?tr('שלושה גביעים!! ליאו מסי מצטרף אליך! 🐐','Three cups!! Leo Messi joins you! 🐐')
-                       :tr('עוד '+(3-wcCups)+' גביעים — ומסי שלך! התיבה הבאה בעוד 50 שלבים.','More cups to go — next box in 50 levels.')},
-        checkMessi);
-    }else{
-      coins+=30;gems+=2;
-      save();refreshTro();
-      showReveal({kind:'fx',icon:'🥈',rar:2,label:'+30 🪙 · +2 💎',
-        story:tr('הפעם בלי גביע... ההזדמנות הבאה בעוד 50 שלבים! (סיכוי: 20%)','No cup this time — next chance in 50 levels! (20%)')});
-    }
+    coins+=40;gems+=3;chests++;
+    save();refreshTro();
+    showReveal({kind:'fx',icon:'🏆',rar:3,label:'+40 🪙 · +3 💎 · +1 🎁',
+      story:tr('בונוס מונדיאל! ורמז: מסי 🐐 מסתתר בתיבות רגילות — 0.01% לכל פתיחה!','Mondial bonus! Hint: Messi 🐐 hides in regular chests — 0.01% per open!')});
   });
 }
 function checkMessi(){
