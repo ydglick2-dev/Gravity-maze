@@ -204,6 +204,8 @@
     50% { box-shadow:0 0 18px rgba(245,197,24,.55); }
   }
   @keyframes popIn { 0%{transform:scale(.4);opacity:0} 70%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
+  @keyframes psShine { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  @keyframes psReady { 0%,100%{box-shadow:inset 0 0 0 2px #ffd257} 50%{box-shadow:inset 0 0 0 2.5px #ffd257,0 0 20px rgba(255,210,87,.55)} }
   @keyframes goalFly { 0%{transform:translate(140px,180px) rotate(0)} 100%{transform:translate(0,0) rotate(-380deg)} }
   #doneOv h1, #doneOv #medalBig, #doneOv #starsBig { animation: popIn .5s cubic-bezier(.34,1.56,.64,1) both; }
   #doneOv #starsBig { animation-delay:.12s }
@@ -254,7 +256,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v85</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v86</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -374,7 +376,7 @@
       <span id="psTier"></span><span id="psPts"></span>
     </div>
     <div style="height:14px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:4px">
-      <div id="psBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--g1,#ffd257),var(--g2,#ff9e4d));transition:width .4s"></div>
+      <div id="psBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--g1,#ffd257),var(--g2,#ff9e4d),var(--g1,#ffd257));background-size:200% 100%;animation:psShine 2.4s linear infinite;box-shadow:0 0 12px var(--g1,#ffd257);transition:width .4s"></div>
     </div>
   </div>
   <button class="btn" id="psClaim" style="display:none" data-en="🎁 Collect rewards!">🎁 אסוף פרסים!</button>
@@ -7358,6 +7360,7 @@ function passAdd(n){
   const t1=passTierNow();
   if(t1>t0){
     showToast('🎫 '+tr('עלית לדרגה ','Pass tier up! Tier ')+t1+tr(' בפס העונה! יש פרס לאסוף 🎁','! A reward awaits 🎁'));
+    emojiBurst({e:['🎟️','✨','🎉'],n:16,m:'burst',d:1400}); // 🎟 עליית דרגה מרגישה כמו אירוע
     tone(880,.1,'sine',.3);setTimeout(()=>tone(1318,.16,'sine',.3),110);
     if(navigator.vibrate)navigator.vibrate([30,50,30]);
   }
@@ -7388,8 +7391,30 @@ $('menuPassBar').onclick=()=>{
   buildPass();syncLobbyUI();
 };
 setInterval(menuPassSync,30000);
+/* 🎁 הפרס עף מהשורה אל כותרת הפס — איסוף שמרגישים */
+function passFly(icon,rect,delay){
+  try{
+    const s=document.createElement('span');
+    s.textContent=icon;
+    s.style.cssText='position:fixed;left:'+(rect.left+rect.width/2-12)+'px;top:'+(rect.top+rect.height/2-12)+'px;font-size:24px;z-index:46;pointer-events:none;transition:transform .7s cubic-bezier(.45,-.25,.6,1),opacity .7s;will-change:transform;filter:drop-shadow(0 0 8px rgba(255,210,87,.8))';
+    document.body.appendChild(s);
+    const t2=$('psSeason').getBoundingClientRect();
+    setTimeout(()=>{requestAnimationFrame(()=>{
+      s.style.transform='translate('+(t2.left+t2.width/2-(rect.left+rect.width/2))+'px,'+(t2.top+t2.height/2-(rect.top+rect.height/2))+'px) scale(.4)';
+      s.style.opacity='.1';
+    });},delay);
+    setTimeout(()=>s.remove(),delay+760);
+  }catch(e){}
+}
 function passClaimAll(){
   passSync();
+  // תופסים את שורות ה"מוכן" לפני האיסוף — בשביל אנימציית המעוף
+  const flights=[];
+  try{
+    const rows=$('psTrack').children;
+    for(let i=passC;i<passTierNow()&&i<rows.length;i++)
+      flights.push({ic:passReward(i).ic,rect:rows[i].getBoundingClientRect()});
+  }catch(e){}
   let got2=[];
   while(passC<passTierNow()){
     const r=passReward(passC);
@@ -7400,11 +7425,14 @@ function passClaimAll(){
   if(!got2.length)return;
   logEv('ps',got2.join(' · '));
   save();refreshTro();
+  flights.forEach((f,i)=>passFly(f.ic,f.rect,i*110));
+  emojiBurst({e:['🎟️','🪙','💎','✨'],n:18,m:'burst',d:1500});
   confetti(130);sfx.win();
+  tone(660,.12,'sine',.3);setTimeout(()=>tone(880,.14,'sine',.3),120);setTimeout(()=>tone(1174,.2,'sine',.32),240);
   showToast('🎫 '+tr('נאסף: ','Collected: ')+got2.join(' + '));
   if(navigator.vibrate)navigator.vibrate([40,60,40]);
   passUiBtn();
-  buildPass();
+  setTimeout(buildPass,300); // נותנים לפרסים לעוף רגע לפני שהרשימה נבנית מחדש
 }
 function buildPass(){
   passSync();
@@ -7412,8 +7440,15 @@ function buildPass(){
   const tier=passTierNow();
   $('psTier').textContent=tr('דרגה ','Tier ')+tier+'/'+PASS_T;
   $('psPts').textContent=(passP%PASS_COST)+'/'+PASS_COST+' 🎫';
-  $('psBar').style.width=(tier>=PASS_T?100:(passP%PASS_COST))+'%';
+  { // הפס מתמלא מ-0 לערך בפתיחה — רואים את ההתקדמות זזה
+    const bar=$('psBar'),w3=(tier>=PASS_T?100:(passP%PASS_COST));
+    bar.style.transition='none';bar.style.width='0%';
+    void bar.offsetWidth;
+    bar.style.transition='width .8s cubic-bezier(.2,.8,.2,1)';
+    bar.style.width=w3+'%';
+  }
   $('psClaim').style.display=passClaimable()>0?'block':'none';
+  $('psClaim').classList.toggle('glowy',passClaimable()>0);
   const g=$('psTrack');g.innerHTML='';
   for(let i=0;i<PASS_T;i++){
     const r=passReward(i);
@@ -7423,7 +7458,7 @@ function buildPass(){
     row.className='achRow'+(st!=='lock'?' got':'');
     row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px'
       +(ms?';background:rgba(130,90,255,.16);box-shadow:inset 0 0 0 1.5px #b26aff66':'')
-      +(st==='ready'?';box-shadow:inset 0 0 0 2px #ffd257':'');
+      +(st==='ready'?';box-shadow:inset 0 0 0 2px #ffd257;animation:psReady 1.6s ease-in-out infinite':'');
     row.innerHTML=
       '<div style="width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;'
         +(st==='done'?'background:#1f9d55;color:#fff':st==='ready'?'background:#ffd257;color:#1b2430':'background:rgba(255,255,255,.1);color:#aeb8c8')+'">'
