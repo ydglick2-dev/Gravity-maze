@@ -348,7 +348,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v111</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v110</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5081,15 +5081,13 @@ function tutBuddyDraw(){
   tutBuddyRAF=requestAnimationFrame(tutBuddyDraw);
 }
 function tutRingAt(sel){
-  const r=$('tutRing'),dim=$('tutDim');
-  const noRing=()=>{r.classList.remove('on');dim.style.opacity='1';};
-  if(!sel){noRing();return;}
+  const r=$('tutRing');
+  if(!sel){r.classList.remove('on');return;}
   try{
     let rect;
     if(typeof sel==='function')rect=sel();          // אזור מותאם (קנבס)
-    else{const el=$(sel);if(!el){noRing();return;}rect=el.getBoundingClientRect();}
-    if(!rect||!rect.width){noRing();return;}
-    dim.style.opacity='0'; // 🔦 הזרקור של הטבעת מספק את ההחשכה — בלי כפילות
+    else{const el=$(sel);if(!el){r.classList.remove('on');return;}rect=el.getBoundingClientRect();}
+    if(!rect||!rect.width){r.classList.remove('on');return;}
     const pad=10,d=Math.max(rect.width,rect.height)+pad*2;
     r.style.width=d+'px';r.style.height=d+'px';
     r.style.left=(rect.left+rect.width/2-d/2)+'px';
@@ -5108,7 +5106,6 @@ function tutShow(){
   setTimeout(()=>tutRingAt(st.ring),60); // אחרי שהכרטיס זז
 }
 function tutNext(){
-  if(!tutSteps)return; // 🛡 לחיצה כפולה/מאוחרת לא מקריסה
   tutIdx++;
   if(tutIdx>=tutSteps.length){tutEnd();return;}
   const st=$('tutCard');st.style.animation='none';void st.offsetWidth;st.style.animation='tutIn .4s cubic-bezier(.2,1.5,.4,1) both';
@@ -5124,7 +5121,6 @@ function tutEnd(){
 }
 function tutRun(steps,onEnd){
   tutSteps=steps;tutIdx=0;tutOnEnd=onEnd||null;
-  $('tutDim').style.opacity='1';
   $('tutOv').classList.add('on');
   if(!tutBuddyRAF)tutBuddyDraw();
   tutShow();
@@ -9665,7 +9661,36 @@ async function wakeOn(){
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(wakeOn,300);});
 ['pointerdown','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,wakeOn,{passive:true}));
 wakeOn();
-initAuth();
+
+window.__t={
+  st:()=>({coins,chests,gems,unlocked,curUser,running,paused,levelIdx,storageOK,key:KEY,trophies,winStreak,lossAcc,
+    doneShown:!document.getElementById('doneOv').classList.contains('hidden'),
+    authShown:!document.getElementById('authOv').classList.contains('hidden'),
+    menuShown:!document.getElementById('menuOv').classList.contains('hidden'),
+    skinOwned:skinOwned.slice(),wakeLock:!!wakeLock}),
+  bst:()=>({hp:bossHp,maxHp:bossMaxHp,ammo:bossAmmo,supN:bossSupN,mode:bossMode,shield:supShieldT,
+    shots:bossShots.length,remn:bossRemn.length,pshots:bossPShots.length,bossMode,falling}),
+  play:(i)=>{document.querySelectorAll('.overlay').forEach(o=>o.classList.add('hidden'));startRun(i);},
+  boss:(i)=>{unlocked=1000;document.querySelectorAll('.overlay').forEach(o=>o.classList.add('hidden'));startRun(i);},
+  goal:()=>{const g=P(L().goal);ball.x=g.x;ball.y=g.y;ball.vx=0;ball.vy=0;},
+  giveChests:(n)=>{chests=n;save();refreshTro();},
+  setCoins:(n)=>{coins=n;save();refreshTro();},
+  setTro:(n)=>{trophies=n;save();refreshTro();},
+  ammo:(n)=>{bossAmmo=n;bossAmmoUi();},
+  charge:()=>{bossSupN=5;supUi();},
+  makeShots:(n)=>{for(let i=0;i<(n||3);i++)bossShots.push({x:board.x+(.2+.1*i)*board.w,y:board.y+.4*board.h,vx:0,vy:20,life:4,r:ball.r*.8,grav:0,rot:0});},
+  makeRemn:(n)=>{for(let i=0;i<(n||3);i++)bossRemn.push({x:board.x+(.2+.15*i)*board.w,y:board.y+.6*board.h,vx:0,vy:0,r:ball.r*.7,rot:0,life:99});},
+  entPos:()=>({shots:bossShots.map(s=>({x:s.x,y:s.y})),remn:bossRemn.map(m=>({x:m.x,y:m.y})),pshots:bossPShots.map(s=>({x:s.x,y:s.y})),bx:board.x,by:board.y,bw:board.w,bh:board.h}),
+  ballAt:()=>({x:ball.x,y:ball.y,bx:board.x,by:board.y,bw:board.w,bh:board.h}),
+  park:()=>{ball.x=board.x+.5*board.w;ball.y=board.y+.9*board.h;ball.vx=0;ball.vy=0;},
+  fire:()=>{bossTryFire();},
+  sup:()=>{bossSuper();},
+  freezeBoss:()=>{if(bossMode!=='dying'){bossStT=999;bossMode='idle';}bossShots.length=0;},
+  skin:(i)=>{if(!skinOwned.includes(i))skinOwned.push(i);skinSel=i;supUi();},
+  wake:()=>({fn:typeof wakeOn,wl:!!wakeLock}),
+  raceOpen:()=>{try{return typeof openRace;}catch(e){return 'ERR:'+e.message;}},
+  ev:(code)=>eval(code)
+};initAuth();
 try{if(scratchFree())setTimeout(()=>{if(!running)showToast(tr('🎟 מתנה יומית חינם מחכה בתפריט — כרטיס גירוד!','🎟 Free daily gift in the menu — scratch card!'));},2600);}catch(e){} // 🎁 מצביעים על המתנה היומית
 if(((troLife/25)|0)>troClaimed){claimTroRoad();save();refreshTro();} // תשלום-עבר בעלייה
 {const bm=document.getElementById('bootMsg');if(bm)bm.remove();} // המשחק עלה בהצלחה
