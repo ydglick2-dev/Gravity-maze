@@ -272,6 +272,9 @@
 #fireWrap{position:fixed;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:11;
   display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
 #fireWrap.hidden{display:none}
+#supWrap{position:fixed;left:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:11;
+  display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+#supWrap.hidden{display:none}
 #bossAmmo{font-weight:900;font-size:15px;color:#ffd257;background:rgba(8,12,20,.65);
   padding:2px 10px;border-radius:12px;box-shadow:inset 0 0 0 1.5px rgba(255,214,87,.35);
   text-shadow:0 1px 4px rgba(0,0,0,.7)}
@@ -295,6 +298,7 @@
   50%{box-shadow:inset 0 0 0 2.5px #e7dcff,0 0 26px rgba(160,110,255,.95);transform:scale(1.1)}}
 @keyframes fireReady{0%,100%{box-shadow:inset 0 0 0 2px rgba(255,255,255,.3),0 0 10px rgba(255,110,70,.4)}
   50%{box-shadow:inset 0 0 0 2.5px #ffd257,0 0 26px rgba(255,90,60,.9);transform:scale(1.07)}}
+#supBtn{width:62px !important;height:62px !important;font-size:24px !important}
 </style>
 </head>
 <body>
@@ -371,10 +375,12 @@
   <div class="pill" id="hudInfo"></div>
 </div>
 <div id="fireWrap" class="hidden" dir="ltr">
-  <div id="supCnt">0/5</div>
-  <button id="supBtn" disabled>⚡</button>
   <div id="bossAmmo">×0</div>
   <button id="fireBtn" disabled>🎯</button>
+</div>
+<div id="supWrap" class="hidden" dir="ltr">
+  <div id="supCnt">0/5</div>
+  <button id="supBtn" disabled>⚡</button>
 </div>
 <div id="raceBar"><span id="oppInfo"></span></div>
 <div id="spWrap" style="display:none;position:fixed;left:10px;right:10px;bottom:calc(128px + env(safe-area-inset-bottom));z-index:7;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.55)"></div>
@@ -1937,11 +1943,11 @@ function loadLevel(i){
   keyGot=(lv.keys||[]).map(()=>false);
   swState=(lv.switches||[]).map(()=>({open:false,inside:false}));
   lvTime=0;lvDeaths=0;comboN=0;comboT=0;
-  bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;bossCycN=0;bossSupN=0;supShieldT=0;supRapidT=0;supSlowT=0;supMudT=0;supStopT=0;
+  bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;supAimDrag=null;bossCycN=0;bossSupN=0;supShieldT=0;supRapidT=0;supSlowT=0;supMudT=0;supStopT=0;
   try{supUi();}catch(e){}
   if(lv.boss&&!customLv){bossMaxHp=bossZone()===9?60:16+bossZone()*4;bossHp=bossMaxHp;bossHpShown=bossMaxHp;bossMode='idle';bossStT=1.2;} // 💪 פס חיים ארוך
   else{bossMaxHp=0;bossHp=0;}
-  try{$('fireWrap').classList.toggle('hidden',!(lv.boss&&!customLv));bossAmmoUi();}catch(e){}
+  try{$('fireWrap').classList.toggle('hidden',!(lv.boss&&!customLv));$('supWrap').classList.toggle('hidden',!(lv.boss&&!customLv));bossAmmoUi();}catch(e){}
   particles.length=0;trail.length=0;shake=0;flashW=0;flashR=0;
   updateHud();
   const z=(levelIdx/10)|0;
@@ -2399,7 +2405,7 @@ let bossHp=0,bossMaxHp=0,bossMode='idle',bossStT=0,bossPh=0,bossX=.5,
     bossShots=[],bossRemn=[],bossAmmo=0,bossInvT=0,bossPShots=[],bossPat=0,
     bossHurtT=0,bossDieT=0,bossRage=0,bossAim=0,bossStrN=0,bossStrT=0,bossSpA=0,
     bossHpShown=0,bossAimDrag=null,bossCycN=0,
-    bossSupN=0,supShieldT=0,supRapidT=0,supSlowT=0,supMudT=0,supStopT=0; // ⚡ סופר: נטען ב-5 פגיעות
+    bossSupN=0,supShieldT=0,supRapidT=0,supSlowT=0,supMudT=0,supStopT=0,supAimDrag=null; // ⚡ סופר: נטען ב-5 פגיעות
 /* ⚡ 35 מכות-על — אחת ייחודית לכל סקין (אינדקס סקין = אינדקס סופר) */
 const SUPERS=[
  {e:'🛡',n:'מגן-על',en:'Super Shield',d:['6 שניות חסינות מלאה!','6s of full immunity!']},          // 0 פלדה
@@ -2624,7 +2630,7 @@ function bossApplyHit(px,py,G,noCharge){
   if(bossHp<=0){
     bossMode='dying';bossDieT=0;
     bossShots.length=0;bossRemn.length=0;bossPShots.length=0;
-    try{$('fireWrap').classList.add('hidden');}catch(e){}
+    try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');}catch(e){}
     sfx.bossDie();shake=10;timeScale=.4;
     emojiPop(G.cx,G.cy,['💥','✨','👑'],14,150);
   }
@@ -2638,13 +2644,14 @@ function supUi(){
     b.disabled=bossSupN<5;b.classList.toggle('ready',bossSupN>=5);
   }catch(e){}
 }
-function applySuper(si){ // האפקט עצמו — הקובייה (16) מגלגלת סופר אחר דרך אותה פונקציה
+function applySuper(si,ang){ // האפקט עצמו — הקובייה (16) מגלגלת סופר אחר דרך אותה פונקציה
+  if(ang===undefined)ang=-Math.PI/2; // 🎯 סופרים יורים מכוונים לפי הגרירה; ברירת מחדל — ישר למעלה
   const G=bossGeo();
   const V=md()*1.5,pShot=(a,extra)=>bossPShots.push(Object.assign({x:ball.x,y:ball.y,vx:Math.cos(a)*V,vy:Math.sin(a)*V,t:0,sup:true},extra||{}));
   switch(si){
    case 0:supShieldT=6;break;                                          // 🛡 מגן-על
    case 1:supRapidT=4;bossAmmoUi();break;                              // ♾️ אש בלי סוף
-   case 2:for(let k=0;k<5;k++)pShot(-Math.PI/2+(k-2)*.25);sfx.playerShoot();break; // 🌪 טורנדו
+   case 2:for(let k=0;k<5;k++)pShot(ang+(k-2)*.25);sfx.playerShoot();break; // 🌪 טורנדו
    case 3:bossMode='rest';bossStT=3.5;bossCycN=0;bossShots.length=0;break; // 😴 שיר ערש
    case 4:lvDeaths=0;try{updateHud();}catch(e){}flashW=.3;break;       // ❤️ ריפוי מלא
    case 5:{const got=bossRemn.length;bossAmmo=Math.min(5,bossAmmo+got);bossRemn.length=0;bossAmmoUi();if(got)sfx.pick(3);break;} // 🧲
@@ -2655,22 +2662,22 @@ function applySuper(si){ // האפקט עצמו — הקובייה (16) מגלג
      bossShots.length=0;sfx.playerShoot();break;
    case 9:supSlowT=5;break;                                            // ⏳ האטת זמן
    case 10:for(let k=0;k<6;k++)bossSpawnRemn(ball.x+(Math.random()-.5)*150,ball.y-30-Math.random()*80);break; // 🌧
-   case 11:for(let k=0;k<2;k++)pShot(-Math.PI/2+(k?.2:-.2),{homing:true});sfx.playerShoot();break; // ⚡⚡ ברק כפול
+   case 11:for(let k=0;k<2;k++)pShot(ang+(k?.2:-.2),{homing:true});sfx.playerShoot();break; // ⚡⚡ ברק כפול
    case 12:for(let k=0;k<2;k++)bossApplyHit(G.cx,G.cy,G,true);if(bossMode!=='dying'){bossMode='rest';bossStT=2;}break; // 🥊
    case 13:addCoins(30);break;                                         // 💰
    case 14:bossShots.forEach(s=>bossSpawnRemn(s.x,s.y));bossShots.length=0;break; // 🧊
    case 15:bossPShots.push({x:G.cx,y:board.y-30,vx:0,vy:md()*1.3,t:0,sup:true,homing:true,dmg:3,big:true});sfx.playerShoot();break; // ☄️ מטאור
-   case 16:{const r=(Math.random()*16)|0;const S2=SUPERS[r];           // 🎲 קוביית מזל
+   case 16:{const r=(Math.random()*16)|0;const S2=SUPERS[r];           // 🎲 קוביית מזל (מעבירה את הכיוון הלאה)
      setTimeout(()=>{try{showToast('🎲→ '+S2.e+' '+tr(S2.n,S2.en)+'!');}catch(e){}},600);
-     applySuper(r);break;}
+     applySuper(r,ang);break;}
    case 17:supStopT=2.5;break;                                         // ⏱ עצירת זמן
    case 18:lvDeaths=Math.max(0,lvDeaths-1);try{updateHud();}catch(e){}break; // 💖 לב נוסף
    case 19:supShieldT=3;lvDeaths=Math.max(0,lvDeaths-1);try{updateHud();}catch(e){}break; // 🛡❤️ משמר
    case 20:supMudT=6;break;                                            // 🐌 בוץ
-   case 21:for(let k=0;k<6;k++)setTimeout(()=>{                        // 📯 צרור-על
+   case 21:{const sa=ang;for(let k=0;k<6;k++)setTimeout(()=>{           // 📯 צרור-על — בכיוון שכוונת
        if(running&&bossOn()&&bossMode!=='dying'&&bossPShots.length<12){
-         bossPShots.push({x:ball.x,y:ball.y,vx:0,vy:-V,t:0,sup:true});sfx.playerShoot();
-       }},k*130);break;
+         bossPShots.push({x:ball.x,y:ball.y,vx:Math.cos(sa)*V,vy:Math.sin(sa)*V,t:0,sup:true});sfx.playerShoot();
+       }},k*130);break;}
    case 22:chests++;try{save();refreshTro();}catch(e){}break;          // 🎁 מתנה
    case 23:gems+=3;try{save();refreshTro();}catch(e){}break;           // 💎 יהלומים
    case 24:setTimeout(()=>{                                            // 🧨 פצצת זמן
@@ -2686,14 +2693,15 @@ function applySuper(si){ // האפקט עצמו — הקובייה (16) מגלג
    case 27:supMudT=5;supSlowT=5;break;                                 // 🐌🐌 האטה כפולה
    case 28:supShieldT=3;bossApplyHit(G.cx,G.cy,G,true);break;          // 👻 רוח רפאים
    case 29:addCoins(50);break;                                         // 🤑 מטר זהב
-   case 30:for(let k=0;k<8;k++)pShot(-Math.PI/2+(k-3.5)*.17);sfx.playerShoot();break; // 💥 מסי
-   case 31:pShot(-Math.PI/2,{dmg:5,big:true});sfx.playerShoot();break; // 🎯 רונאלדו
-   case 32:for(const dx of[-26,0,26])bossPShots.push({x:ball.x+dx,y:ball.y,vx:0,vy:-V,t:0,sup:true});sfx.playerShoot();break; // 🔱 ניימאר
-   case 33:pShot(-Math.PI/2,{dmg:2,homing:true,big:true});sfx.playerShoot();break; // 🚀 אמבפה
+   case 30:for(let k=0;k<8;k++)pShot(ang+(k-3.5)*.17);sfx.playerShoot();break; // 💥 מסי
+   case 31:pShot(ang,{dmg:5,big:true});sfx.playerShoot();break; // 🎯 רונאלדו
+   case 32:{const px=Math.cos(ang+Math.PI/2),py=Math.sin(ang+Math.PI/2); // 🔱 ניימאר — 3 מקבילות בכיוון שכוונת
+     for(const d of[-26,0,26])bossPShots.push({x:ball.x+px*d,y:ball.y+py*d,vx:Math.cos(ang)*V,vy:Math.sin(ang)*V,t:0,sup:true});sfx.playerShoot();break;}
+   case 33:pShot(ang,{dmg:2,homing:true,big:true});sfx.playerShoot();break; // 🚀 אמבפה
    default:for(let k=0;k<12;k++)pShot(k*TAU/12);sfx.playerShoot();     // 🔥 האלנד
   }
 }
-function bossSuper(){
+function bossSuper(dx,dy){
   if(!running||paused||runMode||!bossOn()||bossHp<=0||bossSupN<5||falling>0||winPause>0)return;
   bossSupN=0;supUi();
   const si=superIdxOf(skinSel),SS=SUPERS[si];
@@ -2702,9 +2710,31 @@ function bossSuper(){
   shock(ball.x,ball.y,'rgba(180,140,255,.85)',md()*.4);
   emojiPop(ball.x,ball.y,[SS.e,'✨'],10,140);
   if(navigator.vibrate)navigator.vibrate([40,40,80]);
-  applySuper(si);
+  let ang;
+  if(dx!==undefined&&(dx*dx+dy*dy)>0)ang=Math.atan2(dy,dx);
+  applySuper(si,ang);
 }
-$('supBtn').onpointerdown=e=>{e.preventDefault();bossSuper();};
+{ // 🎯 גם הסופר מכוון בגרירה — חץ סגול
+  const sb=$('supBtn');
+  sb.onpointerdown=e=>{
+    e.preventDefault();
+    if(bossSupN<5)return;
+    supAimDrag={x0:e.clientX,y0:e.clientY,dx:0,dy:0};
+    try{sb.setPointerCapture(e.pointerId);}catch(e2){}
+  };
+  sb.onpointermove=e=>{
+    if(!supAimDrag)return;
+    supAimDrag.dx=e.clientX-supAimDrag.x0;supAimDrag.dy=e.clientY-supAimDrag.y0;
+  };
+  const rel=()=>{
+    if(!supAimDrag)return;
+    const d=supAimDrag,len=Math.hypot(d.dx,d.dy);
+    supAimDrag=null;
+    if(len<18)bossSuper();          // הקשה — ישר למעלה
+    else bossSuper(d.dx,d.dy);      // גרירה — בכיוון
+  };
+  sb.onpointerup=rel;sb.onpointercancel=()=>{supAimDrag=null;};
+}
 /* 🎨 ציור: קליעים, שאריות, ירייה, מנעול יעד — בתוך ה-clip, מתחת לכדור */
 function drawBossShots(t){
   const T=THEMES[L().th],idx=bossZone(),emo=BOSS_EMO[idx];
@@ -2752,6 +2782,23 @@ function drawBossShots(t){
     ctx.fillStyle=gl;ctx.beginPath();ctx.arc(p.x,p.y,ball.r*2.6*bk,0,TAU);ctx.fill();
     ctx.font=Math.round(ball.r*2*bk)+'px sans-serif';
     ctx.fillText(p.homing?'🚀':emo,p.x,p.y);
+  }
+  // 🎯 חץ כיוון סגול — גרירת כפתור הסופר
+  if(supAimDrag&&bossSupN>=5&&falling===0){
+    const d=supAimDrag,len=Math.hypot(d.dx,d.dy);
+    const ang=len<18?-Math.PI/2:Math.atan2(d.dy,d.dx);
+    const L2=md()*.42,ax=ball.x+Math.cos(ang)*L2,ay=ball.y+Math.sin(ang)*L2;
+    ctx.save();
+    ctx.strokeStyle='rgba(180,140,255,.9)';ctx.lineWidth=4;ctx.setLineDash([9,7]);ctx.lineDashOffset=-t*30;
+    ctx.beginPath();ctx.moveTo(ball.x+Math.cos(ang)*ball.r*1.4,ball.y+Math.sin(ang)*ball.r*1.4);ctx.lineTo(ax,ay);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(200,170,255,.95)';
+    ctx.beginPath();
+    ctx.moveTo(ax+Math.cos(ang)*12,ay+Math.sin(ang)*12);
+    ctx.lineTo(ax+Math.cos(ang+2.5)*9,ay+Math.sin(ang+2.5)*9);
+    ctx.lineTo(ax+Math.cos(ang-2.5)*9,ay+Math.sin(ang-2.5)*9);
+    ctx.closePath();ctx.fill();
+    ctx.restore();
   }
   // 🎯 חץ כיוון בזמן גרירת הכפתור — כמו בבראול
   if(bossAimDrag&&bossAmmo>0&&falling===0){
@@ -4218,7 +4265,7 @@ function syncLobbyUI(){
   const anyOv=OVS.some(id=>!$(id).classList.contains('hidden'));
   $('lobbyUI').style.display=(!running&&!anyOv)?'flex':'none';
   $('hud').style.display=running?'flex':'none';
-  if(!running)try{$('fireWrap').classList.add('hidden');}catch(e){}
+  if(!running)try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');}catch(e){}
   $('setBtn').style.display=running?'none':'block'; // ⚙️ זמין בלובי ובתפריטים, לא בזמן משחק
   const sw=$('spWrap');
   if(sw&&sw._on)sw.style.transform=running?'translateX(-250vw)':'none'; // מוסתר בזמן משחק, האודיו ממשיך
@@ -4836,7 +4883,7 @@ function tickNum(el,pre,val){
   el._tr=requestAnimationFrame(step);
 }
 function finishLevel(){
-  try{$('fireWrap').classList.add('hidden');}catch(e){}
+  try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');}catch(e){}
   if(customLv&&customLv._daily){
     running=false;paused=false;
     const md2=medalFor2(customLv.par,lvTime);
@@ -5552,7 +5599,7 @@ function buildAch(){
   });
 }
 function failLevel(){
-  try{$('fireWrap').classList.add('hidden');}catch(e){}
+  try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');}catch(e){}
   winStreak=0;
   if(duelLive){ // במרוץ שלבים נפילה×3 רק מאתחלת את השלב הנוכחי
     hushRoll();
@@ -5902,7 +5949,7 @@ async function beginCountdown(x,seed){
 function startRunner(live,seed,target){
   customLv=null;runMode=true;runLive=!!live;runDead=false;
   bossMaxHp=0;bossHp=0;bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossSupN=0;supShieldT=0;supRapidT=0;supSlowT=0;supMudT=0;supStopT=0; // 👾 קרב בוס לא דולף לראנר (למשל אחרי זימון)
-  try{$('fireWrap').classList.add('hidden');}catch(e){}
+  try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');}catch(e){}
   cineMode='';cineHold=false;cineCb=null;timeScale=1;
   runSeed=seed;runTarget=live?target:1e9;
   runRnd=mulberry(seed);
@@ -9416,25 +9463,12 @@ function initAuth(){
 }
 
 window.__t={
-  st:()=>({coins:coins,chests:chests,gems:gems,unlocked:unlocked,curUser:curUser,running:running,levelIdx:levelIdx,storageOK:storageOK,key:KEY,
-    doneShown:!document.getElementById('doneOv').classList.contains('hidden'),
-    authShown:!document.getElementById('authOv').classList.contains('hidden'),
-    menuShown:!document.getElementById('menuOv').classList.contains('hidden'),
-    trophies:trophies,wheelD:wheelD,skinOwned:skinOwned.slice()}),
-  play:(i)=>{document.querySelectorAll('.overlay').forEach(o=>o.classList.add('hidden'));startRun(i);},
-  boss:(i)=>{unlocked=1000;document.querySelectorAll('.overlay').forEach(o=>o.classList.add('hidden'));startRun(i);},
-  goal:()=>{const g=P(L().goal);ball.x=g.x;ball.y=g.y;ball.vx=0;ball.vy=0;},
-  giveChests:(n)=>{chests=n;save();refreshTro();},
-  setCoins:(n)=>{coins=n;save();refreshTro();},
-  ammo:(n)=>{bossAmmo=n;bossAmmoUi();},
-  charge:()=>{bossSupN=5;supUi();},
-  bst:()=>({hp:bossHp,ammo:bossAmmo,supN:bossSupN,pshots:bossPShots.length,mode:bossMode,shield:supShieldT}),
-  park:()=>{ball.x=board.x+.5*board.w;ball.y=board.y+.9*board.h;ball.vx=0;ball.vy=0;},
-  freezeBoss:()=>{if(bossMode!=='dying'){bossStT=999;bossMode='idle';}bossShots.length=0;},
-  skin:(i)=>{if(!skinOwned.includes(i))skinOwned.push(i);skinSel=i;supUi();},
-  supOf:(i)=>superIdxOf(i),
-  skinsN:()=>SKINS.length,
-  prize:()=>{const p=document.getElementById('scCv')._prize;return p?{t:p.t,v:p.v,idx:p.idx,label:p.label}:null;}
+  st:()=>({tro:trophies,co:coins,gm:gems,ch:chests,unl:unlocked,lvl:levelIdx,lossAcc:lossAcc,troLife:troLife,dwN:dwN,run:running}),
+  win:()=>{finishLevel();},
+  fail:()=>{lvDeaths=3;failLevel();},
+  die1:()=>{ball.spawnT=0;falling=.0001;fallPt={x:ball.x,y:ball.y};},
+  hintTxt:()=>$('hint').textContent,
+  lvName:()=>L().name?L().name:'',
 };initAuth();
 if(((troLife/25)|0)>troClaimed){claimTroRoad();save();refreshTro();} // תשלום-עבר בעלייה
 {const bm=document.getElementById('bootMsg');if(bm)bm.remove();} // המשחק עלה בהצלחה
