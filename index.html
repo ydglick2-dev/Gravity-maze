@@ -344,7 +344,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v103</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v104</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -7096,6 +7096,7 @@ function enforceBan(b){
     +(b.f?tr(' · על ידי ',' · by ')+b.f:''));
   const st=store();
   if(st)try{st.setItem(CKEY,'__ask__');}catch(e){}
+  try{document.cookie='mzUser=;max-age=0;path=/';}catch(e){}
   setTimeout(()=>location.reload(),2600);
   return true;
 }
@@ -7526,6 +7527,7 @@ function applyUser(name){
   else{KEY='mazeUltra100_v2';GKEY='mazeGhosts_v1';}
   ghostDB=null;
   const st=store();if(st)try{st.setItem(CKEY,name||'__guest__')}catch(e){}
+  try{document.cookie='mzUser='+encodeURIComponent(name||'__guest__')+';max-age=63072000;path=/;SameSite=Lax';}catch(e){} // 🛟 גיבוי זהות בעוגייה — שורד מחיקות localStorage חלקיות
   load();refreshUserChip();
   // בלי save() כאן — שמירה מוקדמת הייתה גוברת בטעות על השמירה שבענן
   if(name&&!myName)myName=name.slice(0,12);
@@ -9303,6 +9305,7 @@ $('userChip').onclick=()=>{
   }
   save();gSaveDB();
   const st=store();if(st)try{st.setItem(CKEY,'__ask__')}catch(e){}
+  try{document.cookie='mzUser=;max-age=0;path=/';}catch(e){} // 🛟 מוחקים גם את גיבוי-העוגייה בהתנתקות
   location.reload();
 };
 function syncPerfBtn(){$('perfBtn').textContent='⚡ '+tr('ביצועים: ','Performance: ')+(perfPref==='1'?tr('פועל','on'):perfPref==='0'?tr('כבוי','off'):tr('אוטו','auto'));}
@@ -9325,12 +9328,23 @@ if(window.__tierFresh){
 }
 function initAuth(){
   const st=store();
-  const cu=st?st.getItem(CKEY):null;
+  let cu=st?st.getItem(CKEY):null;
+  if(!cu){ // 🛟 localStorage נמחק? העוגייה זוכרת מי מחובר
+    try{const m=document.cookie.match(/(?:^|; )mzUser=([^;]*)/);if(m&&m[1])cu=decodeURIComponent(m[1]);}catch(e){}
+  }
   const users=getUsers();
-  if(cu&&cu!=='__ask__'&&cu!=='__guest__'&&users[cu]){
-    applyUser(cu);
+  if(cu&&cu!=='__ask__'&&cu!=='__guest__'){
+    applyUser(cu); // ✅ לא מנתקים — גם אם הרשומה המקומית אבדה
     isAdmin=!!(st&&st.getItem('mazeAdm_v1')==='1');
     $('adminBtn').style.display=isAdmin?'':'none';
+    if(!users[cu]){ // הרשומה המקומית אבדה — משחזרים מהענן ברקע
+      (async()=>{try{
+        let rec=null;
+        if(beOn()){const r=await be('/api/doc');rec=r&&r.users&&r.users[cu];}
+        if(!rec){const d=await regFetch();rec=d&&d.users&&d.users[cu];}
+        if(rec){const u2=getUsers();u2[cu]=rec;putUsers(u2);}
+      }catch(e){}})();
+    }
     checkGifts();
   }
   else if(cu==='__guest__'){isAdmin=false;$('adminBtn').style.display='none';applyUser(null);}
