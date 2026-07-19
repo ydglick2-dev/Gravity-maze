@@ -344,7 +344,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v104</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v105</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -6225,7 +6225,7 @@ function buildSkins(){
     const chestOnly=(s.rar|0)>=4&&!s.pow&&!s.wc; // 🔴🟡 נדירויות גבוהות — רק מתיבות, כמו במוקאפ
     const pr=document.createElement('div');pr.className='skPrice';
     pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select')
-      :(s.wc?tr('🍀 0.01% מכל תיבה!','🍀 0.01% from any chest!')
+      :(s.wc?tr('🍀 1% מכל תיבה!','🍀 1% from any chest!')
       :(s.fs?tr('⚽ מגיע עם סקין שחקן','⚽ Comes with a player skin')
       :(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙'))));
     card.appendChild(pr);
@@ -6241,7 +6241,7 @@ function buildSkins(){
         tone(140,.12,'sawtooth',.2);
         if(navigator.vibrate)navigator.vibrate(30);
       };
-      if(s.wc&&!owned){deny();return showToast(tr('🐐 מסי נופל רק מתיבות — סיכוי 0.01% לכל פתיחה. בהצלחה!','🐐 Messi only drops from chests — 0.01% per open. Good luck!'));}
+      if(s.wc&&!owned){deny();return showToast(tr('🐐 מסי נופל רק מתיבות — סיכוי 1% לכל פתיחה. בהצלחה!','🐐 Messi only drops from chests — 1% per open. Good luck!'));}
       if(s.fs&&!owned){deny();return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));}
       if((s.rar|0)>=4&&!s.pow){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
       if(coins>=s.price){
@@ -6277,7 +6277,7 @@ function pickUnowned(cat,ow){
 /* ⭐ סטאר דרופ: הסיכויים הרשמיים של סופרסל (עמוד Starr Drop Chances) —
    נדיר 50% · נדיר במיוחד 28% · אדיר 15% · מדהים 5% · אגדי 2%. כל תיבה
    מכילה פריט מובטח בנדירות שמוגרלת לפי הסיכויים האלה — בדיוק כמו בבראול. */
-const DROP_PCT=[[5,2],[4,5],[3,15],[2,28],[1,50]]; // [נדירות, אחוז] — מצטבר מהנדיר ביותר
+const DROP_PCT=[[5,7],[4,10],[3,20],[2,28],[1,35]]; // [נדירות, אחוז] — נדיב! אגדי 7%, מדהים 10%, אדיר 20%
 let pity=0; // נשמר לתאימות שמירות ישנות — כבר לא בשימוש (פריט מובטח בכל תיבה)
 function grantTier(t){
   // אוסף מועמדים בנדירות המבוקשת; אם אין — מטפסים למעלה ואז יורדים
@@ -6310,9 +6310,9 @@ function grantTier(t){
 }
 function rollChest(){
   const drops=[];
-  // 🐐 מסי! סיכוי 0.01% (1 ל-10,000) בכל תיבה — הדרך היחידה להשיג אותו
+  // 🐐 מסי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
   let messi=null;
-  if(!skinOwned.includes(MESSI_IDX)&&Math.random()<.0001){
+  if(!skinOwned.includes(MESSI_IDX)&&Math.random()<.01){
     skinOwned.push(MESSI_IDX);
     messi={icon:'🐐',label:tr('ליאו מסי!!','Leo Messi!!'),rar:5,
       rv:{kind:'skin',idx:MESSI_IDX,rar:5,label:tr('ליאו מסי','Leo Messi'),story:loreOf(MESSI_IDX)}};
@@ -6348,7 +6348,7 @@ function mondialBox(){ // 🏆 תיבת בונוס כל 50 שלבים (מסי ע
     coins+=40;gems+=3;chests++;
     save();refreshTro();
     showReveal({kind:'fx',icon:'🏆',rar:3,label:'+40 🪙 · +3 💎 · +1 🎁',
-      story:tr('בונוס מונדיאל! ורמז: מסי 🐐 מסתתר בתיבות רגילות — 0.01% לכל פתיחה!','Mondial bonus! Hint: Messi 🐐 hides in regular chests — 0.01% per open!')});
+      story:tr('בונוס מונדיאל! ורמז: מסי 🐐 מסתתר בתיבות רגילות — 1% לכל פתיחה!','Mondial bonus! Hint: Messi 🐐 hides in regular chests — 1% per open!')});
   });
 }
 function checkMessi(){
@@ -6878,7 +6878,7 @@ $('chestBtn').onclick=()=>{
   $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
   $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
   $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
-  $('chestOdds').textContent=tr('⭐ פריט מובטח בכל תיבה! סיכויי נדירות (רשמי בראול): ','⭐ Guaranteed item! Rarity odds (official Brawl): ')+'🟢50% · 🔵28% · 🟣15% · 🔴5% · 🟡2%';
+  $('chestOdds').textContent=tr('⭐ פריט מובטח בכל תיבה! ','⭐ Guaranteed item! ')+'🟢35% · 🔵28% · 🟣20% · 🔴10% · 🟡7% · 🐐1%';
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
