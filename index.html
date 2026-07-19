@@ -348,7 +348,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v107</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v108</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -7229,7 +7229,7 @@ async function buildTables(fresh){
     (curUser&&n===curUser)?Object.assign(statsOf(d.users[n].sv,n),me,{name:n}):statsOf(d.users[n].sv,n));
   if(!curUser||!d.users[curUser])rows.push(me);
   if(tbScope==='fr')rows=rows.filter(r=>r.me||friends.includes(r.name));
-  const V={tro:r=>r.et||0,co:r=>r.ec||0,lvl:r=>r.edone||0,star:r=>r.estars||0}[tbMetric]; // כל המדדים = אמיתי בלבד, בלי מתנות אדמין
+  const V={tro:r=>r.et||0,co:r=>r.ec||0,lvl:r=>r.edone||0,star:r=>r.estars||0}[tbMetric]; // הישגים + מתנות אדמין (הורדה/איפוס מנקים)
   const IC={tro:'🏆',co:'🪙',lvl:'✅',star:'⭐'}[tbMetric];
   rows.sort((a,b)=>V(b)-V(a));
   rows=rows.slice(0,30);
@@ -7415,8 +7415,8 @@ $('watchRefresh').onclick=buildWatch;
 setInterval(()=>{if(!$('watchOv').classList.contains('hidden')&&!document.hidden)buildWatch();},15000);
 $('watchBack').onclick=()=>{$('watchOv').classList.add('hidden');$('adminOv').classList.remove('hidden');};
 $('tablesBtn').onclick=()=>{$('menuOv').classList.add('hidden');$('tablesOv').classList.remove('hidden');buildTables(true);};
-/* 🔄 הטבלה חיה: מתרעננת מהשרת כל 20 שניות כל עוד היא פתוחה */
-setInterval(()=>{try{if(!$('tablesOv').classList.contains('hidden')&&!document.hidden)buildTables(true);}catch(e){}},20000);
+/* 🔄 הטבלה חיה: מתרעננת מהשרת כל 6 שניות כל עוד היא פתוחה */
+setInterval(()=>{try{if(!$('tablesOv').classList.contains('hidden')&&!document.hidden)buildTables(true);}catch(e){}},6000);
 $('tbBack').onclick=()=>{$('tablesOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('tbWorld').onclick=()=>{tbScope='world';buildTables();};
 $('tbFriends').onclick=()=>{tbScope='fr';buildTables();};
@@ -7837,7 +7837,7 @@ async function cloudPush(){
   }catch(e){}
   cloudBusy=false;
 }
-setInterval(()=>{if(cloudDirty&&curUser)cloudPush();},15000);
+setInterval(()=>{if(cloudDirty&&curUser)cloudPush();},6000); // ☁️ דחיפה מהירה — הטבלאות של כולם מתעדכנות תוך שניות
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden&&cloudDirty&&curUser)cloudPush(); // דחיפה אחרונה כשעוזבים
 });
@@ -7857,8 +7857,8 @@ function applyGift(g,target){
     if(g.dnl)unlocked=Math.min(unlocked,Math.max(0,(g.dnl|0)-1));
     if(g.clv&&g.clv.lv)customLevels[Math.max(0,g.clv.i|0)]=g.clv.lv;
     if('clr' in g)delete customLevels[Math.max(0,g.clr|0)];
-    if(g.tro)addTro(g.tro|0,true); // מתנה — נספרת בטבלאות אחרי שתסיימו שלב אחד
-    if(g.co){coins+=g.co|0;pCo+=g.co|0;}
+    if(g.tro)addTro(g.tro|0); // 🎁 מתנה מהאדמין נספרת בטבלאות מיד (עד שהאדמין מוריד/מאפס)
+    if(g.co)addCoins(g.co|0);
     if(g.gm)gems+=g.gm|0;
     if(g.ch)chests+=g.ch|0;
     // הורדה: קודם מהמתנות הממתינות (שעוד לא נספרו), ורק השאר מהאמיתי
@@ -7886,8 +7886,8 @@ function applyGift(g,target){
   if(g.clv&&g.clv.lv){d.cl=(d.cl&&typeof d.cl==='object')?d.cl:{};d.cl[Math.max(0,g.clv.i|0)]=g.clv.lv;}
   if('clr' in g&&d.cl)delete d.cl[Math.max(0,g.clr|0)];
   d.t=Date.now(); // שהשמירה המקומית תנצח את הענן בתיקו
-  if(g.tro){d.tro=(d.tro|0)+(g.tro|0);d.tl=(d.tl|0)+(g.tro|0);d.pt=(d.pt|0)+(g.tro|0);}
-  if(g.co){d.co=(d.co|0)+(g.co|0);d.pc=(d.pc|0)+(g.co|0);}
+  if(g.tro){const e0=d.et===undefined?(d.tl|0):(d.et|0);d.tro=(d.tro|0)+(g.tro|0);d.tl=(d.tl|0)+(g.tro|0);d.et=e0+(g.tro|0);} // נספר מיד
+  if(g.co){const e0=d.ec===undefined?(d.co|0):(d.ec|0);d.co=(d.co|0)+(g.co|0);d.ec=e0+(g.co|0);}
   if(g.gm)d.gm=(d.gm|0)+(g.gm|0);
   if(g.ch)d.ch=(d.ch|0)+(g.ch|0);
   if(g.dtro){const n2=g.dtro|0,p2=d.pt|0,u=Math.min(p2,n2);d.pt=p2-u;const e2=d.et===undefined?(d.tl|0):(d.et|0);d.tro=Math.max(0,(d.tro|0)-n2);d.et=Math.max(0,e2-(n2-u));}
@@ -9512,6 +9512,18 @@ function initAuth(){
   else if(cu==='__guest__'){isAdmin=false;$('adminBtn').style.display='none';applyUser(null);}
   else{refreshUserChip();$('authOv').classList.remove('hidden');}
 }
+/* 📱 המסך לא נכבה בזמן המשחק — כמו בוויז (Wake Lock) */
+let wakeLock=null;
+async function wakeOn(){
+  try{
+    if(!('wakeLock' in navigator)||wakeLock||document.visibilityState!=='visible')return;
+    wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{wakeLock=null;});
+  }catch(e){wakeLock=null;}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(wakeOn,300);});
+['pointerdown','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,wakeOn,{passive:true}));
+wakeOn();
 initAuth();
 try{if(scratchFree())setTimeout(()=>{if(!running)showToast(tr('🎟 מתנה יומית חינם מחכה בתפריט — כרטיס גירוד!','🎟 Free daily gift in the menu — scratch card!'));},2600);}catch(e){} // 🎁 מצביעים על המתנה היומית
 if(((troLife/25)|0)>troClaimed){claimTroRoad();save();refreshTro();} // תשלום-עבר בעלייה
