@@ -348,7 +348,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v108</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v109</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -788,7 +788,7 @@
 
 <div class="overlay hidden" id="raceOv">
   <h1 data-en="🏁 Live Race">🏁 תחרות חיה</h1>
-  <p class="sub" data-en="Two phones, same levels, same moment. Winner takes 🏆10 — loser pays 🏆10!">שני טלפונים, אותם שלבים, אותו רגע.<br>המנצח לוקח 🏆10 — המפסיד משלם 🏆10!</p>
+  <p class="sub" data-en="Two phones, same levels, same moment. Winner takes 🏆10 — loser only 🏆3!">שני טלפונים, אותם שלבים, אותו רגע.<br>המנצח לוקח 🏆10 — המפסיד רק 🏆3!</p>
   <input class="tin" id="raceName" maxlength="12" placeholder="השם שלך" data-en-ph="Your name">
   <div class="row" id="lvChoose">
     <button class="btn" id="lvCreate" data-en="🎯 Create Room">🎯 צור חדר</button>
@@ -4981,7 +4981,7 @@ function finishLevel(){
   }
   unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,levelIdx+1));
   grantPowSkins();
-  const _cg=Math.round((3+((levelIdx/10)|0)*.5)*(POW()==='rich'?1.5:1));
+  const _cg=Math.round((3+got*2+(firstClear?10:0)+((levelIdx/10)|0)*.5)*(POW()==='rich'?1.5:1)); // 🪙 כוכבים=כסף, סיום ראשון=בונוס
   addCoins(_cg);
 
   if((levelIdx+1)%100===0){bossDefeatFx();if(lvDeaths===0)stBossClean=true;} // 👑 הכתרה על ניצחון בוס
@@ -6073,9 +6073,11 @@ function runEliminate(){
       runMode=false;running=false;
       const rec=runDist>runBest;
       if(rec){runBest=Math.floor(runDist);logEv('rn',runBest);}
+      const cg=Math.min(50,(runDist/25)|0); // 🪙 ריצה סולו מתגמלת — עד 50🪙 + פס עונה
+      if(cg){addCoins(cg);passAdd(Math.min(15,(runDist/60)|0));}
       checkAch();save();
       showResult('🏃',Math.floor(runDist)+tr(' מטר!',' meters!'),
-        rec?tr('🎉 שיא חדש!','🎉 New record!'):tr('השיא שלך: ','Your best: ')+Math.floor(runBest)+tr(' מ׳',' m'));
+        (rec?tr('🎉 שיא חדש!','🎉 New record!'):tr('השיא שלך: ','Your best: ')+Math.floor(runBest)+tr(' מ׳',' m'))+(cg?' · +'+cg+'🪙':''));
     }
   });
 }
@@ -6104,9 +6106,9 @@ function endDuel(win,detail){
   runMode=false;runLive=false;running=false;hushRoll();
   $('raceBar').style.display='none';
   if(win){addTro(10);stRaceWins++;questAdd('race',1);addDailyWin();passAdd(30);}
-  else{ // 🏳 הפסד בתחרות עולה 10 גביעים
+  else{ // 🏳 הפסד בתחרות עולה 3 גביעים בלבד — לא לרוקן את החברים החלשים
     const b4=trophies;
-    trophies=Math.max(0,trophies-10);
+    trophies=Math.max(0,trophies-3);
     if(b4>trophies){detail+=' · -'+(b4-trophies)+'🏆';refreshTro();}
   }
   logEv(win?'rw':'rl');
