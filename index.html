@@ -344,7 +344,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v105</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v106</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -782,7 +782,7 @@
 
 <div class="overlay hidden" id="raceOv">
   <h1 data-en="🏁 Live Race">🏁 תחרות חיה</h1>
-  <p class="sub" data-en="Two phones, same levels, same moment. First to finish takes 🏆10.">שני טלפונים, אותם שלבים, אותו רגע.<br>הראשון שמסיים לוקח 🏆10.</p>
+  <p class="sub" data-en="Two phones, same levels, same moment. Winner takes 🏆10 — loser pays 🏆10!">שני טלפונים, אותם שלבים, אותו רגע.<br>המנצח לוקח 🏆10 — המפסיד משלם 🏆10!</p>
   <input class="tin" id="raceName" maxlength="12" placeholder="השם שלך" data-en-ph="Your name">
   <div class="row" id="lvChoose">
     <button class="btn" id="lvCreate" data-en="🎯 Create Room">🎯 צור חדר</button>
@@ -1672,8 +1672,15 @@ function resize(){
   canvas.style.width=W+'px';canvas.style.height=H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
   const pad=14,top=60;
+  const ob=board?{...board}:null; // 📐 שומרים את הלוח הישן — הכדור יישאר יחסי אליו
   board={x:pad,y:top,w:W-pad*2,h:H-top-pad};
   ball.r=Math.min(board.w,board.h)*.033;
+  if(ob&&ob.w>0&&typeof running!=='undefined'&&running){ // סיבוב מסך באמצע שלב — ממפים לפריסה החדשה
+    ball.x=board.x+(ball.x-ob.x)/ob.w*board.w;
+    ball.y=board.y+(ball.y-ob.y)/ob.h*board.h;
+    ball.vx*=board.w/ob.w;ball.vy*=board.h/ob.h;
+    if(typeof fallPt!=='undefined'&&fallPt){fallPt.x=board.x+(fallPt.x-ob.x)/ob.w*board.w;fallPt.y=board.y+(fallPt.y-ob.y)/ob.h*board.h;}
+  }
   cachedTh=-1;spriteCache={};
   let th0=0;try{th0=(typeof runMode!=='undefined'&&runMode)?Math.max(0,runThemeIdx):(L().th||0);}catch(e){}
   buildLayers(th0);
@@ -2044,18 +2051,25 @@ function updKb(){
 }
 const effX=()=>Math.max(-1,Math.min(1,tiltX+kbX*.9));
 const effY=()=>Math.max(-1,Math.min(1,tiltY+kbY*.9));
+let touchId=null; // 🖐 מולטי-טאץ': רק האצבע שפתחה את הג'ויסטיק מנווטת
 canvas.addEventListener('touchstart',e=>{
-  touchOrigin={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  if(touchOrigin!==null)return; // אצבע שנייה לא ממרכזת מחדש
+  const t0=e.changedTouches[0];
+  touchId=t0.identifier;
+  touchOrigin={x:t0.clientX,y:t0.clientY};
   touchLast={x:touchOrigin.x,y:touchOrigin.y};
 },{passive:true});
 canvas.addEventListener('touchmove',e=>{
   if(!touchOrigin||!touchMode)return;
-  touchLast={x:e.touches[0].clientX,y:e.touches[0].clientY};
-  tiltX=Math.max(-1,Math.min(1,(e.touches[0].clientX-touchOrigin.x)/70*SENS));
-  tiltY=Math.max(-1,Math.min(1,(e.touches[0].clientY-touchOrigin.y)/70*SENS));
+  const t0=Array.from(e.touches).find(t=>t.identifier===touchId);
+  if(!t0)return;
+  touchLast={x:t0.clientX,y:t0.clientY};
+  tiltX=Math.max(-1,Math.min(1,(t0.clientX-touchOrigin.x)/70*SENS));
+  tiltY=Math.max(-1,Math.min(1,(t0.clientY-touchOrigin.y)/70*SENS));
 },{passive:true});
-canvas.addEventListener('touchend',()=>{
-  touchOrigin=null;touchLast=null;if(touchMode){tiltX=0;tiltY=0;}
+canvas.addEventListener('touchend',e=>{
+  if(!Array.from(e.changedTouches).some(t=>t.identifier===touchId))return; // אצבע אחרת הורמה — מתעלמים
+  touchId=null;touchOrigin=null;touchLast=null;if(touchMode){tiltX=0;tiltY=0;}
 },{passive:true});
 
 /* ============ PARTICLES ============ */
@@ -4960,12 +4974,15 @@ $('pauseBtn').onclick=()=>{if(!running||cineMode)return;
   if(runLive){showToast(tr('אין השהיה במרוץ חי 😉','No pausing in a live race 😉'));return;}
   paused=true;hushRoll();
   $('sensSlider').value=SENS*100;$('pauseOv').classList.remove('hidden');};
+let resumeSeq=0; // ⏱ טוקן: השהיה באמצע הספירה מבטלת אותה — המשחק לא משתחרר מאחורי מסך ההשהיה
+$('pauseBtn').addEventListener('click',()=>{resumeSeq++;});
 $('resumeBtn').onclick=()=>{ // ⏱ 3-2-1 לפני שהכדור חוזר לחיים — שלא תמות עם האצבע על הכפתור
   $('pauseOv').classList.add('hidden');
   if(!running||runLive){paused=false;lastT=performance.now();return;}
+  const my=++resumeSeq;
   let c3=3;
   const tk=()=>{
-    if(!paused||!running)return; // בוטל בינתיים
+    if(my!==resumeSeq||!paused||!running)return; // בוטל בינתיים
     if(c3>0){showToast(c3+'…');tone(460+c3*90,.09,'sine',.25);c3--;setTimeout(tk,420);}
     else{paused=false;lastT=performance.now();showToast(tr('צא לדרך! 🚀','Go! 🚀'));}
   };
@@ -5354,11 +5371,16 @@ SKINS.forEach(sk=>{
 });
 const POW=()=>((SKINS[skinSel]||{}).pow)||'';
 let shieldUsed=false,winStreak=0;
+const POWDESC={shield:['🛡 סופג נפילה אחת בכל שלב','🛡 Absorbs one fall per level'],
+  slow:['🐌 מאט את הספינרים','🐌 Slows spinners'],
+  ghost:['👻 עובר דרך באמפרים','👻 Passes through bumpers'],
+  rich:['🪙 +50% מטבעות מנצחונות','🪙 +50% coins from wins']};
 function grantPowSkins(){
   POWSKINS.forEach(s=>{const idx=SKINS.indexOf(s);
     if(unlocked+1>=s.unl&&!skinOwned.includes(idx)){
       skinOwned.push(idx);
-      showToast(tr('🦸 סקין-כוח חדש: ','🦸 New power skin: ')+tr(s.name,s.en||s.name)+tr('! (בחנות הסקינים)','! (in the skin shop)'));
+      const pd=POWDESC[s.pow];
+      showToast(tr('🦸 סקין-כוח חדש: ','🦸 New power skin: ')+tr(s.name,s.en||s.name)+(pd?' — '+tr(pd[0],pd[1]):'')+tr(' (בחנות)',' (in the shop)'));
     }});
 }
 function addCoins(n){coins+=n;eCo+=n;refreshTro();}
@@ -6186,6 +6208,7 @@ $('dailyBtn').onclick=async()=>{
   initAudio();await enableSensors();
   $('menuOv').classList.add('hidden');
   startRun(genDaily(ds));
+  setTimeout(()=>{if(running)showToast(tr('🎯 ניסיון אחד ביום — שחקו בזהירות!','🎯 One try per day — play carefully!'));},1700);
 };
 /* ---- חנות סקינים ---- */
 let shopTab='skin';
@@ -6222,6 +6245,12 @@ function buildSkins(){
     rr.textContent=tr(RAR[s.rar|0].n,RAR[s.rar|0].en);
     rr.style.cssText='font-size:10px;font-weight:900;letter-spacing:.5px;color:'+RAR[s.rar|0].c;
     card.appendChild(rr);
+    if(s.pow&&POWDESC[s.pow]){ // 🦸 מה הכוח עושה — סוף סוף כתוב
+      const pw=document.createElement('div');
+      pw.textContent=tr(POWDESC[s.pow][0],POWDESC[s.pow][1]);
+      pw.style.cssText='font-size:9.5px;color:#8fe3a8;font-weight:700;line-height:1.2';
+      card.appendChild(pw);
+    }
     const chestOnly=(s.rar|0)>=4&&!s.pow&&!s.wc; // 🔴🟡 נדירויות גבוהות — רק מתיבות, כמו במוקאפ
     const pr=document.createElement('div');pr.className='skPrice';
     pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select')
