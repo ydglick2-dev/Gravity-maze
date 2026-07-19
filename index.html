@@ -348,7 +348,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v113</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v114</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -6704,6 +6704,10 @@ function buildSkins(){
       if(s.fs&&!owned){deny();return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));}
       if((s.rar|0)>=4&&!s.pow){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
       if(coins>=s.price){
+        // ❓ אישור לפני קנייה — שלא יקנו בטעות
+        if(!confirm(tr('לקנות את "','Buy "')+tr(s.name,s.en||s.name)+tr('" ב-','" for ')+s.price+tr(' מטבעות?',' coins?'))){
+          tone(300,.06,'sine',.15);return;
+        }
         coins-=s.price;cat.ow.push(i);cat.setSel(i);
         checkAch();save();refreshTro();buildSkins();sfx.key();
         emojiPop(ccx,ccy,['🪙','✨'],10,130); // 🪙 המטבעות עפים מהקנייה
