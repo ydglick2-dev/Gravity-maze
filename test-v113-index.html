@@ -348,7 +348,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v113</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v112</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -828,7 +828,7 @@
 
 <div class="overlay hidden" id="raceOv">
   <h1 data-en="🏁 Live Race">🏁 תחרות חיה</h1>
-  <p class="sub" data-en="Up to 4 friends, same race! Create a room and share the code. Winner takes 🏆10.">עד 4 חברים באותו מרוץ! 🏁<br>צרו חדר ושלחו את הקוד. המנצח לוקח 🏆10.</p>
+  <p class="sub" data-en="Two phones, same levels, same moment. Winner takes 🏆10 — loser only 🏆3!">שני טלפונים, אותם שלבים, אותו רגע.<br>המנצח לוקח 🏆10 — המפסיד רק 🏆3!</p>
   <input class="tin" id="raceName" maxlength="12" placeholder="השם שלך" data-en-ph="Your name">
   <div class="row" id="lvChoose">
     <button class="btn" id="lvCreate" data-en="🎯 Create Room">🎯 צור חדר</button>
@@ -9821,7 +9821,32 @@ async function wakeOn(){
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(wakeOn,300);});
 ['pointerdown','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,wakeOn,{passive:true}));
 wakeOn();
-initAuth();
+
+window.__t={
+  setupHost:()=>{liveRole='host';myName='Host';racers=[];hostConns=[];raceStarted=false;mpResult=null;hostEnsureSelf();},
+  // אורח מדומה — לוכד send, מאפשר להזין הודעות
+  addGuest:(name)=>{
+    const c={open:true,_sent:[],send:function(s){this._sent.push(s);},on:function(ev,fn){this['_'+ev]=fn;},close:function(){}};
+    hostAddGuest(c);
+    if(c._data)c._data(JSON.stringify({t:'hello',name}));
+    window.__guests=window.__guests||[];window.__guests.push(c);
+    return {pid:c._pid,count:racers.length};
+  },
+  primaryGuest:(name)=>{ // האורח הראשי דרך onMsg
+    conn={open:true,_sent:[],send:function(s){this._sent.push(s);},_pid:null};
+    onMsg(JSON.stringify({t:'hello',name}));
+    return {count:racers.length};
+  },
+  roster:()=>racers.map(r=>({pid:r.pid,name:r.name,m:r.m,fin:r.fin,elim:r.elim,self:!!r.self})),
+  mpOn:()=>mpOn(),
+  startRace:()=>{raceStarted=true;racers.forEach(r=>{r.m=0;r.fin=null;r.elim=null;});mpResult=null;},
+  guestMsg:(idx,m)=>{const c=window.__guests[idx];if(c&&c._data)c._data(JSON.stringify(m));},
+  primaryMsg:(m)=>{onMsg(JSON.stringify(m));},
+  hostSelfFin:(tm)=>{const r=racerBy(0);r.fin=tm;r.m=1000;hostCheckDone();},
+  result:()=>mpResult,
+  rankTest:()=>mpRank([{name:'A',fin:null,elim:200,m:200},{name:'B',fin:12.5,elim:null,m:1000},{name:'C',fin:null,elim:350,m:350},{name:'D',fin:9.1,elim:null,m:1000}]).map(r=>r.name),
+  podiumHTML:()=>{mpPodiumShow(mpResult||[]);return document.getElementById('rrPodium').textContent;}
+};initAuth();
 try{if(scratchFree())setTimeout(()=>{if(!running)showToast(tr('🎟 מתנה יומית חינם מחכה בתפריט — כרטיס גירוד!','🎟 Free daily gift in the menu — scratch card!'));},2600);}catch(e){} // 🎁 מצביעים על המתנה היומית
 if(((troLife/25)|0)>troClaimed){claimTroRoad();save();refreshTro();} // תשלום-עבר בעלייה
 {const bm=document.getElementById('bootMsg');if(bm)bm.remove();} // המשחק עלה בהצלחה
