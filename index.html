@@ -58,6 +58,7 @@
        filter:drop-shadow(0 0 18px rgba(255,184,77,.45)); }
   .float { animation:float 3.2s ease-in-out infinite; }
   @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  @keyframes instPulse { 0%,100%{transform:scale(1);box-shadow:0 8px 22px rgba(65,201,214,.4)} 50%{transform:scale(1.05);box-shadow:0 10px 28px rgba(65,201,214,.6)} }
   .sub { font-size:15px; line-height:1.65; max-width:330px; color:#aeb8c8; }
   .big { font-size:56px; filter:drop-shadow(0 0 16px rgba(255,200,110,.5)); }
 
@@ -348,7 +349,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v115</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v116</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -364,6 +365,7 @@
       <button class="btn" id="lbPlay" style="min-width:160px" data-en="Play">שחק</button>
       <button class="btn sec" id="menuBtn2" data-en="🎮 Menu">🎮 תפריט</button>
     </div>
+    <button id="lbInstall" style="display:none;cursor:pointer;border:none;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:900;color:#0c1a2e;background:linear-gradient(90deg,#7ee0a0,#41c9d6);box-shadow:0 8px 22px rgba(65,201,214,.4);animation:instPulse 2.2s ease-in-out infinite" data-en="📲 Install the app">📲 התקן את האפליקציה</button>
   </div>
 </div>
 
@@ -7793,21 +7795,61 @@ async function checkAppUpdate(){
 }
 setInterval(checkAppUpdate,240000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkAppUpdate,1500);});
+/* 📲 התקנת האפליקציה — מזהה אם כבר מותקנת, ואם לא מציג כפתור התקנה בקיצור דרך */
 let deferredPrompt=null;
+// האם המשחק כבר רץ כאפליקציה מותקנת? (Chrome/Android, iOS, TWA)
+function isAppInstalled(){
+  try{
+    return window.matchMedia('(display-mode: standalone)').matches
+      || window.matchMedia('(display-mode: fullscreen)').matches
+      || window.navigator.standalone===true
+      || document.referrer.startsWith('android-app://');
+  }catch(e){return false;}
+}
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
+// מציג/מסתיר את כל כפתורי ההתקנה יחד (בלובי + בתפריט)
+function showInstallUI(on){
+  const vis=!!on&&!isAppInstalled();
+  const lb=$('lbInstall');if(lb)lb.style.display=vis?'block':'none';
+  const mb=$('installBtn');if(mb)mb.style.display=vis?'inline-block':'none';
+}
 window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();deferredPrompt=e;
-  $('installBtn').style.display='inline-block';
+  e.preventDefault();deferredPrompt=e; // Chrome/Android — יש לנו קיצור דרך אמיתי להתקנה
+  showInstallUI(true);
 });
-$('installBtn').onclick=async()=>{
-  if(!deferredPrompt)return;
-  deferredPrompt.prompt();
-  const r=await deferredPrompt.userChoice;
-  deferredPrompt=null;$('installBtn').style.display='none';
-  if(r.outcome==='accepted')showToast(tr('✅ מותקן!','✅ Installed!'));
-};
+async function doInstall(){
+  if(isAppInstalled()){showToast(tr('✅ האפליקציה כבר מותקנת','✅ App already installed'));showInstallUI(false);return;}
+  if(deferredPrompt){ // 🚀 קיצור הדרך של גוגל — חלון התקנה מיידי
+    deferredPrompt.prompt();
+    let r={};try{r=await deferredPrompt.userChoice;}catch(e){}
+    deferredPrompt=null;
+    if(r.outcome==='accepted'){showInstallUI(false);showToast(tr('✅ מתקין…','✅ Installing…'));}
+    return;
+  }
+  // אין קיצור דרך (בעיקר iOS/Safari) — מסבירים איך מוסיפים למסך הבית
+  if(isIOS){
+    alert(tr('להתקנה באייפון:\n1. לוחצים על כפתור השיתוף ⬆️ בתחתית הדפדפן\n2. בוחרים "הוסף למסך הבית" (Add to Home Screen)\n3. לוחצים "הוסף"',
+            'To install on iPhone:\n1. Tap the Share button ⬆️ at the bottom of the browser\n2. Choose "Add to Home Screen"\n3. Tap "Add"'));
+  }else{
+    alert(tr('להתקנה: פתחו את תפריט הדפדפן (⋮) ובחרו "התקן אפליקציה" / "הוסף למסך הבית".\nמומלץ לפתוח את המשחק ב-Chrome.',
+            'To install: open the browser menu (⋮) and choose "Install app" / "Add to Home screen".\nBest in Chrome.'));
+  }
+}
+$('installBtn').onclick=doInstall;
+$('lbInstall').onclick=doInstall;
 window.addEventListener('appinstalled',()=>{
-  $('installBtn').style.display='none';showToast(tr('🎉 האפליקציה הותקנה!','🎉 App installed!'));
+  deferredPrompt=null;showInstallUI(false);showToast(tr('🎉 האפליקציה הותקנה!','🎉 App installed!'));
 });
+// בדיקה ראשונית + כשחוזרים לאפליקציה (אם הותקנה בינתיים, מסתירים; אם עדיין לא ואפשר — מציגים)
+function refreshInstallUI(){
+  if(isAppInstalled()){showInstallUI(false);return;}
+  // ב-iOS אין beforeinstallprompt — מציגים בכל זאת כפתור עם הוראות
+  if(isIOS)showInstallUI(true);
+  else if(deferredPrompt)showInstallUI(true);
+}
+setTimeout(refreshInstallUI,1200);
+window.matchMedia('(display-mode: standalone)').addEventListener?.('change',refreshInstallUI);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshInstallUI,400);});
 
 $('achBtn').onclick=()=>{buildAch();$('menuOv').classList.add('hidden');$('achOv').classList.remove('hidden');};
 $('achBack').onclick=()=>{$('achOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
