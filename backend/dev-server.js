@@ -46,6 +46,12 @@ const applyReducing = (sv, g) => {
   if (g.dtro) { const n = g.dtro | 0, p = sv.pt | 0, u = Math.min(p, n); sv.pt = p - u; const e = sv.et === undefined ? (sv.tl | 0) : (sv.et | 0); sv.tro = Math.max(0, (sv.tro | 0) - n); sv.et = Math.max(0, e - (n - u)); }
   if (g.dco) { const n = g.dco | 0, p = sv.pc | 0, u = Math.min(p, n); sv.pc = p - u; const e = sv.ec === undefined ? (sv.co | 0) : (sv.ec | 0); sv.co = Math.max(0, (sv.co | 0) - n); sv.ec = Math.max(0, e - (n - u)); }
   if (g.dgm) sv.gm = Math.max(0, (sv.gm | 0) - (g.dgm | 0));
+  if (Array.isArray(g.skx)) {
+    sv.ow = Array.isArray(sv.ow) ? sv.ow : [0];
+    g.skx.forEach(ix => { ix |= 0; if (ix <= 0) return; const k = sv.ow.indexOf(ix); if (k >= 0) sv.ow.splice(k, 1); });
+    if (!sv.ow.includes(0)) sv.ow.unshift(0);
+    if (!sv.ow.includes(sv.sk | 0)) sv.sk = 0;
+  }
   return sv;
 };
 
@@ -118,6 +124,7 @@ const server = http.createServer((req, res) => {
       if (g.dgm) q.dgm = (q.dgm | 0) + (g.dgm | 0);
       if (g.un) q.un = 1; if (g.sk) q.sk = 1; if (g.st) q.st = 1;
       if (Array.isArray(g.ski)) q.ski = [...new Set([...(Array.isArray(q.ski) ? q.ski : []), ...g.ski.map(n => n | 0)])].slice(0, 64);
+      if (Array.isArray(g.skx)) q.skx = [...new Set([...(Array.isArray(q.skx) ? q.skx : []), ...g.skx.map(n => n | 0)])].slice(0, 64);
       if (g.unl) q.unl = Math.max(q.unl | 0, g.unl | 0);
       if (g.dnl) q.dnl = g.dnl | 0;
       if (g.clv) q.clv = g.clv;

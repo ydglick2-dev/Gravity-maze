@@ -348,7 +348,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v114</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v115</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -614,6 +614,7 @@
   <div class="row">
     <select class="tin" id="admSkinSel" style="max-width:180px"></select>
     <button class="btn sec" id="admGiveSkin" data-en="🎨 Give this skin">🎨 תן סקין</button>
+    <button class="btn sec" id="admTakeSkin" data-en="🗑 Remove this skin">🗑 הסר סקין</button>
   </div>
   <div class="row">
     <input class="tin" id="admLevelDown" type="number" min="1" max="1000" value="10" style="max-width:100px">
@@ -754,6 +755,7 @@
 
 <div class="overlay hidden" id="questOv">
   <h1 data-en="📜 Daily Quests">📜 קווסטים יומיים</h1>
+  <div class="sub" style="margin-top:-6px;color:#ffd257" data-en="Every quest fuels your Season Pass 🎟️ — the only way to advance it">כל קווסט מזרים 🎟️ לפס העונה — זו הדרך היחידה להתקדם בו</div>
   <div id="questList" style="display:flex;flex-direction:column;gap:8px;width:min(330px,88vw);max-height:46vh;overflow-y:auto;padding:4px"></div>
   <div id="dwLine" class="pill"></div>
   <div id="questCyc" class="pill"></div>
@@ -5688,8 +5690,8 @@ function questAdd(ty,amt){
     if(qProg[i]>=q.target){
       qDone[i]=true;qCyc++;
       const xp=q.xp||40; // 🎟️ קווסט = XP לפס העונה (הדרך היחידה להתקדם בפס)
-      if(q.gem){gems+=q.gem;refreshTro();showToast(tr('📜 קווסט הושלם! +','📜 Quest complete! +')+q.gem+'💎 · +'+xp+' XP');}
-      else{addCoins(q.rew);showToast(tr('📜 קווסט הושלם! +','📜 Quest complete! +')+q.rew+'🪙 · +'+xp+' XP');}
+      if(q.gem){gems+=q.gem;refreshTro();showToast(tr('📜 קווסט הושלם! +','📜 Quest complete! +')+xp+'🎟️ '+tr('לפס העונה · +','to Season Pass · +')+q.gem+'💎');}
+      else{addCoins(q.rew);showToast(tr('📜 קווסט הושלם! +','📜 Quest complete! +')+xp+'🎟️ '+tr('לפס העונה · +','to Season Pass · +')+q.rew+'🪙');}
       try{passAdd(xp);}catch(e){}
       tone(740,.1,'sine',.3);setTimeout(()=>tone(1108,.18,'sine',.3),110);
       if(qCyc>=6){ // 6 השלמות = תיבה (הובטח במסך התיבות אך מעולם לא חולק)
@@ -5733,7 +5735,7 @@ function buildQuests(){
     const pct=Math.min(100,qProg[i]/q.target*100);
     row.innerHTML='<span>'+(qDone[i]?'✅':'📜')+'</span><div><b>'+q.txt(q.target)+'</b>'+
       '<div class="qBarWrap"><div class="qBar" data-w="'+pct+'" style="width:0%"></div></div>'+
-      '<small>'+qProg[i]+'/'+q.target+'</small></div><span class="skPrice">+'+(q.gem?q.gem+'💎':q.rew+'🪙')+'</span>';
+      '<small>'+qProg[i]+'/'+q.target+'</small></div><span class="skPrice" style="text-align:center;line-height:1.25">+'+(q.xp||40)+'🎟️<br><small style="opacity:.72;font-weight:800">+'+(q.gem?q.gem+'💎':q.rew+'🪙')+'</small></span>';
     g.appendChild(row);
   });
   // 📊 הפסים מתמלאים בזה אחר זה בפתיחה — לא נולדים מלאים
@@ -8175,6 +8177,11 @@ function applyGift(g,target){
       skinOwned.push(ix);
       if(sk2.face||sk2.wc)grantGoalFx(true); // סקין שחקן — גם אפקט GOAL כמו בתיבה (בלי לדרוס את האפקט שנבחר)
     });
+    if(Array.isArray(g.skx))g.skx.forEach(ix=>{ // 🗑 הסרת סקין ספציפי ע"י האדמין
+      ix|=0;if(ix<=0)return; // סקין ברירת המחדל (0) לעולם לא מוסר
+      const k=skinOwned.indexOf(ix);if(k>=0)skinOwned.splice(k,1);
+      if(skinSel===ix){skinSel=0;try{supUi();}catch(e){}} // אם היה הבחור — חוזרים לברירת המחדל
+    });
     if(g.st)session.forEach(s=>{s.done=true;s.stars=3;});
     try{checkAch();}catch(e){}
     return true;
@@ -8210,6 +8217,12 @@ function applyGift(g,target){
       }
     });
   }
+  if(Array.isArray(g.skx)){ // 🗑 הסרת סקין ספציפי בשמירה המקומית של שחקן אחר
+    d.ow=Array.isArray(d.ow)?d.ow:[0];
+    g.skx.forEach(ix=>{ix|=0;if(ix<=0)return;const k=d.ow.indexOf(ix);if(k>=0)d.ow.splice(k,1);});
+    if(!d.ow.includes(0))d.ow.unshift(0);
+    if(!d.ow.includes(d.sk|0))d.sk=0;
+  }
   if(g.st){ // לפני הניפוח: מקבעים את המונים האמיתיים, שהטבלאות ימשיכו להציג רק משחק אמיתי
     if(d.edn===undefined){let _ed=0,_es=0;(d.s||[]).forEach(a=>{if(a&&a[0]&&(a[2]|0)>0){_ed++;_es+=a[1]|0;}});d.edn=_ed;d.esn=_es;}
     d.s=LEVELS.map((_,i)=>{const a=(d.s&&d.s[i])||[0,0,0];
@@ -8236,7 +8249,7 @@ async function admGive(g,label){
   }
   const st=store();
   const isLocal=st&&st.getItem('mazeU_'+t)!==null;
-  const needCloud=!!(g.rst||g.dnl||g.dtro||g.dco||g.dgm)||('clr' in g); // פעולות מפחיתות חייבות לעדכן גם את הענן,
+  const needCloud=!!(g.rst||g.dnl||g.dtro||g.dco||g.dgm||(Array.isArray(g.skx)&&g.skx.length))||('clr' in g); // פעולות מפחיתות חייבות לעדכן גם את הענן,
   // אחרת שומר-הדריסה משחזר את השמירה הישנה מהענן בכניסה הבאה
   if(isLocal){
     const ok=applyGift(g,t);
@@ -8262,6 +8275,12 @@ async function admGive(g,label){
      if(g.dtro){const n2=g.dtro|0,p2=sv2.pt|0,u=Math.min(p2,n2);sv2.pt=p2-u;const e2=sv2.et===undefined?(sv2.tl|0):(sv2.et|0);sv2.tro=Math.max(0,(sv2.tro|0)-n2);sv2.et=Math.max(0,e2-(n2-u));}
      if(g.dco){const n2=g.dco|0,p2=sv2.pc|0,u=Math.min(p2,n2);sv2.pc=p2-u;const e2=sv2.ec===undefined?(sv2.co|0):(sv2.ec|0);sv2.co=Math.max(0,(sv2.co|0)-n2);sv2.ec=Math.max(0,e2-(n2-u));}
      if(g.dgm)sv2.gm=Math.max(0,(sv2.gm|0)-(g.dgm|0));
+     if(Array.isArray(g.skx)){ // 🗑 הסרת סקין גם בשמירה שבענן — אחרת שומר-הדריסה משחזר אותו
+       sv2.ow=Array.isArray(sv2.ow)?sv2.ow:[0];
+       g.skx.forEach(ix=>{ix|=0;if(ix<=0)return;const k=sv2.ow.indexOf(ix);if(k>=0)sv2.ow.splice(k,1);});
+       if(!sv2.ow.includes(0))sv2.ow.unshift(0);
+       if(!sv2.ow.includes(sv2.sk|0))sv2.sk=0;
+     }
    }}
   const q=d.gifts[t]||{};
   if(g.tro)q.tro=(q.tro|0)+(g.tro|0);
@@ -8273,6 +8292,7 @@ async function admGive(g,label){
   if(g.dgm)q.dgm=(q.dgm|0)+(g.dgm|0);
   if(g.un)q.un=1;if(g.sk)q.sk=1;if(g.st)q.st=1;
   if(Array.isArray(g.ski))q.ski=[...new Set([...(Array.isArray(q.ski)?q.ski:[]),...g.ski.map(n=>n|0)])].slice(0,64);
+  if(Array.isArray(g.skx))q.skx=[...new Set([...(Array.isArray(q.skx)?q.skx:[]),...g.skx.map(n=>n|0)])].slice(0,64);
   if(g.unl)q.unl=Math.max(q.unl|0,g.unl|0);
   if(g.dnl)q.dnl=g.dnl|0;
   if(g.clv)q.clv=g.clv;
@@ -9752,6 +9772,11 @@ $('admSkins').onclick=()=>admGive({sk:1},'כל הסקינים');
 $('admGiveSkin').onclick=()=>{
   const i=$('admSkinSel').value|0;
   admGive({ski:[i]},tr('סקין ','skin ')+(SKINS[i]?SKINS[i].name:i));
+};
+$('admTakeSkin').onclick=()=>{
+  const i=$('admSkinSel').value|0;
+  if(i<=0)return $('admMsg').textContent=tr('אי אפשר להסיר את סקין ברירת המחדל','Cannot remove the default skin');
+  admGive({skx:[i]},tr('הסרת סקין ','remove skin ')+(SKINS[i]?SKINS[i].name:i));
 };
 $('admStars').onclick=()=>admGive({st:1},'3★ בהכל');
 $('admAll').onclick=()=>admGive({tro:Math.max(1,$('admTro').value|0),co:Math.max(1,$('admCoins').value|0),ch:Math.max(1,$('admChests').value|0),gm:Math.max(1,$('admGems').value|0),un:1,sk:1,st:1},'החבילה המלאה');
