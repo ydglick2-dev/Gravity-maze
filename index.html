@@ -11,6 +11,7 @@
 <meta name="color-scheme" content="dark">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="Gravity Maze">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <style>
@@ -349,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v118</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v119</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -498,10 +499,15 @@
 
 <div class="overlay hidden" id="instOv" style="z-index:59;background:rgba(8,12,22,.97)">
   <div class="big">📲</div>
-  <h1 data-en="Install the App">התקנת האפליקציה</h1>
-  <p class="sub" id="instTxt" style="max-width:320px"></p>
+  <h1 id="instTitle" data-en="Install the App">התקנת האפליקציה</h1>
+  <p class="sub" id="instTxt" style="max-width:330px"></p>
+  <div id="instIOS" style="display:none;max-width:330px;text-align:right;background:rgba(7,16,33,.72);border:1px solid rgba(126,200,242,.28);border-radius:16px;padding:15px 17px;line-height:2;font-size:15px;color:#eaf1fb">
+    <div>1️⃣ <span data-en='Tap the Share button'>לחצו על כפתור השיתוף</span> <span style="display:inline-flex;vertical-align:middle;border:1.5px solid #7ec8f2;border-radius:6px;padding:2px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ec8f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/></svg></span> <span data-en='at the bottom of Safari'>בסרגל של ספארי</span></div>
+    <div>2️⃣ <span data-en='Choose'>בוחרים</span> <b>"הוסף למסך הבית"</b> <small style="color:#a9c6e2">(Add to Home Screen)</small></div>
+    <div>3️⃣ <span data-en='Tap'>לוחצים</span> <b data-en='Add'>"הוסף"</b> — <span data-en='done!'>וזהו!</span> 🎉</div>
+  </div>
   <img id="instQR" alt="QR" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAYAAAB5fY51AAAAAklEQVR4AewaftIAAAvZSURBVO3Bwa0kWY5FwZtEbCkBhaD+YlAISkABcnI7GPiraXd4x2fWMfv1+w8BwAImAFjCBABLmABgCRMALGECgCVMALCECQCW+OgfeKT+RtOlb/FI3TVdOvFInUyXrniknpguvcUjdWW6dOKRumu69CaP1JXp0olH6m80XbpiAoAlTACwhAkAljABwBImAFjCBABLmABgiY8emi79RB6pt3ik3jJdOvFIvWW69IRH6sp06cQjdZdH6mS69C0eqW+ZLv1EHqm7TACwhAkAljABwBImAFjCBABLmABgCRMALPHRyzxSb5kuvcUjddd06S6P1Ml06QmP1F3TpbdMl048UlemSyceqbumS38jj9RbpktvMQHAEiYAWMIEAEuYAGAJEwAsYQKAJT7CKh6pb/FInUyX3jJduuKROpkunXikrniknpgunXik8P9nAoAlTACwhAkAljABwBImAFjCBABLmABgiY/wH5suPeGRumu69C0eqROP1FumS3d5pE6mS1c8UifTJfz3mABgCRMALGECgCVMALCECQCWMAHAEiYAWOKjl02X/jYeqZPp0l3TpROP1E81XbrLI/WW6dKJR+rKdOnEI7XRdGkjEwAsYQKAJUwAsIQJAJYwAcASJgBY4qOHPFL/NtOlE4/UyXTpikfqZLp04pE6mS5d8UidTJdOPFJXpkv/RtOlE4/UWzxSfxsTACxhAoAlTACwhAkAljABwBImAFjCBABL/Pr9h/B/eKS+Ybr0hEdqo+nSiUfqLdOluzxSb5ku4X8zAcASJgBYwgQAS5gAYAkTACxhAoAlTACwxEf/wCN1Ml068Uj9RNOlk+nSFY/UE9OlKx6pn2q69BNNl048UiceqW+ZLt3lkfqJpktvMQHAEiYAWMIEAEuYAGAJEwAsYQKAJT76B9OlE4/UyXTpLo/UyXTpLo/UXdOlJzxSd02XTjxSd02XnvBIXZkunXikvmW6dMUjdTJdeotH6mS6dOKRujJdesIjdcUjdTJdussEAEuYAGAJEwAsYQKAJUwAsIQJAJYwAcASv37/oQOP1Ml06cQjtdF06YpH6i3TpROP1Ml06cQjddd06cQjddd06cQjddd06cQjdWW6dOKR+pbp0olH6q7p0olH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" style="width:210px;height:210px;border-radius:16px;background:#fff;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.5)">
-  <div style="font-size:12.5px;color:#a9c6e2;margin-top:8px;max-width:300px" data-en="📷 Scan the code with another phone's camera, or open the install page below">📷 סרקו את הקוד ממצלמת טלפון אחר, או פתחו כאן את דף ההתקנה</div>
+  <div id="instScan" style="font-size:12.5px;color:#a9c6e2;margin-top:8px;max-width:300px" data-en="📷 Scan the code with another phone's camera, or open the install page below">📷 סרקו את הקוד ממצלמת טלפון אחר, או פתחו כאן את דף ההתקנה</div>
   <a id="instOpen" href="https://nova-deploy-hub.dtubugk.chatgpt.site/play/gravity-maze-zr6c/" target="_blank" rel="noopener" class="btn" style="text-decoration:none;display:inline-block" data-en="🌐 Open install page">🌐 פתח את דף ההתקנה</a>
   <button class="btn sec" id="instClose" data-en="Close">סגור</button>
 </div>
@@ -7829,9 +7835,17 @@ window.addEventListener('beforeinstallprompt',e=>{
 });
 // חלון התקנה בתוך המשחק (alert חסום בסביבת iframe של האתר, לכן משתמשים במודאל שלנו)
 function openInstallModal(){
+  // ב-iOS אין Chrome ואין קיצור דרך — מציגים מדריך "הוסף למסך הבית" ומסתירים QR/דף חיצוני
+  const ios=isIOS;
+  const setD=(id,d)=>{const e=$(id);if(e)e.style.display=d;};
+  setD('instIOS',ios?'block':'none');
+  setD('instQR',ios?'none':'');
+  setD('instScan',ios?'none':'');
+  setD('instOpen',ios?'none':'inline-block');
+  const ttl=$('instTitle');if(ttl)ttl.textContent=ios?tr('הוספה למסך הבית','Add to Home Screen'):tr('התקנת האפליקציה','Install the App');
   const t=$('instTxt');
-  if(t)t.innerHTML=isIOS
-    ? tr('באייפון: כפתור השיתוף ⬆️ בתחתית הדפדפן ← "הוסף למסך הבית".','On iPhone: Share button ⬆️ at the bottom ← "Add to Home Screen".')
+  if(t)t.innerHTML=ios
+    ? tr('לא צריך Chrome! מוסיפים את המשחק ישירות מ-Safari בכמה לחיצות:','No Chrome needed! Add the game straight from Safari in a few taps:')
     : tr('פתחו את דף ההתקנה למטה (נפתח ב-Chrome), ואז בתפריט ⋮ בחרו "התקן אפליקציה". או סרקו את הקוד מטלפון אחר.','Open the install page below (in Chrome), then menu ⋮ → "Install app". Or scan the code from another phone.');
   try{$('menuOv').classList.add('hidden');}catch(e){}
   $('instOv').classList.remove('hidden');
