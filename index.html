@@ -60,6 +60,8 @@
   .float { animation:float 3.2s ease-in-out infinite; }
   @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
   @keyframes instPulse { 0%,100%{transform:scale(1);box-shadow:0 8px 22px rgba(65,201,214,.4)} 50%{transform:scale(1.05);box-shadow:0 10px 28px rgba(65,201,214,.6)} }
+  /* ⚠️ פעימה ללא transform — כדי לא לדרוס את מרכוז הכפתור (translate(-50%,-50%)) */
+  @keyframes tiltPulse { 0%,100%{box-shadow:0 10px 30px rgba(65,201,214,.5)} 50%{box-shadow:0 14px 42px rgba(65,201,214,.9)} }
   .sub { font-size:15px; line-height:1.65; max-width:330px; color:#aeb8c8; }
   .big { font-size:56px; filter:drop-shadow(0 0 16px rgba(255,200,110,.5)); }
 
@@ -350,7 +352,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v120</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v121</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -405,7 +407,7 @@
   <button class="btn" id="setBack" data-en="✕ Close">✕ סגירה</button>
 </div>
 <div id="hint" style="display:none"></div>
-<button id="tiltBtn" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:45;border:none;cursor:pointer;border-radius:18px;padding:16px 26px;font-size:17px;font-weight:900;color:#0c1a2e;background:linear-gradient(90deg,#7ee0a0,#41c9d6);box-shadow:0 10px 30px rgba(65,201,214,.5);animation:instPulse 2s ease-in-out infinite" data-en="🎢 Enable tilt control">🎢 הפעל שליטה בהטיה</button>
+<button id="tiltBtn" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:46;border:none;cursor:pointer;border-radius:18px;padding:16px 26px;font-size:17px;font-weight:900;color:#0c1a2e;background:linear-gradient(90deg,#7ee0a0,#41c9d6);box-shadow:0 10px 30px rgba(65,201,214,.5);animation:tiltPulse 2s ease-in-out infinite;white-space:nowrap;max-width:92vw" data-en="🎢 Enable tilt control">🎢 הפעל שליטה בהטיה</button>
 <div id="toast"></div>
 <style>
 #tutOv{position:fixed;inset:0;z-index:60;display:none;pointer-events:auto}
