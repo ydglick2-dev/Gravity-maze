@@ -349,7 +349,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v116</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v117</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -494,6 +494,16 @@
     </div>
     <div style="display:none"><div id="troLine"></div></div>
   </div>
+</div>
+
+<div class="overlay hidden" id="instOv" style="z-index:59;background:rgba(8,12,22,.97)">
+  <div class="big">📲</div>
+  <h1 data-en="Install the App">התקנת האפליקציה</h1>
+  <p class="sub" id="instTxt" style="max-width:320px"></p>
+  <img id="instQR" alt="QR" src="data:image/png;base64,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" style="width:210px;height:210px;border-radius:16px;background:#fff;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.5)">
+  <div style="font-size:12.5px;color:#a9c6e2;margin-top:8px;max-width:300px" data-en="📷 Scan the code with another phone's camera, or open the install page below">📷 סרקו את הקוד ממצלמת טלפון אחר, או פתחו כאן את דף ההתקנה</div>
+  <a id="instOpen" href="https://gravity-maze.gravity-maze.workers.dev/" target="_blank" rel="noopener" class="btn" style="text-decoration:none;display:inline-block" data-en="🌐 Open install page">🌐 פתח את דף ההתקנה</a>
+  <button class="btn sec" id="instClose" data-en="Close">סגור</button>
 </div>
 
 <div class="overlay hidden" id="authOv" style="z-index:60">
@@ -7817,36 +7827,39 @@ window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();deferredPrompt=e; // Chrome/Android — יש לנו קיצור דרך אמיתי להתקנה
   showInstallUI(true);
 });
+// חלון התקנה בתוך המשחק (alert חסום בסביבת iframe של האתר, לכן משתמשים במודאל שלנו)
+function openInstallModal(){
+  const t=$('instTxt');
+  if(t)t.innerHTML=isIOS
+    ? tr('באייפון: כפתור השיתוף ⬆️ בתחתית הדפדפן ← "הוסף למסך הבית".','On iPhone: Share button ⬆️ at the bottom ← "Add to Home Screen".')
+    : tr('פתחו את דף ההתקנה למטה (נפתח ב-Chrome), ואז בתפריט ⋮ בחרו "התקן אפליקציה". או סרקו את הקוד מטלפון אחר.','Open the install page below (in Chrome), then menu ⋮ → "Install app". Or scan the code from another phone.');
+  try{$('menuOv').classList.add('hidden');}catch(e){}
+  $('instOv').classList.remove('hidden');
+}
 async function doInstall(){
   if(isAppInstalled()){showToast(tr('✅ האפליקציה כבר מותקנת','✅ App already installed'));showInstallUI(false);return;}
-  if(deferredPrompt){ // 🚀 קיצור הדרך של גוגל — חלון התקנה מיידי
-    deferredPrompt.prompt();
-    let r={};try{r=await deferredPrompt.userChoice;}catch(e){}
-    deferredPrompt=null;
-    if(r.outcome==='accepted'){showInstallUI(false);showToast(tr('✅ מתקין…','✅ Installing…'));}
-    return;
+  if(deferredPrompt){ // 🚀 קיצור הדרך של גוגל — חלון התקנה מיידי (עובד רק בדף עליון, לא ב-iframe)
+    try{
+      deferredPrompt.prompt();
+      let r={};try{r=await deferredPrompt.userChoice;}catch(e){}
+      deferredPrompt=null;
+      if(r.outcome==='accepted'){showInstallUI(false);showToast(tr('✅ מתקין…','✅ Installing…'));return;}
+      if(r.outcome==='dismissed')return; // המשתמש ביטל ביודעין
+    }catch(e){deferredPrompt=null;}
   }
-  // אין קיצור דרך (בעיקר iOS/Safari) — מסבירים איך מוסיפים למסך הבית
-  if(isIOS){
-    alert(tr('להתקנה באייפון:\n1. לוחצים על כפתור השיתוף ⬆️ בתחתית הדפדפן\n2. בוחרים "הוסף למסך הבית" (Add to Home Screen)\n3. לוחצים "הוסף"',
-            'To install on iPhone:\n1. Tap the Share button ⬆️ at the bottom of the browser\n2. Choose "Add to Home Screen"\n3. Tap "Add"'));
-  }else{
-    alert(tr('להתקנה: פתחו את תפריט הדפדפן (⋮) ובחרו "התקן אפליקציה" / "הוסף למסך הבית".\nמומלץ לפתוח את המשחק ב-Chrome.',
-            'To install: open the browser menu (⋮) and choose "Install app" / "Add to Home screen".\nBest in Chrome.'));
-  }
+  // אין קיצור דרך זמין (iframe באתר / iOS / דפדפן אחר) — פותחים מודאל עם QR + קישור להתקנה
+  openInstallModal();
 }
 $('installBtn').onclick=doInstall;
 $('lbInstall').onclick=doInstall;
+$('instClose').onclick=()=>{$('instOv').classList.add('hidden');};
+$('instOpen').onclick=()=>{setTimeout(()=>$('instOv').classList.add('hidden'),300);};
 window.addEventListener('appinstalled',()=>{
   deferredPrompt=null;showInstallUI(false);showToast(tr('🎉 האפליקציה הותקנה!','🎉 App installed!'));
 });
-// בדיקה ראשונית + כשחוזרים לאפליקציה (אם הותקנה בינתיים, מסתירים; אם עדיין לא ואפשר — מציגים)
-function refreshInstallUI(){
-  if(isAppInstalled()){showInstallUI(false);return;}
-  // ב-iOS אין beforeinstallprompt — מציגים בכל זאת כפתור עם הוראות
-  if(isIOS)showInstallUI(true);
-  else if(deferredPrompt)showInstallUI(true);
-}
+// בדיקה ראשונית + כשחוזרים לאפליקציה. מציגים את הכפתור לכל מי שהמשחק לא מותקן אצלו —
+// יש לנו מודאל QR+קישור שעובד בכל מצב (גם ב-iframe וגם ב-iOS), אז הכפתור תמיד עושה משהו.
+function refreshInstallUI(){ showInstallUI(!isAppInstalled()); }
 setTimeout(refreshInstallUI,1200);
 window.matchMedia('(display-mode: standalone)').addEventListener?.('change',refreshInstallUI);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(refreshInstallUI,400);});
