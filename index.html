@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v119</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v120</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -405,6 +405,7 @@
   <button class="btn" id="setBack" data-en="✕ Close">✕ סגירה</button>
 </div>
 <div id="hint" style="display:none"></div>
+<button id="tiltBtn" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:45;border:none;cursor:pointer;border-radius:18px;padding:16px 26px;font-size:17px;font-weight:900;color:#0c1a2e;background:linear-gradient(90deg,#7ee0a0,#41c9d6);box-shadow:0 10px 30px rgba(65,201,214,.5);animation:instPulse 2s ease-in-out infinite" data-en="🎢 Enable tilt control">🎢 הפעל שליטה בהטיה</button>
 <div id="toast"></div>
 <style>
 #tutOv{position:fixed;inset:0;z-index:60;display:none;pointer-events:auto}
@@ -2066,6 +2067,7 @@ function updateHud(){
 /* ============ INPUT ============ */
 function onOrient(e){
   if(e.beta===null||e.gamma===null)return;
+  if(!gotOrientation){try{$('tiltBtn').style.display='none';}catch(_e){}} // 🎢 יש חיישן — מסתירים את כפתור ההפעלה
   gotOrientation=true;
   let gx=e.gamma,gy=e.beta;
   const o=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
@@ -2076,24 +2078,31 @@ function onOrient(e){
   tiltX=dz(Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS)));
   tiltY=dz(Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS)));
 }
-let sensorBound=false,sensorHinted=false;
+let sensorBound=false,sensorHinted=false,sensorDenied=false;
+const iosMotionReq=(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function');
 async function enableSensors(){
   try{
-    if(typeof DeviceOrientationEvent!=='undefined'&&
-       typeof DeviceOrientationEvent.requestPermission==='function'){
-      if(!gotOrientation){
-        const res=await DeviceOrientationEvent.requestPermission();
-        if(res!=='granted')throw 0;
-      }
+    if(iosMotionReq&&!gotOrientation){
+      // ⚠️ ב-iOS חייבים לקרוא לזה בתוך מחוות משתמש. אם ההגדרה "גישה לתנועה" כבויה — מוחזר 'denied' בלי דיאלוג.
+      const res=await DeviceOrientationEvent.requestPermission();
+      if(res!=='granted'){sensorDenied=true;throw 0;}
+      sensorDenied=false;
     }
     if(!sensorBound){sensorBound=true;window.addEventListener('deviceorientation',onOrient);}
-  }catch(e){}
+  }catch(e){if(iosMotionReq&&!gotOrientation)sensorDenied=true;}
   if(sensorHinted)return;
   sensorHinted=true;
   setTimeout(()=>{
     if(!gotOrientation){
       touchMode=true;
-      $('hint').textContent=tr('🕹 אין גישה לחיישן באתר הזה — גררו אצבע על המסך (ג\'ויסטיק). להטיה אמיתית פתחו את המשחק ישירות בכרום','🕹 No tilt sensor on this site — drag a finger (joystick). For real tilt open the game directly in Chrome');
+      if(iosMotionReq){ // 🍎 iPhone: אין קשר ל-Chrome — צריך להפעיל הרשאת תנועה או ללחוץ על הכפתור
+        try{$('tiltBtn').style.display='block';}catch(e){}
+        $('hint').innerHTML=sensorDenied
+          ? tr('🎢 להטיה: הגדרות → Safari → "גישה לתנועה וכיוון" → הפעלה, ואז רעננו. בינתיים גררו אצבע 👆','🎢 For tilt: Settings → Safari → "Motion & Orientation Access" → ON, then reload. Meanwhile drag a finger 👆')
+          : tr('🎢 הקישו על "הפעל שליטה בהטיה", או גררו אצבע על המסך 👆','🎢 Tap "Enable tilt control", or drag a finger 👆');
+      }else{
+        $('hint').textContent=tr('🕹 אין גישה לחיישן באתר הזה — גררו אצבע על המסך (ג\'ויסטיק)','🕹 No tilt sensor on this site — drag a finger (joystick)');
+      }
     }else{
       $('hint').textContent=tr('הטה את הטלפון בעדינות · ⏸ ← 🎯 כיול אם הכיוון עקום','Tilt gently · ⏸ → 🎯 calibrate if it drifts');
       setTimeout(()=>{$('hint').style.display='none';},4500);
@@ -2101,6 +2110,29 @@ async function enableSensors(){
     updateHud();
   },1200);
 }
+// 🎢 כפתור ייעודי ל-iOS: מחוות-משתמש נקייה שמבקשת הרשאת תנועה מיד. requestPermission נקרא ראשון.
+$('tiltBtn').onclick=async()=>{
+  try{
+    if(iosMotionReq){
+      const res=await DeviceOrientationEvent.requestPermission();
+      if(res==='granted'){
+        sensorDenied=false;
+        if(!sensorBound){sensorBound=true;window.addEventListener('deviceorientation',onOrient);}
+        $('tiltBtn').style.display='none';
+        $('hint').textContent=tr('✅ הטיה פעילה! הטה את הטלפון בעדינות','✅ Tilt active! Tilt gently');
+        setTimeout(()=>{$('hint').style.display='none';},3500);
+      }else{
+        sensorDenied=true;
+        $('hint').innerHTML=tr('🎢 ההרשאה חסומה. הפעילו: הגדרות → Safari → "גישה לתנועה וכיוון", ואז רעננו את הדף','🎢 Permission blocked. Enable: Settings → Safari → "Motion & Orientation Access", then reload');
+      }
+    }
+  }catch(e){
+    sensorDenied=true;
+    $('hint').innerHTML=tr('🎢 הפעילו: הגדרות → Safari → "גישה לתנועה וכיוון", ואז רעננו','🎢 Enable: Settings → Safari → "Motion & Orientation Access", then reload');
+  }
+  try{initAudio();}catch(e){}
+  updateHud();
+};
 /* מקלדת: חצים / WASD */
 let kbX=0,kbY=0;
 const KEYX={ArrowLeft:-1,a:-1,A:-1,ArrowRight:1,d:1,D:1};
@@ -4350,7 +4382,9 @@ function syncLobbyUI(){
   const anyOv=OVS.some(id=>!$(id).classList.contains('hidden'));
   $('lobbyUI').style.display=(!running&&!anyOv)?'flex':'none';
   $('hud').style.display=running?'flex':'none';
-  if(!running)try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');}catch(e){}
+  if(!running)try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');$('tiltBtn').style.display='none';}catch(e){}
+  // 🎢 iOS: אם החיישן נחסם ואנחנו בתוך שלב — מציגים כפתור הפעלה יזום
+  else if(iosMotionReq&&!gotOrientation&&sensorDenied)try{$('tiltBtn').style.display='block';}catch(e){}
   $('setBtn').style.display=running?'none':'block'; // ⚙️ זמין בלובי ובתפריטים, לא בזמן משחק
   const sw=$('spWrap');
   if(sw&&sw._on)sw.style.transform=running?'translateX(-250vw)':'none'; // מוסתר בזמן משחק, האודיו ממשיך
@@ -4753,7 +4787,7 @@ function lobbyDraw(t){
 }
 window.addEventListener('pointerdown',()=>{
   if(firstGest)return;firstGest=true;
-  initAudio();enableSensors();
+  enableSensors();initAudio(); // 🍎 קודם הרשאת חיישן (חייב מחוות משתמש), אחר כך אודיו
 },{passive:true});
 
 /* ---- 🎬 קולנועיות תלת-ממד: הפסד ופודיום ---- */
