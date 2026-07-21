@@ -106,6 +106,12 @@ const server = http.createServer((req, res) => {
       doc.users[u] = { s: b.rec.s, h: b.rec.h, c: Date.now() };
       persist(); return J({ ok: 1 });
     }
+    if (p === '/api/deluser' && req.method === 'POST') {
+      const t = cleanName(b.t);
+      if (!doc.users[t]) return J({ err: 'nouser' }, 404);
+      for (const sect of ['users', 'gifts', 'summon', 'bans', 'live']) delete doc[sect][t];
+      persist(); return J({ ok: 1 });
+    }
     if (p === '/api/pw' && req.method === 'POST') {
       const u = cleanName(b.u);
       if (!doc.users[u]) return J({ err: 'nouser' }, 404);

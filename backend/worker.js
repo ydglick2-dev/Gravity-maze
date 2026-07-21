@@ -199,6 +199,15 @@ export class Registry {
       return J({ ok: 1 });
     }
 
+    // 🗑 מחיקת משתמש מלאה מהמערכת (פאנל אדמין)
+    if (p === '/api/deluser' && req.method === 'POST') {
+      const t = cleanName(b.t);
+      if (!d.users[t]) return J({ err: 'nouser' }, 404);
+      for (const sect of ['users', 'gifts', 'summon', 'bans', 'live']) delete d[sect][t];
+      await this.saveDoc();
+      return J({ ok: 1 });
+    }
+
     if (p === '/api/pw' && req.method === 'POST') {
       const u = cleanName(b.u);
       if (!d.users[u]) return J({ err: 'nouser' }, 404);

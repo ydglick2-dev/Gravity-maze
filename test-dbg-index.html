@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v127</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v126</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -9990,7 +9990,7 @@ async function wakeOn(){
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(wakeOn,300);});
 ['pointerdown','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,wakeOn,{passive:true}));
 wakeOn();
-initAuth();
+window.__t={ping:1};initAuth();
 try{if(scratchFree())setTimeout(()=>{if(!running)showToast(tr('🎟 מתנה יומית חינם מחכה בתפריט — כרטיס גירוד!','🎟 Free daily gift in the menu — scratch card!'));},2600);}catch(e){} // 🎁 מצביעים על המתנה היומית
 if(((troLife/25)|0)>troClaimed){claimTroRoad();save();refreshTro();} // תשלום-עבר בעלייה
 {const bm=document.getElementById('bootMsg');if(bm)bm.remove();} // המשחק עלה בהצלחה
