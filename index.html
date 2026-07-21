@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v131</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v132</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -476,6 +476,7 @@
       <button class="mTile" id="achBtn"><div class="mIc">🏅</div><div data-en="Achievements">הישגים</div></button>
       <button class="mTile" id="mnuSet"><div class="mIc">⚙️</div><div data-en="Settings">הגדרות</div></button>
       <button class="mTile" id="adminBtn" style="display:none"><div class="mIc">🛠</div><div data-en="Admin">אדמין</div></button>
+      <button class="mTile" id="giftAdmBtn" style="display:none"><div class="mIc">🎁</div><div data-en="Gift for Gliki">מתנה לגליקי</div></button>
       <button id="passBtn" style="display:none"></button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:18px 20px;gap:12px;margin-top:auto">
@@ -496,6 +497,22 @@
     </div>
     <div style="display:none"><div id="troLine"></div></div>
   </div>
+</div>
+
+<div class="overlay hidden" id="giftAdmOv" style="z-index:58;background:rgba(20,8,28,.97)">
+  <div class="big">🎁</div>
+  <h1 data-en="Gift for Gliki 🎂">מתנה לגליקי 🎂</h1>
+  <p class="sub" style="max-width:320px" data-en="It's Gliki's birthday! Send coins from your stash and a blessing 💌">יומולדת לגליקי! שלחו לו מטבעות מהאוסף שלכם וברכה 💌</p>
+  <div class="row" id="giftAmtRow">
+    <button class="chip" data-amt="0">💌 רק ברכה</button>
+    <button class="chip on" data-amt="20">20🪙</button>
+    <button class="chip" data-amt="50">50🪙</button>
+    <button class="chip" data-amt="100">100🪙</button>
+  </div>
+  <input class="tin" id="giftMsg" maxlength="90" placeholder="כתבו ברכה... (יומולדת שמח!)" data-en-ph="Write a blessing..." style="max-width:290px">
+  <div id="giftAdmMsg" style="min-height:20px;font-size:13px;color:#ffd257;font-weight:700"></div>
+  <button class="btn" id="giftAdmSend" data-en="🎁 Send gift">🎁 שלח מתנה</button>
+  <button class="btn sec" id="giftAdmBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="instOv" style="z-index:59;background:rgba(8,12,22,.97)">
@@ -4294,7 +4311,7 @@ function drawBall(T){
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 const SB={x:0,z:5.5,vx:0,vz:0,rot:0}; // ⚽ כדור הכדורגל — דוחפים אותו לשער
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv','sndOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv','sndOv','giftAdmOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -4609,8 +4626,32 @@ function init3D(){
   conf.frustumCulled=false;scene.add(conf);
   const cam=new THREE.PerspectiveCamera(58,W/H,.1,90);
   cam.position.set(0,5,LB.z+7.4);
+  /* 🎂 שכבת מסיבה עונתית — בלונים, קונפטי צף ושלט יומולדת. מוצגת רק כשאייקון העונה 🎂 */
+  const party=new THREE.Group();
+  const emojiSprite=(em,sz)=>{
+    const tx=cvTex(128,(g,w,h)=>{g.font=(h*.78)+'px serif';g.textAlign='center';g.textBaseline='middle';g.fillText(em,w/2,h/2+h*.04);});
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false}));
+    sp.scale.set(sz,sz,1);return sp;
+  };
+  const EMS=['🎈','🎈','🎈','🎉','🎂','🎁','🎈','✨'];
+  for(let i=0;i<14;i++){
+    const sp=emojiSprite(EMS[i%EMS.length],1.3+(i%3)*.45);
+    sp.position.set((Math.random()-.5)*17,.8+Math.random()*8,3+Math.random()*22);
+    sp.userData={v:.5+Math.random()*.6,ph:Math.random()*6.28,x0:sp.position.x};
+    party.add(sp);
+  }
+  const banner=new THREE.Sprite(new THREE.SpriteMaterial({map:cvTex({w:1024,h:256},(g,w,h)=>{
+    g.font='900 100px system-ui';g.textAlign='center';g.textBaseline='middle';
+    g.shadowColor='rgba(255,122,217,.9)';g.shadowBlur=26;
+    const gr=g.createLinearGradient(0,0,w,0);
+    gr.addColorStop(0,'#ff7ad9');gr.addColorStop(.5,'#fff0fa');gr.addColorStop(1,'#ffc23e');
+    g.fillStyle=gr;g.fillText('🎂 יומולדת שמח לגליקי! 🎉',w/2,h/2);
+  }),transparent:true,depthWrite:false}));
+  banner.scale.set(9,2.25,1);banner.position.set(0,4.6,1.5);
+  party.add(banner);
+  party.visible=false;scene.add(party);
   return {ren,scene,cam,ball3,blob,gGlow,stars,bTex,sb3,blob2,lastSkin:skinSel,
-    aura,auraRar:-1,conf,cvel:new Float32Array(CN*3),confT:0};
+    aura,auraRar:-1,conf,cvel:new Float32Array(CN*3),confT:0,party,banner};
 }
 /* 🎉 פרץ קונפטי תלת-ממדי — צבעוני, קופץ על הדשא ונמוג */
 function confetti3D(x,z){
@@ -4657,6 +4698,20 @@ function render3D(dt){
   T3.stars.rotation.y+=dt*.008;
   const _now=performance.now()/1000;
   T3.stars.material.opacity=.68+.24*Math.sin(_now*1.7); // ✨ נצנוץ כוכבים
+  // 🎂 שכבת המסיבה — פעילה רק בעונה עם אייקון 🎂 (נבדק חי, גם אם העונה מתחלפת באמצע)
+  if(T3.party){
+    const bday=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🎂');
+    T3.party.visible=bday;
+    if(bday){
+      T3.party.children.forEach(sp=>{
+        if(!sp.userData||sp.userData.v===undefined)return; // השלט לא צף
+        sp.position.y+=sp.userData.v*dt;
+        sp.position.x=sp.userData.x0+Math.sin(_now*.9+sp.userData.ph)*.8;
+        if(sp.position.y>9.5){sp.position.y=.4;sp.userData.x0=(Math.random()-.5)*17;sp.position.z=3+Math.random()*22;}
+      });
+      if(T3.banner){T3.banner.position.y=4.6+Math.sin(_now*1.1)*.25;}
+    }
+  }
   // 💎 הילת נדירות סביב הכדור (אדיר ומעלה)
   {
     const _rar=(SKINS[skinSel]||{}).rar|0;
@@ -8367,6 +8422,13 @@ function applyGift(g,target){
       if(skinSel===ix){skinSel=0;try{supUi();}catch(e){}} // אם היה הבחור — חוזרים לברירת המחדל
     });
     if(g.st)session.forEach(s=>{s.done=true;s.stars=3;});
+    if(Array.isArray(g.bmsg))g.bmsg.forEach((m,k)=>{ // 💌 ברכות יומולדת מהשחקנים
+      setTimeout(()=>{
+        showToast('💌 '+String(m.f||'').slice(0,14)+': '+String(m.t||'').slice(0,90)+((m.co|0)>0?' (+'+(m.co|0)+'🪙)':''));
+        tone(880,.1,'sine',.3);setTimeout(()=>tone(1108,.14,'sine',.3),120);
+        try{emojiBurst({e:['💌','🎂','✨'],n:10,m:'burst',d:1200});}catch(e){}
+      },1500+k*3200);
+    });
     if(g.rlk!==undefined){ // 🔒 נעילת/שחרור יצירת חשבונות במכשיר הזה — מהאדמין, מרחוק
       try{g.rlk?localStorage.setItem('mzRegLock','1'):localStorage.removeItem('mzRegLock');}catch(e){}
       setTimeout(()=>showToast(g.rlk
@@ -8485,6 +8547,7 @@ async function admGive(g,label){
   if(Array.isArray(g.skx))q.skx=[...new Set([...(Array.isArray(q.skx)?q.skx:[]),...g.skx.map(n=>n|0)])].slice(0,64);
   if(g.unl)q.unl=Math.max(q.unl|0,g.unl|0);
   if(g.rlk!==undefined)q.rlk=g.rlk?1:0; // 🔒 נעילת יצירת חשבונות
+  if(Array.isArray(g.bmsg))q.bmsg=[...(Array.isArray(q.bmsg)?q.bmsg:[]),...g.bmsg].slice(-20); // 💌 ברכות
   if(g.dnl)q.dnl=g.dnl|0;
   if(g.clv)q.clv=g.clv;
   if('clr' in g)q.clr=g.clr|0;
@@ -8536,6 +8599,59 @@ $('setBtn').onclick=()=>{
   const ov=$('settingsOv');
   if(ov.classList.contains('hidden')){syncSettings();ov.classList.remove('hidden');}
   else ov.classList.add('hidden');
+};
+/* 🎁 מתנה לגליקי — שחקנים שולחים לאדמין מטבעות משלהם + ברכה */
+const GIFT_ADMIN='גליקי';
+let giftAmt=20;
+function syncGiftAdmBtn(){ // מוצג רק למחוברים שאינם האדמין עצמו
+  try{$('giftAdmBtn').style.display=(curUser&&curUser!==GIFT_ADMIN)?'':'none';}catch(e){}
+}
+$('giftAdmBtn').onclick=()=>{
+  $('menuOv').classList.add('hidden');
+  $('giftAdmMsg').textContent='🪙 '+tr('יש לך: ','You have: ')+coins;
+  $('giftAdmOv').classList.remove('hidden');
+};
+$('giftAdmBack').onclick=()=>{$('giftAdmOv').classList.add('hidden');$('menuOv').classList.remove('hidden');};
+$('giftAmtRow').querySelectorAll('.chip').forEach(ch=>{
+  ch.onclick=()=>{
+    giftAmt=ch.dataset.amt|0;
+    $('giftAmtRow').querySelectorAll('.chip').forEach(c2=>c2.className='chip'+(c2===ch?' on':''));
+  };
+});
+let giftBusy=false;
+$('giftAdmSend').onclick=async()=>{
+  if(giftBusy)return;
+  if(!curUser)return $('giftAdmMsg').textContent=tr('צריך להתחבר קודם','Log in first');
+  const msg=String($('giftMsg').value||'').trim().slice(0,90);
+  if(!msg&&!giftAmt)return $('giftAdmMsg').textContent=tr('כתבו ברכה או בחרו מתנה 🙂','Write a blessing or pick a gift 🙂');
+  if(giftAmt>coins)return $('giftAdmMsg').textContent=tr('אין מספיק מטבעות — יש לך ','Not enough coins — you have ')+coins+'🪙';
+  giftBusy=true;
+  $('giftAdmMsg').textContent='…';
+  const g={bmsg:[{f:curUser,t:msg||tr('יומולדת שמח! 🎂','Happy birthday! 🎂'),co:giftAmt}]};
+  if(giftAmt)g.co=giftAmt;
+  let ok=false;
+  try{
+    if(beOn()){const r=await be('/api/gift',{t:GIFT_ADMIN,g});ok=!!(r&&r.ok);}
+    else{
+      const d=await regFetch();
+      if(d&&d.users[GIFT_ADMIN]){
+        const q=d.gifts[GIFT_ADMIN]||{};
+        if(g.co)q.co=(q.co|0)+g.co;
+        q.bmsg=[...(Array.isArray(q.bmsg)?q.bmsg:[]),...g.bmsg].slice(-20);
+        d.gifts[GIFT_ADMIN]=q;
+        ok=await regPut(d);
+      }
+    }
+  }catch(e){}
+  giftBusy=false;
+  if(!ok)return $('giftAdmMsg').textContent=tr('שגיאת רשת — נסו שוב','Network error — try again');
+  if(giftAmt){coins-=giftAmt;eCo=Math.max(0,eCo-giftAmt);save();refreshTro();} // המתנה יוצאת מהכיס שלך באמת
+  $('giftAdmMsg').textContent='';
+  $('giftMsg').value='';
+  $('giftAdmOv').classList.add('hidden');
+  showToast(tr('🎁 המתנה נשלחה לגליקי! תודה 💜','🎁 Gift sent to Gliki! Thank you 💜'));
+  try{emojiBurst({e:['🎁','💌','🎂','✨'],n:16,m:'burst',d:1500});}catch(e){}
+  tone(740,.1,'sine',.3);setTimeout(()=>tone(988,.16,'sine',.3),110);
 };
 $('setBack').onclick=()=>$('settingsOv').classList.add('hidden');
 $('setTut').onclick=()=>{ // 🎓 איפוס דגלי ההדרכה — יופיעו שוב בשלב 1 ובבוס הראשון
@@ -9507,6 +9623,7 @@ function menuPassSync(){
     tickNum($('mnuTro'),'🏆 ',trophies);
     $('playBtn').textContent=tr('שחק · שלב ','Play · Level ')+Math.min(unlocked+1,1000);
     refreshUserChip();
+    syncGiftAdmBtn(); // 🎁 כפתור "מתנה לגליקי" — לכל מי שמחובר ואינו האדמין
   }catch(e){}
 }
 $('mnuSet').onclick=()=>{$('menuOv').classList.add('hidden');$('setBtn').onclick();};
