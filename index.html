@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v130</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v131</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5574,10 +5574,10 @@ DFX.push(
  {name:'ברקים',en:'Bolts',icon:'⚡',price:550,rar:2},
  {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:750,rar:3});
 POWSKINS.forEach(s=>SKINS.push(s));
-/* 👑 גליקי — הסקין האגדי של יוצר המשחק! (החליף את מסי — מי שכבר השיג נשאר עם האגדה) */
+/* 🐐 ליאו מסי — אקסקלוסיב: נשאר רק אצל מי שכבר השיג. לא מושג יותר */
 const MESSI_IMG=new Image();
-MESSI_IMG.src='gliki.png';
-SKINS.push({name:'גליקי',en:'Gliki',price:0,rar:5,wc:3,vkey:'gliki',shout:'גליקי המלך!! יומולדת שמח!!',draw:(c,r,rot,T)=>{
+MESSI_IMG.src='messi.png';
+SKINS.push({name:'ליאו מסי',en:'Leo Messi',price:0,rar:5,face:1,leg:1,vkey:'messi',shout:'אנקרה מסי! אנקרה מסי! גול גול גול!',draw:(c,r,rot,T)=>{
   c.save();c.rotate(rot*.25);
   if(MESSI_IMG.complete&&MESSI_IMG.naturalWidth){
     c.drawImage(MESSI_IMG,-r*1.02,-r*1.02,r*2.04,r*2.04);
@@ -5696,6 +5696,25 @@ SKINS.push(
    c.fillStyle='#ffc23e';c.font='900 '+(r*.2|0)+'px system-ui';
    c.textAlign='center';c.textBaseline='middle';c.fillText('🎂',r*.42,r*.5);}}
 );
+/* 👑 גליקי — הסקין האגדי החדש של יוצר המשחק! הג'קפוט: 1% מכל תיבה */
+const GLIKI_IMG=new Image();
+GLIKI_IMG.src='gliki.png';
+SKINS.push({name:'גליקי',en:'Gliki',price:0,rar:5,wc:1,vkey:'gliki',shout:'גליקי המלך!! יומולדת שמח!!',draw:(c,r,rot,T)=>{
+  c.save();c.rotate(rot*.25);
+  if(GLIKI_IMG.complete&&GLIKI_IMG.naturalWidth){
+    c.drawImage(GLIKI_IMG,-r*1.02,-r*1.02,r*2.04,r*2.04);
+  }else{
+    const g=c.createLinearGradient(-r,0,r,0);
+    g.addColorStop(0,'#ff7ad9');g.addColorStop(.5,'#fff0fa');g.addColorStop(1,'#ffc23e');
+    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
+    c.fillStyle='#2a0f38';c.font='900 '+(r*.8|0)+'px system-ui';
+    c.textAlign='center';c.textBaseline='middle';c.fillText('👑',0,r*.05);
+  }
+  c.restore();
+  c.strokeStyle='rgba(246,180,14,.85)';c.lineWidth=r*.08; // טבעת זהב של מלך
+  c.beginPath();c.arc(0,0,r*.95,0,TAU);c.stroke();
+}});
+const GLIKI_IDX=SKINS.length-1;
 /* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
    רים-לייט תלת-ממדי לכולם, טבעת נדירות מסתובבת (אדיר+), ניצוצות מקיפים
    (מיתי+) והילת זהב פועמת לאגדיים. בלי לשכתב אף ציור. */
@@ -6877,10 +6896,10 @@ function rollChest(){
   const drops=[];
   // 👑 גליקי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
   let messi=null;
-  if(!skinOwned.includes(MESSI_IDX)&&Math.random()<.01){
-    skinOwned.push(MESSI_IDX);
+  if(!skinOwned.includes(GLIKI_IDX)&&Math.random()<.01){
+    skinOwned.push(GLIKI_IDX);
     messi={icon:'👑',label:tr('גליקי!!','Gliki!!'),rar:5,
-      rv:{kind:'skin',idx:MESSI_IDX,rar:5,label:tr('גליקי','Gliki'),story:loreOf(MESSI_IDX)}};
+      rv:{kind:'skin',idx:GLIKI_IDX,rar:5,label:tr('גליקי','Gliki'),story:loreOf(GLIKI_IDX)}};
     const gfx=grantGoalFx();if(gfx)messi._extra=gfx;
   }
   // ⭐ מגרילים את נדירות התיבה לפי הסיכויים הרשמיים של סטאר דרופ
@@ -6906,7 +6925,7 @@ function rollChest(){
   return drops;
 }
 let chestBusy=false;
-/* 🏆 תיבת מונדיאל — כל 50 שלבים. 20% לגביע מונדיאל; 3 גביעים = גליקי! */
+/* 🏆 תיבת מונדיאל — כל 50 שלבים. 20% לגביע מונדיאל; 3 גביעים = ליאו מסי (מורשת)! */
 function mondialBox(){ // 🏆 תיבת בונוס כל 50 שלבים (מסי עבר לתיבות רגילות — 0.01%)
   showToast(tr('🏆 תיבת מונדיאל — שלב ','🏆 World Cup box — level ')+(levelIdx+1)+'!');
   playBoxOpen(5,()=>{
@@ -6920,7 +6939,7 @@ function checkMessi(){
   if(wcCups>=3&&!skinOwned.includes(MESSI_IDX)){
     skinOwned.push(MESSI_IDX);
     save();
-    setTimeout(()=>showReveal({kind:'skin',idx:MESSI_IDX,rar:5,label:tr('גליקי','Gliki'),story:loreOf(MESSI_IDX)},()=>{
+    setTimeout(()=>showReveal({kind:'skin',idx:MESSI_IDX,rar:5,label:tr('ליאו מסי','Leo Messi'),story:loreOf(MESSI_IDX)},()=>{
       const gfx=grantGoalFx();
       if(gfx){save();setTimeout(()=>showReveal(gfx.rv),400);}
     }),500);
@@ -8712,7 +8731,7 @@ const SKIN_LORE=[
  ['לגם בטעות שיקוי זמן. מאז — העולם רץ, והוא צועד בנחת.','Accidentally sipped a time potion. The world rushes; it strolls.'],
  ['רוח של כדור מהעולם הבא. קירות? הוא כבר לא מרגיש אותם.','A ball\'s ghost from the other side. Walls? It barely feels them anymore.'],
  ['התגלגל פעם דרך בנק. יצא מהצד השני — כפול.','Once rolled through a bank. Came out the other side — doubled.'],
- ['מלך היומולדת בכבודו ובעצמו! יוצר המבוך ירד לשחק איתכם — עם כתר, משקפיים וריז אינסופי. 👑🎂','The Birthday King himself! The maze creator came down to play — crown, shades and infinite rizz. 👑🎂'],
+ ['ה-GOAT בכבודו ובעצמו. שלושה גביעי מונדיאל הביאו אותו למבוך — עכשיו הוא נשאר רק אצל מי שתפס אותו בזמן. 🐐🇦🇷','The GOAT himself. Three World Cups brought him to the maze — now only early catchers keep him. 🐐🇦🇷'],
  ['סיוווו! מלך השערים עזב את המגרש בשביל המבוך. עדיין קופץ הכי גבוה. 🇵🇹','Siuuu! The goal king left the pitch for the maze. Still jumps the highest. 🇵🇹'],
  ['הקוסם מברזיל. מכדרר בין הקירות כאילו הם מגינים. 🇧🇷','The Brazilian magician. Dribbles between walls like defenders. 🇧🇷'],
  ['הצ׳יטה של פריז. מהיר מדי בשביל החורים — הם פשוט לא מספיקים לתפוס אותו. 🇫🇷','The Paris cheetah. Too fast for the holes to catch. 🇫🇷'],
@@ -8720,7 +8739,8 @@ const SKIN_LORE=[
  ['נמלט ממסיבת יומולדת שנייה לפני הפיצוץ. אל תחזיקו אותו קרוב לסיכות.','Escaped a birthday party a second before the pop. Keep it away from pins.'],
  ['ענן צבעוני שמסרב לרדת לרצפה. כל פנייה שלו — מסיבה.','A colorful cloud that refuses to hit the floor. Every turn is a party.'],
  ['אף אחד לא יודע מה בפנים. גם הוא לא. אולי עוד מתנה?','Nobody knows what\'s inside. Neither does it. Maybe another gift?'],
- ['נאפתה לכבוד יומולדת של אגדה. הנרות לא נכבים אף פעם. 🎂','Baked for a legend\'s birthday. The candles never go out. 🎂']];
+ ['נאפתה לכבוד יומולדת של אגדה. הנרות לא נכבים אף פעם. 🎂','Baked for a legend\'s birthday. The candles never go out. 🎂'],
+ ['מלך היומולדת בכבודו ובעצמו! יוצר המבוך ירד לשחק איתכם — עם כתר, משקפיים וריז אינסופי. 👑🎂','The Birthday King himself! The maze creator came down to play — crown, shades and infinite rizz. 👑🎂']];
 function loreOf(i){const l=SKIN_LORE[i];return l?tr(l[0],l[1]):'';}
 /* 🐣 היצור: הכדור נפתח לחיה חמודה — עיניים, גבות ופה לפי מצב רוח */
 function drawCreature(g,cx,cy,R,idx,mood,t){
