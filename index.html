@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v127</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v128</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -591,6 +591,7 @@
   </div>
   <div class="row" style="flex-wrap:wrap;align-items:center">
     <button class="chip" id="admSeaBall">⚽ ערכת כדורגל</button>
+    <button class="chip" id="admSeaBday">🎂 ערכת יומולדת</button>
     <button class="chip" id="admSeaUp">🖼 העלאת קובץ עיצוב</button>
     <input type="file" id="admSeaFile" accept=".json,application/json" style="display:none">
   </div>
@@ -9354,7 +9355,10 @@ function adoptSeason(sv2){
   applySeasonTheme(nw&&nw.th);
   passSync();passUiBtn();menuPassSync();
   if(!$('passOv').classList.contains('hidden'))buildPass();
-  if(nw)showToast('🎉 '+tr('עונה חדשה: ','New season: ')+((nw.th&&nw.th.ic)||'')+' '+(nw.name||tr('עונה ','Season ')+nw.n)+'!');
+  if(nw){
+    showToast('🎉 '+tr('עונה חדשה: ','New season: ')+((nw.th&&nw.th.ic)||'')+' '+(nw.name||tr('עונה ','Season ')+nw.n)+'!');
+    try{emojiBurst({e:[(nw.th&&nw.th.ic)||'🎉','🎉','✨','🎈'],n:20,m:'burst',d:1700});}catch(e){} // 🎊 עונה חדשה = חגיגה
+  }
 }
 function seasonLabel(){
   if(seasonOv)return ((seasonOv.th&&seasonOv.th.ic)?seasonOv.th.ic+' ':'')+(seasonOv.name||tr('עונה ','Season ')+seasonOv.n);
@@ -9529,7 +9533,13 @@ const SEASON_PACKS={ // ⚽ אלביסלסטה — לפי קובץ העיצוב 
     t1:'#eaf4ff',t2:'#c9d3dd',t3:'#8fb0c9',
     gl:'rgba(94,160,230,.17)',
     bg1:'rgba(11,29,54,.93)',bg2:'rgba(5,14,28,.95)',
-    gd:'rgba(126,200,242,.07)'}
+    gd:'rgba(126,200,242,.07)'},
+  birthday:{ic:'🎂',st:'1', // 🎂 עונת יומולדת — ורוד/זהב על סגול חגיגי
+    g1:'#ff7ad9',g2:'#ffc23e',
+    t1:'#fff0fa',t2:'#f3cdeb',t3:'#d29ac4',
+    gl:'rgba(255,122,217,.20)',
+    bg1:'rgba(46,12,58,.93)',bg2:'rgba(24,5,38,.95)',
+    gd:'rgba(255,180,240,.08)'}
 };
 let admSeaTh=null;
 $('admSeaBall').onclick=()=>{
@@ -9537,6 +9547,12 @@ $('admSeaBall').onclick=()=>{
   if(!$('admSeaName').value)$('admSeaName').value='איוונט כדורגל';
   applySeasonTheme(admSeaTh); // תצוגה מקדימה אצל האדמין
   $('admMsg').textContent=tr('⚽ ערכת כדורגל נטענה (תצוגה מקדימה) — לחצו "החלף עונה" להפצה','⚽ Football pack loaded (preview) — hit Switch season to publish');
+};
+$('admSeaBday').onclick=()=>{
+  admSeaTh=SEASON_PACKS.birthday;
+  if(!$('admSeaName').value)$('admSeaName').value='עונת היומולדת';
+  applySeasonTheme(admSeaTh);
+  $('admMsg').textContent=tr('🎂 ערכת יומולדת נטענה (תצוגה מקדימה) — לחצו "החלף עונה" להפצה','🎂 Birthday pack loaded (preview) — hit Switch season to publish');
 };
 $('admSeaUp').onclick=()=>$('admSeaFile').click();
 $('admSeaFile').onchange=e=>{
