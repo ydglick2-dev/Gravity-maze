@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v132</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v133</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -361,7 +361,7 @@
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
-    <div style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000;background:rgba(7,16,33,.55);border-radius:999px;padding:5px 14px" data-en="⚽ Bump the soccer ball and push it into the goal!">⚽ תתנגשו בכדורגל ותדחפו אותו לשער!</div>
+    <div id="lbHint" style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000;background:rgba(7,16,33,.55);border-radius:999px;padding:5px 14px" data-en="⚽ Bump the soccer ball and push it into the goal!">⚽ תתנגשו בכדורגל ותדחפו אותו לשער!</div>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn" id="lbPlay" style="min-width:160px" data-en="Play">שחק</button>
       <button class="btn sec" id="menuBtn2" data-en="🎮 Menu">🎮 תפריט</button>
@@ -4380,6 +4380,13 @@ function syncLobbyPlayers3D(dt){
 function syncLobbyUI(){
   const anyOv=OVS.some(id=>!$(id).classList.contains('hidden'));
   $('lobbyUI').style.display=(!running&&!anyOv)?'flex':'none';
+  try{ // 🎂 טקסט העזרה של הלובי מתחלף עם העונה
+    const _bd=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🎂');
+    const lh=$('lbHint');
+    const txt=_bd?tr('🎁 דחפו את המתנה אל עוגת היומולדת של גליקי!','🎁 Push the gift to Gliki\'s birthday cake!')
+                 :tr('⚽ תתנגשו בכדורגל ותדחפו אותו לשער!','⚽ Bump the soccer ball and push it into the goal!');
+    if(lh&&lh.textContent!==txt)lh.textContent=txt;
+  }catch(e){}
   $('hud').style.display=running?'flex':'none';
   if(!running)try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');}catch(e){}
   $('setBtn').style.display=running?'none':'block'; // ⚙️ זמין בלובי ובתפריטים, לא בזמן משחק
@@ -4441,15 +4448,18 @@ function lobbyFrame(dt,t){
     }
   }
   if(SB.z<1){
-    if(Math.abs(SB.x)<2.7){ // ⚽ גוווול!
+    const _bday=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🎂');
+    if(Math.abs(SB.x)<2.7){ // ⚽ גול! / 🎁 המתנה הוגשה!
       LB.goals++;LB.glow=1;
-      try{const g2=$('lbGoals');g2.style.display='';g2.textContent='⚽ '+LB.goals;}catch(e){}
-      showToast(tr('⚽ גוֹל! (','⚽ GOAL! (')+LB.goals+')');
+      try{const g2=$('lbGoals');g2.style.display='';g2.textContent=(_bday?'🎁 ':'⚽ ')+LB.goals;}catch(e){}
+      showToast(_bday?tr('🎁 המתנה הוגשה לגליקי! (','🎁 Gift delivered to Gliki! (')+LB.goals+')'
+                    :tr('⚽ גוֹל! (','⚽ GOAL! (')+LB.goals+')');
       sfx.win();
-      goalFxShow(LB.goals%2?'comic':'fly');
+      if(!_bday)goalFxShow(LB.goals%2?'comic':'fly');
       skinShout();
-      try{confetti3D(SB.x,Math.max(1.2,SB.z));}catch(e){} // 🎉 קונפטי תלת-ממדי מהשער
-      emojiBurst({e:['🎉','⚽','✨','🎊'],n:20,m:'burst',d:1600});
+      try{confetti3D(SB.x,Math.max(1.2,SB.z));}catch(e){} // 🎉 קונפטי תלת-ממדי
+      emojiBurst(_bday?{e:['🎁','🎂','🎈','💜','✨'],n:22,m:'burst',d:1700}
+                      :{e:['🎉','⚽','✨','🎊'],n:20,m:'burst',d:1600});
       for(let i=0;i<30;i++){
         if(particles.length>240)particles.shift();
         particles.push({x:W/2+(Math.random()-.5)*120,y:H*.46,
@@ -4650,8 +4660,36 @@ function init3D(){
   banner.scale.set(9,2.25,1);banner.position.set(0,4.6,1.5);
   party.add(banner);
   party.visible=false;scene.add(party);
+  /* 🎂 מיני-משחק יומולדת: במקום שער — עוגת ענק; במקום כדורגל — קופסת מתנה מתגלגלת */
+  const cake3=new THREE.Group();
+  const tier1=new THREE.Mesh(new THREE.CylinderGeometry(1.75,1.85,.85,26),new THREE.MeshLambertMaterial({color:0x8a5426}));
+  tier1.position.y=.43;cake3.add(tier1);
+  const tier2=new THREE.Mesh(new THREE.CylinderGeometry(1.12,1.2,.7,24),new THREE.MeshLambertMaterial({color:0xff9bb0}));
+  tier2.position.y=1.2;cake3.add(tier2);
+  const icing=new THREE.Mesh(new THREE.CylinderGeometry(1.14,1.14,.14,24),new THREE.MeshLambertMaterial({color:0xfff0fa}));
+  icing.position.y=1.58;cake3.add(icing);
+  const flames=[];
+  const candCols=[0x59b8ff,0x4dd77a,0xffc23e];
+  for(let k=0;k<3;k++){
+    const a=k*(TAU/3)+.5;
+    const cd=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,.5,8),new THREE.MeshLambertMaterial({color:candCols[k]}));
+    cd.position.set(Math.cos(a)*.62,1.9,Math.sin(a)*.62);cake3.add(cd);
+    const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(255,205,90,.95)'),transparent:true,depthWrite:false}));
+    fl.scale.set(.42,.62,1);fl.position.set(cd.position.x,2.32,cd.position.z);
+    cake3.add(fl);flames.push(fl);
+  }
+  cake3.position.set(0,0,.9);cake3.visible=false;scene.add(cake3);
+  const giftTex=cvTex(256,(g,w,h)=>{ // עטיפה ורודה + סרט זהב
+    g.fillStyle='#e0498a';g.fillRect(0,0,w,h);
+    g.fillStyle='rgba(255,255,255,.22)';
+    for(let x=0;x<w;x+=42)for(let y=0;y<h;y+=42){g.beginPath();g.arc(x+21,y+21,7,0,7);g.fill();}
+    g.fillStyle='#ffc23e';g.fillRect(w/2-18,0,36,h);g.fillRect(0,h/2-18,w,36);
+  });
+  const gift3=new THREE.Mesh(new THREE.BoxGeometry(.85,.85,.85),new THREE.MeshLambertMaterial({map:giftTex}));
+  gift3.visible=false;scene.add(gift3);
   return {ren,scene,cam,ball3,blob,gGlow,stars,bTex,sb3,blob2,lastSkin:skinSel,
-    aura,auraRar:-1,conf,cvel:new Float32Array(CN*3),confT:0,party,banner};
+    aura,auraRar:-1,conf,cvel:new Float32Array(CN*3),confT:0,party,banner,
+    cake3,gift3,flames,goalNear:goal,goalFar:goal2};
 }
 /* 🎉 פרץ קונפטי תלת-ממדי — צבעוני, קופץ על הדשא ונמוג */
 function confetti3D(x,z){
@@ -4710,6 +4748,22 @@ function render3D(dt){
         if(sp.position.y>9.5){sp.position.y=.4;sp.userData.x0=(Math.random()-.5)*17;sp.position.z=3+Math.random()*22;}
       });
       if(T3.banner){T3.banner.position.y=4.6+Math.sin(_now*1.1)*.25;}
+    }
+    // 🎁 המיני-משחק מתחלף: שער⇄עוגה, כדורגל⇄קופסת מתנה
+    if(T3.cake3){
+      T3.cake3.visible=bday;
+      if(T3.goalNear)T3.goalNear.visible=!bday;
+      if(T3.goalFar)T3.goalFar.visible=!bday;
+      T3.gift3.visible=bday;
+      T3.sb3.visible=!bday;
+      if(bday){
+        T3.gift3.position.copy(T3.sb3.position);
+        T3.gift3.quaternion.copy(T3.sb3.quaternion);
+        T3.flames.forEach((fl,k)=>{ // להבות מרצדות
+          fl.material.opacity=.75+.25*Math.sin(_now*9+k*2.1);
+          fl.scale.set(.42+.06*Math.sin(_now*7+k),.62+.09*Math.sin(_now*8+k),1);
+        });
+      }
     }
   }
   // 💎 הילת נדירות סביב הכדור (אדיר ומעלה)
@@ -4793,15 +4847,21 @@ function lobbyDraw(t){
     if(!p)continue;k?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);
   }
   ctx.stroke();
-  // שער
-  ctx.strokeStyle='#f2f2f6';
-  const gp=[[-2.8,0,1],[-2.8,1.8,1],[2.8,1.8,1],[2.8,0,1],[-2.8,1.8,-0.2],[2.8,1.8,-0.2]];
-  const P3=gp.map(p=>pj(p[0],p[1],p[2]));
-  const seg=(i,j,w2)=>{if(P3[i]&&P3[j]){ctx.lineWidth=w2;
-    ctx.beginPath();ctx.moveTo(P3[i].x,P3[i].y);ctx.lineTo(P3[j].x,P3[j].y);ctx.stroke();}};
-  seg(0,1,4);seg(1,2,4);seg(2,3,4);seg(1,4,2.5);seg(2,5,2.5);seg(4,5,2.5);
-  ctx.strokeStyle='rgba(255,255,255,.22)';
-  for(let k=1;k<7;k++)L3(-2.8+k*.8,1,-2.8+k*.8,.2,1);
+  // שער — או עוגת יומולדת בעונת ה-🎂
+  const _bd2=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🎂');
+  if(_bd2){
+    const ck=pj(0,.9,.9);
+    if(ck){ctx.font=(ck.s*2.2|0)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🎂',ck.x,ck.y);}
+  }else{
+    ctx.strokeStyle='#f2f2f6';
+    const gp=[[-2.8,0,1],[-2.8,1.8,1],[2.8,1.8,1],[2.8,0,1],[-2.8,1.8,-0.2],[2.8,1.8,-0.2]];
+    const P3=gp.map(p=>pj(p[0],p[1],p[2]));
+    const seg=(i,j,w2)=>{if(P3[i]&&P3[j]){ctx.lineWidth=w2;
+      ctx.beginPath();ctx.moveTo(P3[i].x,P3[i].y);ctx.lineTo(P3[j].x,P3[j].y);ctx.stroke();}};
+    seg(0,1,4);seg(1,2,4);seg(2,3,4);seg(1,4,2.5);seg(2,5,2.5);seg(4,5,2.5);
+    ctx.strokeStyle='rgba(255,255,255,.22)';
+    for(let k=1;k<7;k++)L3(-2.8+k*.8,1,-2.8+k*.8,.2,1);
+  }
   // צל + כדור
   const bp=pj(LB.x,.55,LB.z),sp=pj(LB.x,0,LB.z);
   if(sp){ctx.beginPath();
