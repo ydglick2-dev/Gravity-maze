@@ -18,6 +18,16 @@ const CORS = {
 const cleanName = v => String(v || '')
   .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, '')
   .replace(/\s+/g, ' ').trim();
+/* \ud83d\udeab \u05e1\u05d9\u05e0\u05d5\u05df \u05e7\u05dc\u05dc\u05d5\u05ea \u05d1\u05e9\u05de\u05d5\u05ea \u2014 \u05d6\u05d4\u05d4 \u05dc\u05e8\u05e9\u05d9\u05de\u05d4 \u05d1\u05e7\u05dc\u05d9\u05d9\u05e0\u05d8 (index.html) */
+const BAD_WORDS = ['\u05d6\u05d5\u05e0\u05d4','\u05d6\u05d5\u05e0\u05d5\u05ea', '\u05e9\u05e8\u05de\u05d5\u05d8', '\u05db\u05d5\u05e1\u05d0\u05de\u05e7', '\u05db\u05d5\u05e1\u05e2\u05de\u05e7', '\u05d6\u05d3\u05d9\u05d9\u05e0', '\u05dc\u05d6\u05d9\u05d9\u05e0', '\u05d6\u05d9\u05d5\u05e0', '\u05d7\u05e8\u05d0', '\u05de\u05e0\u05d9\u05d0\u05e7', '\u05e7\u05d5\u05e7\u05e1\u05d9\u05e0\u05dc', '\u05de\u05e4\u05d2\u05e8', '\u05e0\u05d0\u05e6\u05d9', '\u05d6\u05d9\u05e0', '\u05db\u05d5\u05e1', '\u05d4\u05d5\u05de\u05d5', 'fuck', 'shit', 'bitch', 'cunt', 'whore', 'slut', 'nigg', 'porn', 'dick', 'pussy', 'asshole', 'faggot', 'nazi', 'sex'];
+const nameBanned = v => {
+  let n = String(v || '').toLowerCase();
+  n = n.replace(/[ךםןףץ]/g, c => ({ 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' }[c] || c));
+  const a = n.replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e').replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't').replace(/@/g, 'a').replace(/\$/g, 's').replace(/[^a-zא-ת]/g, '');
+  const b = n.replace(/[^a-zא-ת]/g, '');
+  const c = n.replace(/0/g, 'ו').replace(/1/g, 'י').replace(/[^a-zא-ת]/g, '');
+  return BAD_WORDS.some(w => a.includes(w) || b.includes(w) || c.includes(w));
+};
 /* הענן הישן — שחקנים עם גרסה ישנה של המשחק עדיין נרשמים ושומרים שם */
 const TDB = 'https://textdb.dev/api/data/mzk-glk-reg-7g2k9-v1';
 const J = (o, s = 200) => new Response(JSON.stringify(o), {
@@ -57,7 +67,7 @@ export class Registry {
       let changed = false;
       for (const k0 in (src.users || {})) {
         const k = cleanName(k0);
-        if (!k) continue;
+        if (!k || nameBanned(k)) continue; // 🚫 שמות עם קללות לא נקלטים מהענן הישן
         if (!d.users[k]) { d.users[k] = src.users[k0]; changed = true; continue; }
         const sv2 = src.users[k0] && src.users[k0].sv;
         if (sv2 && this.score(sv2) > this.score(d.users[k].sv)) { d.users[k].sv = sv2; changed = true; }
@@ -153,7 +163,7 @@ export class Registry {
         const out = {};
         for (const k0 in m) {
           const k = cleanName(k0);
-          if (!k) continue;
+          if (!k || nameBanned(k)) continue; // 🚫 קללות לא נכנסות גם בכתיבת מסמך מלא
           if (out[k] && sect === 'users') {
             const a = out[k], c = m[k0];
             out[k] = (this.score(c && c.sv) > this.score(a && a.sv)) ? c : a;
@@ -172,7 +182,7 @@ export class Registry {
     if (p === '/api/import' && req.method === 'POST') {
       const src = b.doc || {};
       let n = 0;
-      for (const k in (src.users || {})) if (!d.users[k]) { d.users[k] = src.users[k]; n++; }
+      for (const k in (src.users || {})) if (!d.users[k] && !nameBanned(k)) { d.users[k] = src.users[k]; n++; }
       for (const k in (src.gifts || {})) d.gifts[k] = Object.assign(d.gifts[k] || {}, src.gifts[k]);
       for (const k in (src.bans || {})) if (!d.bans[k]) d.bans[k] = src.bans[k];
       await this.saveDoc();
@@ -182,6 +192,7 @@ export class Registry {
     if (p === '/api/register' && req.method === 'POST') {
       const u = cleanName(b.u).slice(0, 14);
       if (!u || !b.rec || !b.rec.s || !b.rec.h) return J({ err: 'bad' }, 400);
+      if (nameBanned(u)) return J({ err: 'badname' }, 400); // 🚫 שם לא הולם
       if (d.users[u]) return J({ err: 'taken' }, 409);
       d.users[u] = { s: b.rec.s, h: b.rec.h, c: Date.now() };
       await this.saveDoc();

@@ -16,6 +16,15 @@ try { WebSocketServer = require('ws').WebSocketServer; } catch (e) {
 const cleanName = v => String(v || '')
   .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, '')
   .replace(/\s+/g, ' ').trim();
+const BAD_WORDS = ['זונה','זונות', 'שרמוט', 'כוסאמק', 'כוסעמק', 'זדיינ', 'לזיינ', 'זיונ', 'חרא', 'מניאק', 'קוקסינל', 'מפגר', 'נאצי', 'זינ', 'כוס', 'הומו', 'fuck', 'shit', 'bitch', 'cunt', 'whore', 'slut', 'nigg', 'porn', 'dick', 'pussy', 'asshole', 'faggot', 'nazi', 'sex'];
+const nameBanned = v => {
+  let n = String(v || '').toLowerCase();
+  n = n.replace(/[ךםןףץ]/g, c => ({ 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' }[c] || c));
+  const a = n.replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e').replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't').replace(/@/g, 'a').replace(/\$/g, 's').replace(/[^a-zא-ת]/g, '');
+  const b = n.replace(/[^a-zא-ת]/g, '');
+  const c = n.replace(/0/g, 'ו').replace(/1/g, 'י').replace(/[^a-zא-ת]/g, '');
+  return BAD_WORDS.some(w => a.includes(w) || b.includes(w) || c.includes(w));
+};
 const PORT = +(process.argv[2] || 8787);
 const FILE = path.join(__dirname, 'dev-data.json');
 let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
@@ -92,6 +101,7 @@ const server = http.createServer((req, res) => {
     if (p === '/api/register' && req.method === 'POST') {
       const u = cleanName(b.u).slice(0, 14);
       if (!u || !b.rec || !b.rec.s || !b.rec.h) return J({ err: 'bad' }, 400);
+      if (nameBanned(u)) return J({ err: 'badname' }, 400);
       if (doc.users[u]) return J({ err: 'taken' }, 409);
       doc.users[u] = { s: b.rec.s, h: b.rec.h, c: Date.now() };
       persist(); return J({ ok: 1 });
