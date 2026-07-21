@@ -27,8 +27,9 @@ const nameBanned = v => {
 };
 const PORT = +(process.argv[2] || 8787);
 const FILE = path.join(__dirname, 'dev-data.json');
-let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
+let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, chat: {}, mm: null };
 try { doc = Object.assign(doc, JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) { }
+if (!doc.chat) doc.chat = {};
 if (!doc.snd) doc.snd = { v: 0, m: {} }; // 🔊 סאונדים לסקינים
 const persist = () => { try { fs.writeFileSync(FILE, JSON.stringify(doc)); } catch (e) { } };
 
@@ -127,6 +128,25 @@ const server = http.createServer((req, res) => {
       doc.users[u].sv = b.sv;
       persist(); return J({ ok: 1, kept: 'client' });
     }
+    if (p === '/api/chat' && req.method === 'POST') {
+      const u = cleanName(b.u), to = cleanName(b.to);
+      const t = String(b.t || '').trim().slice(0, 120);
+      if (!u || !to || !t || u === to) return J({ err: 'bad' }, 400);
+      if (!doc.users[u] || !doc.users[to]) return J({ err: 'nouser' }, 404);
+      if (nameBanned(t)) return J({ err: 'badword' }, 400);
+      const key = [u, to].sort().join('|');
+      const arr = Array.isArray(doc.chat[key]) ? doc.chat[key] : [];
+      arr.push({ f: u, t, at: Date.now() });
+      doc.chat[key] = arr.slice(-60);
+      persist(); notify(to);
+      return J({ ok: 1 });
+    }
+    if (p === '/api/chatget' && req.method === 'POST') {
+      const u = cleanName(b.u), w = cleanName(b.w);
+      if (!u || !w) return J({ err: 'bad' }, 400);
+      const key = [u, w].sort().join('|');
+      return J({ ok: 1, msgs: Array.isArray(doc.chat[key]) ? doc.chat[key] : [] });
+    }
     if (p === '/api/bcast' && req.method === 'POST') {
       const m = { f: cleanName(b.f).slice(0, 14) || 'גליקי', t: String(b.t || '').slice(0, 90), co: 0 };
       if (!m.t) return J({ err: 'bad' }, 400);
@@ -169,6 +189,16 @@ const server = http.createServer((req, res) => {
     if (p === '/api/claim' && req.method === 'POST') {
       const u = cleanName(b.u);
       const out = { gift: doc.gifts[u] || null, summon: doc.summon[u] || null, ban: doc.bans[u] || null, season: doc.season || null, snv: doc.snd.v || 0 };
+      { const cs = {};
+        for (const key in doc.chat) {
+          const pr = key.split('|');
+          if (pr[0] !== u && pr[1] !== u) continue;
+          const arr = doc.chat[key];
+          if (!Array.isArray(arr) || !arr.length) continue;
+          const last = arr[arr.length - 1];
+          cs[pr[0] === u ? pr[1] : pr[0]] = { at: +last.at || 0, f: last.f, t: String(last.t || '').slice(0, 60) };
+        }
+        out.chat = cs; }
       if (out.gift || out.summon) { delete doc.gifts[u]; delete doc.summon[u]; persist(); }
       return J(out);
     }

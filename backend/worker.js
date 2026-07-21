@@ -80,7 +80,7 @@ export class Registry {
     if (!this.doc) {
       this.doc = (await this.state.storage.get('doc')) ||
         { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
-      for (const k of ['users', 'gifts', 'summon', 'bans', 'live'])
+      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat'])
         if (!this.doc[k]) this.doc[k] = {};
     }
     if (!this.snd) this.snd = (await this.state.storage.get('sndIdx')) || { v: 0, ks: [] };
@@ -230,6 +230,29 @@ export class Registry {
       return J({ ok: 1, kept: 'client' });
     }
 
+    /* 💬 צ'אט בין חברים — שמור לפי זוג שחקנים, נדחף ב-WS */
+    if (p === '/api/chat' && req.method === 'POST') {
+      const u = cleanName(b.u), to = cleanName(b.to);
+      const t = String(b.t || '').trim().slice(0, 120);
+      if (!u || !to || !t || u === to) return J({ err: 'bad' }, 400);
+      if (!d.users[u] || !d.users[to]) return J({ err: 'nouser' }, 404);
+      if (nameBanned(t)) return J({ err: 'badword' }, 400);
+      const key = [u, to].sort().join('|');
+      const arr = Array.isArray(d.chat[key]) ? d.chat[key] : [];
+      arr.push({ f: u, t, at: Date.now() });
+      d.chat[key] = arr.slice(-60);
+      await this.saveDoc();
+      this.notify(to, { t: 'chat', f: u });
+      return J({ ok: 1 });
+    }
+
+    if (p === '/api/chatget' && req.method === 'POST') {
+      const u = cleanName(b.u), w = cleanName(b.w);
+      if (!u || !w) return J({ err: 'bad' }, 400);
+      const key = [u, w].sort().join('|');
+      return J({ ok: 1, msgs: Array.isArray(d.chat[key]) ? d.chat[key] : [] });
+    }
+
     // 📢 שידור הודעה מהאדמין לכל השחקנים בעולם
     if (p === '/api/bcast' && req.method === 'POST') {
       const m = { f: cleanName(b.f).slice(0, 14) || 'גליקי', t: String(b.t || '').slice(0, 90), co: 0 };
@@ -283,6 +306,18 @@ export class Registry {
       await this.tdbSync();
       const u = cleanName(b.u);
       const out = { gift: d.gifts[u] || null, summon: d.summon[u] || null, ban: d.bans[u] || null, season: d.season || null, snv: this.snd.v || 0 };
+      { // 💬 סיכום צ'אט: ההודעה האחרונה מול כל שותף — לבאדג' ולהתראות
+        const cs = {};
+        for (const key in d.chat) {
+          const pr = key.split('|');
+          if (pr[0] !== u && pr[1] !== u) continue;
+          const arr = d.chat[key];
+          if (!Array.isArray(arr) || !arr.length) continue;
+          const last = arr[arr.length - 1];
+          cs[pr[0] === u ? pr[1] : pr[0]] = { at: +last.at || 0, f: last.f, t: String(last.t || '').slice(0, 60) };
+        }
+        out.chat = cs;
+      }
       if (out.gift || out.summon) {
         delete d.gifts[u];
         delete d.summon[u];

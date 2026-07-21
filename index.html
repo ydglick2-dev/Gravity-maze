@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v134</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v135</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -364,7 +364,7 @@
     <div id="lbHint" style="font-size:12.5px;color:#c8d2e0;text-shadow:0 1px 4px #000;background:rgba(7,16,33,.55);border-radius:999px;padding:5px 14px" data-en="⚽ Bump the soccer ball and push it into the goal!">⚽ תתנגשו בכדורגל ותדחפו אותו לשער!</div>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn" id="lbPlay" style="min-width:160px" data-en="Play">שחק</button>
-      <button class="btn sec" id="menuBtn2" data-en="🎮 Menu">🎮 תפריט</button>
+      <button class="btn sec" id="menuBtn2" style="position:relative" data-en="🎮 Menu">🎮 תפריט<span id="menuDot" style="display:none;position:absolute;top:-4px;inset-inline-end:-4px;width:14px;height:14px;background:#ff4d6d;border-radius:50%;box-shadow:0 0 10px rgba(255,77,109,.8)"></span></button>
     </div>
     <button id="lbInstall" style="display:none;cursor:pointer;border:none;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:900;color:#0c1a2e;background:linear-gradient(90deg,#7ee0a0,#41c9d6);box-shadow:0 8px 22px rgba(65,201,214,.4);animation:instPulse 2.2s ease-in-out infinite" data-en="📲 Install the app">📲 התקן את האפליקציה</button>
   </div>
@@ -471,7 +471,7 @@
       <button class="mTile" id="skinBtn"><div class="mIc">🎨</div><div data-en="Skins">סקינים</div></button>
       <button class="mTile" id="selectBtn"><div class="mIc">🗺️</div><div data-en="Levels">שלבים</div></button>
       <button class="mTile" id="tablesBtn"><div class="mIc">🏆</div><div data-en="Leaderboards">טבלאות</div></button>
-      <button class="mTile" id="friendsBtn"><div class="mIc">👥</div><div data-en="Friends">חברים</div></button>
+      <button class="mTile" id="friendsBtn" style="position:relative"><div class="mIc">👥</div><div data-en="Friends">חברים</div><span id="frBadge" style="display:none;position:absolute;top:6px;inset-inline-end:8px;background:#ff4d6d;color:#fff;font-size:11px;font-weight:900;border-radius:999px;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 5px;box-shadow:0 2px 8px rgba(255,77,109,.6)"></span></button>
       <button class="mTile" id="boardBtn"><div class="mIc">⏱️</div><div data-en="Daily Records">שיאי היום</div></button>
       <button class="mTile" id="achBtn"><div class="mIc">🏅</div><div data-en="Achievements">הישגים</div></button>
       <button class="mTile" id="mnuSet"><div class="mIc">⚙️</div><div data-en="Settings">הגדרות</div></button>
@@ -849,6 +849,17 @@
   <div style="font-size:11.5px;color:#8a94a8" data-en="Tap a friend to view their profile and journal">הקישו על חבר כדי לצפות בפרופיל וביומן שלו</div>
   <button class="btn sec" id="myProfileBtn" data-en="📖 My Journal">📖 היומן שלי</button>
   <button class="btn sec" id="frBack" data-en="🏠 Main Menu">🏠 חזרה לתפריט</button>
+</div>
+
+<div class="overlay hidden" id="chatOv" style="z-index:57;background:rgba(8,12,22,.97)">
+  <h1 id="chatTitle" style="display:flex;align-items:center;gap:10px">💬</h1>
+  <div id="chatList" style="display:flex;flex-direction:column;gap:7px;width:min(340px,92vw);height:44vh;overflow-y:auto;padding:8px;background:rgba(7,16,33,.65);border-radius:14px;border:1px solid rgba(126,200,242,.15)"></div>
+  <div class="row">
+    <input class="tin" id="chatIn" maxlength="120" placeholder="הודעה..." data-en-ph="Message..." style="max-width:225px">
+    <button class="btn" id="chatSend" style="padding:10px 18px" data-en="Send">שלח</button>
+  </div>
+  <div id="chatMsg" style="min-height:16px;font-size:12px;color:#ffb0a0"></div>
+  <button class="btn sec" id="chatBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="profileOv">
@@ -4318,7 +4329,7 @@ function drawBall(T){
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 const SB={x:0,z:5.5,vx:0,vz:0,rot:0}; // ⚽ כדור הכדורגל — דוחפים אותו לשער
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv','sndOv','giftAdmOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv','sndOv','giftAdmOv','chatOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -7672,6 +7683,16 @@ async function buildFriends(){
           :tr('עוד לא סנכרן לענן','no cloud data yet'))+'</small></div>';
     inner.onclick=()=>showProfile(n,rec&&rec.sv,false); // 📖 כניסה לפרופיל וליומן
     row.appendChild(inner);
+    const ch=document.createElement('button'); // 💬 צ'אט עם החבר
+    ch.className='chip';ch.style.position='relative';ch.textContent='💬';
+    const m=chatSum[n];
+    if(m&&m.f!==curUser&&(+m.at||0)>(+chatRead[n]||0)){
+      const dot=document.createElement('span');
+      dot.style.cssText='position:absolute;top:-3px;inset-inline-end:-3px;width:11px;height:11px;background:#ff4d6d;border-radius:50%';
+      ch.appendChild(dot);
+    }
+    ch.onclick=()=>openChat(n);
+    row.appendChild(ch);
     const x=document.createElement('button');
     x.className='chip';x.textContent='✕';
     x.onclick=()=>{ // השורה מתקפלת החוצה לפני שנמחקת
@@ -7684,6 +7705,99 @@ async function buildFriends(){
   });
   if(!d)$('frMsg').textContent=tr('אין אינטרנט — הנתונים לא נטענו','No internet — stats not loaded');
 }
+/* ============ 💬 צ'אט בין חברים ============
+   הודעות נשמרות בשרת (לפי זוג), נדחפות ב-WS, וסיכומי אי-נקרא מגיעים עם /api/claim */
+let chatWith=null,chatSum={},chatRead={},chatNoted={};
+try{chatRead=JSON.parse(localStorage.getItem('mzChatRead')||'{}');}catch(e){}
+function chatSaveRead(){try{localStorage.setItem('mzChatRead',JSON.stringify(chatRead));}catch(e){}}
+function chatUnreadTotal(){
+  let n=0;
+  for(const w in chatSum){
+    const m=chatSum[w];
+    if(m&&m.f!==curUser&&(+m.at||0)>(+chatRead[w]||0))n++;
+  }
+  return n;
+}
+function updateChatBadge(){
+  const n=chatUnreadTotal();
+  try{const b=$('frBadge');b.style.display=n?'block':'none';b.textContent=n>9?'9+':n;}catch(e){}
+  try{$('menuDot').style.display=n?'block':'none';}catch(e){}
+}
+function chatNotify(sum){ // סיכומים חדשים מהשרת — התראה על מה שעוד לא ראינו
+  if(!sum||typeof sum!=='object')return;
+  chatSum=sum;
+  for(const w in sum){
+    const m=sum[w];
+    if(!m||m.f===curUser)continue;
+    if((+m.at||0)<=(+chatRead[w]||0))continue;
+    if((+chatNoted[w]||0)>=(+m.at||0))continue;
+    chatNoted[w]=+m.at||0;
+    if(chatWith===w&&!$('chatOv').classList.contains('hidden')){loadChat();continue;} // הצ'אט פתוח — רק רענון
+    showToast('💬 '+esc(w)+': '+esc(String(m.t||'').slice(0,60)));
+    tone(660,.09,'sine',.3);setTimeout(()=>tone(880,.12,'sine',.3),100);
+    if(navigator.vibrate)navigator.vibrate([30,40,30]);
+  }
+  updateChatBadge();
+}
+function chatBubble(m){
+  const mine=m.f===curUser;
+  const b=document.createElement('div');
+  b.style.cssText='max-width:78%;padding:8px 12px;border-radius:14px;font-size:13.5px;line-height:1.5;word-break:break-word;'+
+    (mine?'align-self:flex-start;background:linear-gradient(90deg,var(--g1,#ffd65c),var(--g2,#f6b40e));color:#12253f;border-bottom-left-radius:4px;'
+         :'align-self:flex-end;background:rgba(126,200,242,.16);color:#eaf1fb;border-bottom-right-radius:4px;');
+  const when=new Date(m.at||Date.now());
+  b.innerHTML=(mine?'':'<b style="font-size:11px;opacity:.8">'+esc(m.f)+'</b><br>')+esc(m.t)+
+    '<div style="font-size:9.5px;opacity:.55;margin-top:2px">'+String(when.getHours()).padStart(2,'0')+':'+String(when.getMinutes()).padStart(2,'0')+'</div>';
+  return b;
+}
+async function loadChat(){
+  if(!chatWith||!curUser)return;
+  const g=$('chatList');
+  const r=await be('/api/chatget',{u:curUser,w:chatWith});
+  if(!r||!Array.isArray(r.msgs)){g.innerHTML='<div class="ldg">'+tr('הצ׳אט דורש חיבור לשרת 🌐','Chat needs the game server 🌐')+'</div>';return;}
+  g.innerHTML='';
+  if(!r.msgs.length)g.innerHTML='<div style="color:#8a94a8;font-size:12.5px;text-align:center;margin:auto">'+tr('אין הודעות עדיין — תגידו שלום! 👋','No messages yet — say hi! 👋')+'</div>';
+  r.msgs.forEach(m=>g.appendChild(chatBubble(m)));
+  g.scrollTop=g.scrollHeight;
+  const last=r.msgs.length?+r.msgs[r.msgs.length-1].at||0:Date.now();
+  chatRead[chatWith]=Math.max(+chatRead[chatWith]||0,last,Date.now());
+  chatSaveRead();updateChatBadge();
+}
+function openChat(n){
+  if(!curUser)return showToast(tr('צריך להתחבר כדי לשוחח','Log in to chat'));
+  if(!beOn())return showToast(tr('הצ׳אט דורש את שרת המשחק 🌐','Chat needs the game server 🌐'));
+  chatWith=n;
+  $('chatTitle').innerHTML='💬 '+avHTML(n,34)+' '+esc(n);
+  $('chatMsg').textContent='';$('chatIn').value='';
+  $('friendsOv').classList.add('hidden');
+  $('chatOv').classList.remove('hidden');
+  $('chatList').innerHTML='<div class="ldg">'+tr('טוען…','Loading…')+'</div>';
+  loadChat();
+}
+let chatBusy=false;
+async function sendChat(){
+  if(chatBusy||!chatWith||!curUser)return;
+  const t=String($('chatIn').value||'').trim().slice(0,120);
+  if(!t)return;
+  if(nameBanned(t))return $('chatMsg').textContent=tr('🚫 שמרו על שפה מכבדת 🙏','🚫 Keep it respectful 🙏');
+  chatBusy=true;
+  const r=await be('/api/chat',{u:curUser,to:chatWith,t});
+  chatBusy=false;
+  if(!r||!r.ok)return $('chatMsg').textContent=tr('שגיאת רשת — נסו שוב','Network error — try again');
+  $('chatMsg').textContent='';$('chatIn').value='';
+  loadChat();
+  tone(740,.06,'sine',.2);
+}
+$('chatSend').onclick=sendChat;
+$('chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+$('chatBack').onclick=()=>{
+  $('chatOv').classList.add('hidden');
+  chatWith=null;
+  $('friendsOv').classList.remove('hidden');buildFriends();
+};
+setInterval(()=>{ // רענון עדין כשהצ'אט פתוח (בנוסף לדחיפת ה-WS)
+  if(chatWith&&!$('chatOv').classList.contains('hidden')&&!document.hidden)loadChat();
+},5000);
 $('frAdd').onclick=async()=>{
   const n=cleanName($('frName').value);
   if(n.length<2)return $('frMsg').textContent=tr('שם קצר מדי','Name too short');
@@ -7855,9 +7969,10 @@ setInterval(async()=>{
 },30000);
 /* 📬 דואר נכנס כמעט-מיידי: מתנות, איפוסים, באנים וזימונים מוחלים תוך ~10 שניות,
    בלובי וגם באמצע משחק — בלי לחכות לכניסה מחדש */
-function applyInbox(r){ // {gift,summon,ban,season,snv} — מכל מקור
+function applyInbox(r){ // {gift,summon,ban,season,snv,chat} — מכל מקור
   if('season' in r)adoptSeason(r.season);
   if('snv' in r)syncSounds(r.snv); // 🔊 גרסת הסאונדים לסקינים השתנתה? מורידים ברקע
+  if('chat' in r)try{chatNotify(r.chat);}catch(e){} // 💬 סיכומי צ'אט — התראות ובאדג'
   if(enforceBan(r.ban))return true;
   const sm=r.summon;
   if(sm&&sm.code&&Date.now()-(sm.ts||0)<180e3)setTimeout(()=>showSummon(sm),400);
@@ -7868,6 +7983,8 @@ function applyInbox(r){ // {gift,summon,ban,season,snv} — מכל מקור
     save();refreshTro();
     showToast(tr('🎁 קיבלת עדכון מהאדמין!','🎁 Admin update received!'));
     tone(880,.1,'sine',.3);setTimeout(()=>tone(1318,.18,'sine',.3),110);
+    if(navigator.vibrate)navigator.vibrate([50,60,50]); // 📳 התראה מורגשת גם למתנות
+    try{emojiBurst({e:['🎁','✨'],n:10,m:'burst',d:1100});}catch(e){}
     if(hadRst&&running){ // איפוס באמצע משחק — יציאה נקייה ללובי
       running=false;paused=false;runMode=false;duelLive=false;hushRoll();recStop(false);
       $('raceBar').style.display='none';
@@ -7913,7 +8030,13 @@ function wsInbox(){
   try{
     inboxWS=new WebSocket(BACKEND.replace(/^http/,'ws')+'/ws?u='+encodeURIComponent(curUser));
     inboxWS.onopen=()=>{wsRetry=0;};
-    inboxWS.onmessage=()=>pollInbox();
+    inboxWS.onmessage=ev=>{ // 💬 הודעת צ'אט לצ'אט פתוח — רענון מיידי; והכל מושך את הדואר
+      try{
+        const m=JSON.parse(ev.data);
+        if(m&&m.t==='chat'&&chatWith===m.f&&!$('chatOv').classList.contains('hidden')){loadChat();return;}
+      }catch(e){}
+      pollInbox();
+    };
     inboxWS.onclose=inboxWS.onerror=()=>{
       inboxWS=null;
       setTimeout(wsInbox,Math.min(30000,2000+wsRetry++*3000));
