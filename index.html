@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v124</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v125</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -8097,6 +8097,8 @@ async function doAuth(reg){
   if(p.length<4)return authMsg(tr('סיסמה: לפחות 4 תווים','Password: at least 4 characters'));
   const users=getUsers(),ex=users[u];
   if(reg){
+    let _rl=false;try{_rl=!!localStorage.getItem('mzRegLock');}catch(e){}
+    if(_rl)return authMsg(tr('🔒 יצירת חשבונות חדשים חסומה במכשיר הזה — התחברו לחשבון הקיים','🔒 Creating new accounts is blocked on this device — log in to your existing account'));
     if(ex)return authMsg(tr('שם משתמש זה תפוס','Username taken'));
     authMsg(tr('בודק זמינות בעולם… 🌍','Checking availability… 🌍'));
     const cloud=await regFetch();
@@ -9961,6 +9963,18 @@ const _q=new URLSearchParams(location.search).get('mode');
 if(_q==='daily')setTimeout(()=>$('dailyBtn').click(),350);
 else if(_q==='race')setTimeout(()=>$('raceBtn').click(),350);
 else if(_q==='run')setTimeout(()=>$('runBtn').click(),350);
+/* 🔒 נעילת יצירת חשבונות במכשיר — מופעל ע"י סריקת QR של האדמין (?lockreg=1).
+   שחרור: QR עם ?lockreg=glk-open (שמור אצל האדמין בלבד). */
+try{
+  const _lk=new URLSearchParams(location.search).get('lockreg');
+  if(_lk==='1'){
+    localStorage.setItem('mzRegLock','1');
+    setTimeout(()=>showToast(tr('🔒 יצירת חשבונות חדשים נחסמה במכשיר הזה','🔒 Creating new accounts is now blocked on this device')),1400);
+  }else if(_lk==='glk-open'){
+    localStorage.removeItem('mzRegLock');
+    setTimeout(()=>showToast(tr('🔓 נעילת יצירת החשבונות הוסרה','🔓 Account-creation lock removed')),1400);
+  }
+}catch(e){}
 })();
 </script>
 </body>
