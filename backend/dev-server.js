@@ -16,7 +16,7 @@ try { WebSocketServer = require('ws').WebSocketServer; } catch (e) {
 const cleanName = v => String(v || '')
   .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, '')
   .replace(/\s+/g, ' ').trim();
-const BAD_WORDS = ['זונה','זונות', 'שרמוט', 'כוסאמק', 'כוסעמק', 'זדיינ', 'לזיינ', 'זיונ', 'חרא', 'מניאק', 'קוקסינל', 'מפגר', 'נאצי', 'זינ', 'כוס', 'הומו', 'fuck', 'shit', 'bitch', 'cunt', 'whore', 'slut', 'nigg', 'porn', 'dick', 'pussy', 'asshole', 'faggot', 'nazi', 'sex'];
+const BAD_WORDS = ['זונה','זונות', 'שרמוט', 'כוסאמק', 'כוסעמק', 'זדיינ', 'לזיינ', 'זיונ', 'חרא', 'מניאק', 'קוקסינל', 'מפגר', 'נאצי', 'זינ', 'כוס', 'הומו', 'fuck', 'shit', 'bitch', 'cunt', 'whore', 'slut', 'nigg', 'porn', 'dick', 'pussy', 'asshole', 'faggot', 'nazi', 'sex', 'סקס', 'אונס', 'סוטה', 'סוטימ', 'פדופיל', 'זרג', 'ציצ', 'אוננ', 'חרמנ', 'עירומ', 'בולבול', 'מטומטמ', 'דביל', 'אידיוט', 'זבל', 'מכוער', 'טיפש', 'penis', 'vagina', 'boobs', 'tits', 'dildo', 'hentai', 'milf', 'blowjob', 'handjob', 'orgasm', 'erotic', 'rape', 'nude', 'naked', 'sperm', 'xxx', 'zona', 'sharmuta', 'kusemek', 'kusamak', 'manyak', 'anal', 'horny'];
 const nameBanned = v => {
   let n = String(v || '').toLowerCase();
   n = n.replace(/[ךםןףץ]/g, c => ({ 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' }[c] || c));

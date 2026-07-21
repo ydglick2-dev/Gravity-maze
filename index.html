@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v123</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v124</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -7908,7 +7908,7 @@ let curUser=null,isAdmin=false;
    ואז "אותו שם" לא נמצא בחיפוש). מנקים בכל מקום שבו שם נכנס למערכת. */
 function cleanName(v){return String(v||'').replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g,'').replace(/\s+/g,' ').trim();}
 /* \ud83d\udeab \u05e1\u05d9\u05e0\u05d5\u05df \u05e7\u05dc\u05dc\u05d5\u05ea \u05d1\u05e9\u05de\u05d5\u05ea \u05de\u05e9\u05ea\u05de\u05e9 \u2014 \u05e2\u05d1\u05e8\u05d9\u05ea + \u05d0\u05e0\u05d2\u05dc\u05d9\u05ea, \u05db\u05d5\u05dc\u05dc \u05d8\u05e8\u05d9\u05e7\u05d9\u05dd (\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd, \u05de\u05e1\u05e4\u05e8\u05d9\u05dd \u05d1\u05de\u05e7\u05d5\u05dd \u05d0\u05d5\u05ea\u05d9\u05d5\u05ea) */
-const BAD_WORDS=['\u05d6\u05d5\u05e0\u05d4','\u05d6\u05d5\u05e0\u05d5\u05ea','\u05e9\u05e8\u05de\u05d5\u05d8','\u05db\u05d5\u05e1\u05d0\u05de\u05e7','\u05db\u05d5\u05e1\u05e2\u05de\u05e7','\u05d6\u05d3\u05d9\u05d9\u05e0','\u05dc\u05d6\u05d9\u05d9\u05e0','\u05d6\u05d9\u05d5\u05e0','\u05d7\u05e8\u05d0','\u05de\u05e0\u05d9\u05d0\u05e7','\u05e7\u05d5\u05e7\u05e1\u05d9\u05e0\u05dc','\u05de\u05e4\u05d2\u05e8','\u05e0\u05d0\u05e6\u05d9','\u05d6\u05d9\u05e0','\u05db\u05d5\u05e1','\u05d4\u05d5\u05de\u05d5','fuck','shit','bitch','cunt','whore','slut','nigg','porn','dick','pussy','asshole','faggot','nazi','sex'];
+const BAD_WORDS=['\u05d6\u05d5\u05e0\u05d4','\u05d6\u05d5\u05e0\u05d5\u05ea','\u05e9\u05e8\u05de\u05d5\u05d8','\u05db\u05d5\u05e1\u05d0\u05de\u05e7','\u05db\u05d5\u05e1\u05e2\u05de\u05e7','\u05d6\u05d3\u05d9\u05d9\u05e0','\u05dc\u05d6\u05d9\u05d9\u05e0','\u05d6\u05d9\u05d5\u05e0','\u05d7\u05e8\u05d0','\u05de\u05e0\u05d9\u05d0\u05e7','\u05e7\u05d5\u05e7\u05e1\u05d9\u05e0\u05dc','\u05de\u05e4\u05d2\u05e8','\u05e0\u05d0\u05e6\u05d9','\u05d6\u05d9\u05e0','\u05db\u05d5\u05e1','\u05d4\u05d5\u05de\u05d5','fuck','shit','bitch','cunt','whore','slut','nigg','porn','dick','pussy','asshole','faggot','nazi','sex', 'סקס', 'אונס', 'סוטה', 'סוטימ', 'פדופיל', 'זרג', 'ציצ', 'אוננ', 'חרמנ', 'עירומ', 'בולבול', 'מטומטמ', 'דביל', 'אידיוט', 'זבל', 'מכוער', 'טיפש', 'penis', 'vagina', 'boobs', 'tits', 'dildo', 'hentai', 'milf', 'blowjob', 'handjob', 'orgasm', 'erotic', 'rape', 'nude', 'naked', 'sperm', 'xxx', 'zona', 'sharmuta', 'kusemek', 'kusamak', 'manyak', 'anal', 'horny'];
 function nameBanned(v){
   let n=String(v||'').toLowerCase();
   n=n.replace(/[\u05da\u05dd\u05df\u05e3\u05e5]/g,c=>({'\u05da':'\u05db','\u05dd':'\u05de','\u05df':'\u05e0','\u05e3':'\u05e4','\u05e5':'\u05e6'}[c]||c)); // \u05d0\u05d5\u05ea\u05d9\u05d5\u05ea \u05e1\u05d5\u05e4\u05d9\u05d5\u05ea \u2192 \u05e8\u05d2\u05d9\u05dc\u05d5\u05ea
