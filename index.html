@@ -259,6 +259,13 @@
   #toast { position:fixed; top:28%; left:0; right:0; text-align:center; z-index:30; pointer-events:none;
     font-size:22px; font-weight:900; color:#ffe9b8; text-shadow:0 0 18px rgba(255,184,77,.8), 0 2px 6px #000;
     opacity:0; transition:opacity .3s; }
+  /* 📣 באנר הודעות אדמין/ברכות — נשאר 5 שניות, לא נדרס ע"י טוסטים אחרים ולא נסגר בלחיצה */
+  #toastAdm { position:fixed; top:12%; left:12px; right:12px; text-align:center; z-index:31; pointer-events:none;
+    opacity:0; transition:opacity .35s; }
+  #toastAdm .inner { display:inline-block; max-width:min(360px,92vw); padding:12px 20px; border-radius:16px;
+    background:linear-gradient(135deg,rgba(46,12,58,.96),rgba(24,5,38,.97)); border:2px solid rgba(255,194,62,.75);
+    box-shadow:0 10px 34px rgba(0,0,0,.6),0 0 24px rgba(255,122,217,.35);
+    font-size:16.5px; font-weight:800; color:#fff0fa; line-height:1.55; word-break:break-word; }
   #banner { position:fixed; top:38%; left:0; right:0; text-align:center; z-index:15; pointer-events:none;
     transform:translateY(18px); opacity:0; transition:all .45s cubic-bezier(.2,.9,.3,1.2); }
   #banner.show { transform:translateY(0); opacity:1; }
@@ -350,7 +357,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v137</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v138</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -408,6 +415,7 @@
 </div>
 <div id="hint" style="display:none"></div>
 <div id="toast"></div>
+<div id="toastAdm"><div class="inner"></div></div>
 <style>
 #tutOv{position:fixed;inset:0;z-index:60;display:none;pointer-events:auto}
 #tutOv.on{display:block}
@@ -5086,6 +5094,22 @@ function showToast(msg){
   try{el.style.animation='none';void el.offsetWidth;el.style.animation='toastIn .34s cubic-bezier(.2,1.4,.4,1)';}catch(e){} // קפיצת כניסה
   clearTimeout(el._t);el._t=setTimeout(()=>el.style.opacity=0,1400);
 }
+/* 📣 הודעות מהאדמין וברכות — באנר נפרד עם תור: כל הודעה נשארת 5 שניות מלאות,
+   לא נדרסת ע"י טוסטים רגילים, ולחיצות/מעבר מסכים לא מעלימים אותה */
+let admQ=[],admShowing=false;
+function showAdmToast(msg){
+  admQ.push(String(msg));
+  if(!admShowing)_admNext();
+}
+function _admNext(){
+  const el=$('toastAdm');
+  if(!admQ.length){admShowing=false;el.style.opacity=0;return;}
+  admShowing=true;
+  el.querySelector('.inner').textContent=admQ.shift();
+  el.style.opacity=1;
+  try{el.style.animation='none';void el.offsetWidth;el.style.animation='toastIn .34s cubic-bezier(.2,1.4,.4,1)';}catch(e){}
+  clearTimeout(el._t);el._t=setTimeout(_admNext,5000);
+}
 /* ⭐ כוכבי מסך הניצחון קופצים אחד-אחד, עם צליל עולה לכל כוכב */
 function starsBigAnim(got,total){
   try{
@@ -7982,7 +8006,7 @@ function applyInbox(r){ // {gift,summon,ban,season,snv,chat} — מכל מקור
     const hadRst=!!g.rst;
     applyGift(g,null);
     save();refreshTro();
-    showToast(tr('🎁 קיבלת עדכון מהאדמין!','🎁 Admin update received!'));
+    showAdmToast(tr('🎁 קיבלת עדכון מהאדמין!','🎁 Admin update received!'));
     tone(880,.1,'sine',.3);setTimeout(()=>tone(1318,.18,'sine',.3),110);
     if(navigator.vibrate)navigator.vibrate([50,60,50]); // 📳 התראה מורגשת גם למתנות
     try{emojiBurst({e:['🎁','✨'],n:10,m:'burst',d:1100});}catch(e){}
@@ -8621,14 +8645,14 @@ function applyGift(g,target){
         localStorage.setItem('mzBlessLog',JSON.stringify(L.slice(0,15)));
       }catch(e){}
       setTimeout(()=>{
-        showToast('💌 '+String(m.f||'').slice(0,14)+': '+String(m.t||'').slice(0,90)+((m.co|0)>0?' (+'+(m.co|0)+'🪙)':''));
+        showAdmToast('💌 '+String(m.f||'').slice(0,14)+': '+String(m.t||'').slice(0,90)+((m.co|0)>0?' (+'+(m.co|0)+'🪙)':''));
         tone(880,.1,'sine',.3);setTimeout(()=>tone(1108,.14,'sine',.3),120);
         try{emojiBurst({e:['💌','🎂','✨'],n:10,m:'burst',d:1200});}catch(e){}
-      },1500+k*3200);
+      },900);
     });
     if(g.rlk!==undefined){ // 🔒 נעילת/שחרור יצירת חשבונות במכשיר הזה — מהאדמין, מרחוק
       try{g.rlk?localStorage.setItem('mzRegLock','1'):localStorage.removeItem('mzRegLock');}catch(e){}
-      setTimeout(()=>showToast(g.rlk
+      setTimeout(()=>showAdmToast(g.rlk
         ?tr('🔒 יצירת חשבונות חדשים נחסמה במכשיר הזה','🔒 Creating new accounts is now blocked on this device')
         :tr('🔓 נעילת יצירת החשבונות הוסרה','🔓 Account-creation lock removed')),900);
     }
