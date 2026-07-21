@@ -27,9 +27,10 @@ const nameBanned = v => {
 };
 const PORT = +(process.argv[2] || 8787);
 const FILE = path.join(__dirname, 'dev-data.json');
-let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, chat: {}, mm: null };
+let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, chat: {}, push: {}, mm: null };
 try { doc = Object.assign(doc, JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) { }
 if (!doc.chat) doc.chat = {};
+if (!doc.push) doc.push = {};
 if (!doc.snd) doc.snd = { v: 0, m: {} }; // 🔊 סאונדים לסקינים
 const persist = () => { try { fs.writeFileSync(FILE, JSON.stringify(doc)); } catch (e) { } };
 
@@ -127,6 +128,13 @@ const server = http.createServer((req, res) => {
       if (!b.force && cur && score(cur) > score(b.sv)) return J({ ok: 1, kept: 'server', sv: cur });
       doc.users[u].sv = b.sv;
       persist(); return J({ ok: 1, kept: 'client' });
+    }
+    if (p === '/api/pushsub' && req.method === 'POST') {
+      const u = cleanName(b.u);
+      const ep = b.sub && String(b.sub.endpoint || '');
+      if (!u || !doc.users[u] || !/^https:\/\//.test(ep) || ep.length > 600) return J({ err: 'bad' }, 400);
+      doc.push[u] = [...(doc.push[u] || []).filter(s2 => s2.endpoint !== ep), { endpoint: ep }].slice(-3);
+      persist(); return J({ ok: 1 }); // בסביבת פיתוח אין שליחת push אמיתית
     }
     if (p === '/api/chat' && req.method === 'POST') {
       const u = cleanName(b.u), to = cleanName(b.to);

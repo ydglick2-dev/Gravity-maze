@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v135</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v136</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -402,6 +402,7 @@
   </div>
   <div style="font-size:11.5px;color:#8a94a8;max-width:290px" data-en="Paste a Spotify track/playlist/album link — a mini player appears in the lobby (tap it to start)">הדביקו קישור לשיר / פלייליסט / אלבום מספוטיפיי — נגן קטן יופיע בלובי (הקישו עליו כדי לנגן)</div>
   <button class="btn sec" id="spClear" style="display:none" data-en="✕ Remove Spotify player">✕ הסרת נגן ספוטיפיי</button>
+  <button class="btn sec" id="setPush" data-en="🔔 Notifications when the game is closed">🔔 התראות כשהמשחק סגור</button>
   <button class="btn sec" id="setTut" data-en="🎓 Replay tutorials">🎓 הצג הדרכה מחדש</button>
   <button class="btn" id="setBack" data-en="✕ Close">✕ סגירה</button>
 </div>
@@ -8504,6 +8505,7 @@ async function finishLogin(u,p){
   $('authOv').classList.add('hidden');
   $('adminBtn').style.display=isAdmin?'':'none';
   checkGifts();
+  pushAutoRefresh(); // 🔔 מכשיר שכבר אישר התראות — נרשם מחדש אוטומטית
 }
 async function checkGifts(){
   if(!curUser)return;
@@ -8848,6 +8850,48 @@ $('giftAdmSend').onclick=async()=>{
   try{emojiBurst({e:['🎁','💌','🎂','✨'],n:16,m:'burst',d:1500});}catch(e){}
   tone(740,.1,'sine',.3);setTimeout(()=>tone(988,.16,'sine',.3),110);
 };
+/* 🔔 Web Push — התראות אמיתיות גם כשהמשחק סגור לגמרי */
+const VAPID_PUB='BIPwghQQaFJubytY-O5kMWo-CPtTKiHrn-9u2O5KOO88lbmKm7w_nDF_Pfc_gHHU9s1W6_u9oBh1GbzayEEpGi8';
+function _vapidKey(){
+  const pad='='.repeat((4-VAPID_PUB.length%4)%4);
+  const raw=atob((VAPID_PUB+pad).replace(/-/g,'+').replace(/_/g,'/'));
+  const a=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);
+  return a;
+}
+async function pushEnable(quiet){
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+      if(!quiet)showToast(tr('הדפדפן הזה לא תומך בהתראות 😕','This browser does not support notifications 😕'));
+      return false;
+    }
+    if(!curUser){if(!quiet)showToast(tr('צריך להתחבר קודם','Log in first'));return false;}
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){
+      if(!quiet)showToast(tr('🔕 ההתראות נחסמו — אפשר לאשר בהגדרות הדפדפן','🔕 Notifications blocked — allow in browser settings'));
+      return false;
+    }
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_vapidKey()});
+    if(beOn()){
+      const r=await be('/api/pushsub',{u:curUser,sub:{endpoint:sub.endpoint}});
+      if(!(r&&r.ok)){if(!quiet)showToast(tr('שגיאת רשת — נסו שוב','Network error — try again'));return false;}
+    }
+    if(!quiet){
+      showToast(tr('🔔 מעולה! תקבלו התראות על הודעות ומתנות גם כשהמשחק סגור','🔔 You will get notifications even when the game is closed'));
+      tone(740,.1,'sine',.3);setTimeout(()=>tone(988,.14,'sine',.3),110);
+    }
+    return true;
+  }catch(e){
+    if(!quiet)showToast(tr('ההתראות לא נתמכות כאן — נסו מהאפליקציה המותקנת 📲','Not supported here — try from the installed app 📲'));
+    return false;
+  }
+}
+$('setPush').onclick=()=>pushEnable(false);
+// אם כבר אושר בעבר — מרעננים את המנוי בשקט אחרי התחברות (מכשיר חדש נרשם אוטומטית)
+function pushAutoRefresh(){
+  try{if(curUser&&'Notification' in window&&Notification.permission==='granted')setTimeout(()=>pushEnable(true),2500);}catch(e){}
+}
 $('setBack').onclick=()=>$('settingsOv').classList.add('hidden');
 $('setTut').onclick=()=>{ // 🎓 איפוס דגלי ההדרכה — יופיעו שוב בשלב 1 ובבוס הראשון
   try{localStorage.removeItem('mzTut1');localStorage.removeItem('mzTutBoss');}catch(e){}
@@ -10442,6 +10486,7 @@ function initAuth(){
     applyUser(cu); // ✅ לא מנתקים — גם אם הרשומה המקומית אבדה
     isAdmin=!!(st&&st.getItem('mazeAdm_v1')==='1');
     $('adminBtn').style.display=isAdmin?'':'none';
+    pushAutoRefresh(); // 🔔 רענון מנוי ההתראות בכניסה אוטומטית
     if(!users[cu]){ // הרשומה המקומית אבדה — משחזרים מהענן ברקע
       (async()=>{try{
         let rec=null;

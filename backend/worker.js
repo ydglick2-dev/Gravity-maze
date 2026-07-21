@@ -28,6 +28,10 @@ const nameBanned = v => {
   const c = n.replace(/0/g, 'ו').replace(/1/g, 'י').replace(/[^a-zא-ת]/g, '');
   return BAD_WORDS.some(w => a.includes(w) || b.includes(w) || c.includes(w));
 };
+/* 🔔 Web Push (VAPID) — התראות גם כשהמשחק סגור. דחיפה ריקה: התוכן נטען כשפותחים */
+const VAPID_JWK={"kty": "EC", "crv": "P-256", "x": "g_CCFBBoUm5vK1j47mQxaj4I-1MqIeuf727Y7ko47zw", "y": "lbmKm7w_nDF_Pfc_gHHU9s1W6_u9oBh1GbzayEEpGi8", "d": "2NIiWBd5Tyt8Hxsuec1GEjusCEHBOnv-WB-Z6CgreX0"};
+const VAPID_PUB='BIPwghQQaFJubytY-O5kMWo-CPtTKiHrn-9u2O5KOO88lbmKm7w_nDF_Pfc_gHHU9s1W6_u9oBh1GbzayEEpGi8';
+const b64u = o => btoa(String.fromCharCode(...new Uint8Array(o))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 /* הענן הישן — שחקנים עם גרסה ישנה של המשחק עדיין נרשמים ושומרים שם */
 const TDB = 'https://textdb.dev/api/data/mzk-glk-reg-7g2k9-v1';
 const J = (o, s = 200) => new Response(JSON.stringify(o), {
@@ -80,7 +84,7 @@ export class Registry {
     if (!this.doc) {
       this.doc = (await this.state.storage.get('doc')) ||
         { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
-      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat'])
+      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push'])
         if (!this.doc[k]) this.doc[k] = {};
     }
     if (!this.snd) this.snd = (await this.state.storage.get('sndIdx')) || { v: 0, ks: [] };
@@ -92,6 +96,47 @@ export class Registry {
   notify(u, msg) {
     const set = this.socks.get(u);
     if (set) for (const ws of set) { try { ws.send(JSON.stringify(msg)); } catch (e) { } }
+  }
+
+  async vapidHeader(origin) {
+    this._vjwt = this._vjwt || {};
+    const c0 = this._vjwt[origin];
+    if (c0 && c0.exp > Date.now() / 1000 + 600) return c0.h;
+    const key = await crypto.subtle.importKey('jwk', VAPID_JWK, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+    const enc = s2 => b64u(new TextEncoder().encode(s2));
+    const exp = Math.floor(Date.now() / 1000) + 43200;
+    const hd = enc(JSON.stringify({ typ: 'JWT', alg: 'ES256' }));
+    const cl = enc(JSON.stringify({ aud: origin, exp, sub: 'mailto:gravitymaze@example.com' }));
+    const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(hd + '.' + cl));
+    const h = 'vapid t=' + hd + '.' + cl + '.' + b64u(sig) + ', k=' + VAPID_PUB;
+    this._vjwt[origin] = { h, exp };
+    return h;
+  }
+
+  /* דחיפה ריקה לכל המכשירים הרשומים של שחקן — רק אם אין לו WS חי (אחרת הוא בפנים) */
+  async sendPush(u) {
+    try {
+      const live = this.socks.get(u);
+      if (live && live.size) return;
+      const subs = (this.doc.push && this.doc.push[u]) || [];
+      if (!subs.length) return;
+      let dead = false;
+      await Promise.allSettled(subs.map(async sub => {
+        try {
+          const origin = new URL(sub.endpoint).origin;
+          const r = await fetch(sub.endpoint, {
+            method: 'POST',
+            headers: { 'Authorization': await this.vapidHeader(origin), 'TTL': '86400', 'Urgency': 'normal' },
+            signal: AbortSignal.timeout(6000)
+          });
+          if (r.status === 404 || r.status === 410) { sub._dead = 1; dead = true; }
+        } catch (e) { }
+      }));
+      if (dead) {
+        this.doc.push[u] = subs.filter(s2 => !s2._dead);
+        await this.saveDoc();
+      }
+    } catch (e) { }
   }
 
   // זהה ל-saveScore בקליינט: מדדים שרק עולים
@@ -230,6 +275,16 @@ export class Registry {
       return J({ ok: 1, kept: 'client' });
     }
 
+    /* 🔔 רישום מנוי Push של מכשיר (עד 3 מכשירים לשחקן) */
+    if (p === '/api/pushsub' && req.method === 'POST') {
+      const u = cleanName(b.u);
+      const ep = b.sub && String(b.sub.endpoint || '');
+      if (!u || !d.users[u] || !/^https:\/\//.test(ep) || ep.length > 600) return J({ err: 'bad' }, 400);
+      d.push[u] = [...(d.push[u] || []).filter(s2 => s2.endpoint !== ep), { endpoint: ep }].slice(-3);
+      await this.saveDoc();
+      return J({ ok: 1 });
+    }
+
     /* 💬 צ'אט בין חברים — שמור לפי זוג שחקנים, נדחף ב-WS */
     if (p === '/api/chat' && req.method === 'POST') {
       const u = cleanName(b.u), to = cleanName(b.to);
@@ -243,6 +298,7 @@ export class Registry {
       d.chat[key] = arr.slice(-60);
       await this.saveDoc();
       this.notify(to, { t: 'chat', f: u });
+      await this.sendPush(to); // 🔔 גם כשהמשחק סגור
       return J({ ok: 1 });
     }
 
@@ -266,6 +322,7 @@ export class Registry {
       }
       await this.saveDoc();
       for (const u in d.users) this.notify(u, { t: 'inbox' });
+      await Promise.allSettled(Object.keys(d.users).filter(u => u !== m.f).map(u => this.sendPush(u))); // 🔔
       return J({ ok: 1, sent: n });
     }
 
@@ -298,6 +355,7 @@ export class Registry {
       d.users[t].sv = this.applyReducing(d.users[t].sv, g);
       await this.saveDoc();
       this.notify(t, { t: 'inbox' });
+      await this.sendPush(t); // 🔔 התראה על מתנה גם כשהמשחק סגור
       return J({ ok: 1 });
     }
 

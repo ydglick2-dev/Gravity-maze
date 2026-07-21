@@ -1,4 +1,4 @@
-const CACHE = 'maze-ultra-v135';
+const CACHE = 'maze-ultra-v136';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,28 @@ self.addEventListener('install', e => {
 
 self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+/* 🔔 Web Push — התראות גם כשהמשחק סגור. הדחיפה ריקה (בלי תוכן מוצפן),
+   ולכן מוצגת הודעה כללית; הפרטים מחכים בתוך המשחק */
+self.addEventListener('push', e => {
+  e.waitUntil(self.registration.showNotification('Gravity Maze 🎮', {
+    body: 'יש משהו חדש! 💬🎁 הודעה, מתנה או ברכה מחכה לך במשחק',
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    tag: 'mzk-inbox',
+    renotify: true,
+    dir: 'rtl',
+    lang: 'he',
+    vibrate: [60, 40, 60]
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    for (const c of cs) { if ('focus' in c) return c.focus(); }
+    return clients.openWindow('./index.html');
+  }));
 });
 
 self.addEventListener('activate', e => {
