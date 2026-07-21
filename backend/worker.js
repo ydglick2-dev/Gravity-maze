@@ -230,6 +230,22 @@ export class Registry {
       return J({ ok: 1, kept: 'client' });
     }
 
+    // 📢 שידור הודעה מהאדמין לכל השחקנים בעולם
+    if (p === '/api/bcast' && req.method === 'POST') {
+      const m = { f: cleanName(b.f).slice(0, 14) || 'גליקי', t: String(b.t || '').slice(0, 90), co: 0 };
+      if (!m.t) return J({ err: 'bad' }, 400);
+      let n = 0;
+      for (const u in d.users) {
+        if (u === m.f) continue;
+        const q = d.gifts[u] || {};
+        q.bmsg = [...(Array.isArray(q.bmsg) ? q.bmsg : []), m].slice(-20);
+        d.gifts[u] = q; n++;
+      }
+      await this.saveDoc();
+      for (const u in d.users) this.notify(u, { t: 'inbox' });
+      return J({ ok: 1, sent: n });
+    }
+
     // מתנה/עונש: מיזוג אטומי לתור + דחיפה מיידית ב-WS
     if (p === '/api/gift' && req.method === 'POST') {
       const t = cleanName(b.t);

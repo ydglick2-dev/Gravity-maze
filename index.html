@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v133</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v134</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -678,6 +678,13 @@
     <button class="btn sec" id="admRegLock" data-en="🔒 Lock account creation (device)">🔒 נעל יצירת חשבונות</button>
     <button class="btn sec" id="admRegUnlock" data-en="🔓 Unlock">🔓 שחרר</button>
   </div>
+  <div class="row">
+    <input class="tin" id="admMsgTxt" maxlength="90" placeholder="הודעה מגליקי..." data-en-ph="Message..." style="max-width:180px">
+    <button class="btn sec" id="admMsgSend" data-en="📨 To player">📨 לשחקן</button>
+    <button class="btn sec" id="admMsgAll" data-en="📢 To everyone">📢 לכולם</button>
+  </div>
+  <div style="font-size:11px;color:#8a94a8" data-en="📨 sends to the target name above · 📢 broadcasts to every player in the world">📨 נשלח לשם היעד שלמעלה · 📢 משודר לכל שחקן בעולם</div>
+  <div id="admBlessList" style="display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto;width:min(320px,88vw)"></div>
   <div style="font-size:11px;color:#8a94a8" data-en="Locks new-account creation on the device the target user is logged into">🔒 נועל יצירת חשבונות חדשים במכשיר שהשחקן היעד מחובר אליו</div>
   <div class="row">
     <input class="tin" id="admBanReason" maxlength="60" placeholder="סיבת הבאן (יוצג לשחקן)" data-en-ph="Ban reason (shown to player)" style="max-width:200px">
@@ -8482,7 +8489,12 @@ function applyGift(g,target){
       if(skinSel===ix){skinSel=0;try{supUi();}catch(e){}} // אם היה הבחור — חוזרים לברירת המחדל
     });
     if(g.st)session.forEach(s=>{s.done=true;s.stars=3;});
-    if(Array.isArray(g.bmsg))g.bmsg.forEach((m,k)=>{ // 💌 ברכות יומולדת מהשחקנים
+    if(Array.isArray(g.bmsg))g.bmsg.forEach((m,k)=>{ // 💌 ברכות והודעות
+      try{ // נשמר ביומן — כדי שהאדמין יוכל לקרוא ולהשיב גם אחרי שהטוסט נעלם
+        const L=JSON.parse(localStorage.getItem('mzBlessLog')||'[]');
+        L.unshift({f:String(m.f||'').slice(0,14),t:String(m.t||'').slice(0,90),co:m.co|0,at:Date.now()});
+        localStorage.setItem('mzBlessLog',JSON.stringify(L.slice(0,15)));
+      }catch(e){}
       setTimeout(()=>{
         showToast('💌 '+String(m.f||'').slice(0,14)+': '+String(m.t||'').slice(0,90)+((m.co|0)>0?' (+'+(m.co|0)+'🪙)':''));
         tone(880,.1,'sine',.3);setTimeout(()=>tone(1108,.14,'sine',.3),120);
@@ -10102,6 +10114,7 @@ $('adminBtn').onclick=async()=>{
       sel.appendChild(o);
     });
   }catch(e){}
+  try{buildBlessList();}catch(e){} // 💌 יומן ההודעות שקיבלת
   $('admNet').textContent=tr('🌍 בודק חיבור…','🌍 Checking…');
   const d=await regFetch();
   $('admNet').textContent=d
@@ -10190,6 +10203,61 @@ $('admResetPw').onclick=async()=>{
 $('admUnlock').onclick=()=>admGive({un:1},'כל השלבים');
 $('admRegLock').onclick=()=>admGive({rlk:1},tr('נעילת יצירת חשבונות','account-creation lock'));
 $('admRegUnlock').onclick=()=>admGive({rlk:0},tr('שחרור יצירת חשבונות','account-creation unlock'));
+/* 📨 הודעות מהאדמין: לשחקן ספציפי (דרך תור המתנות) או שידור לכל העולם */
+$('admMsgSend').onclick=()=>{
+  const txt=String($('admMsgTxt').value||'').trim().slice(0,90);
+  if(!txt)return $('admMsg').textContent=tr('כתבו הודעה קודם','Write a message first');
+  admGive({bmsg:[{f:curUser||'גליקי',t:txt,co:0}]},tr('הודעה','message'));
+  $('admMsgTxt').value='';
+};
+$('admMsgAll').onclick=async()=>{
+  const txt=String($('admMsgTxt').value||'').trim().slice(0,90);
+  if(!txt)return $('admMsg').textContent=tr('כתבו הודעה קודם','Write a message first');
+  $('admMsg').textContent='…';
+  const m={f:curUser||'גליקי',t:txt,co:0};
+  let sent=0,ok=false;
+  try{
+    if(beOn()){
+      const r=await be('/api/bcast',m);
+      ok=!!(r&&r.ok);sent=r&&r.sent|0;
+    }else{
+      const d=await regFetch();
+      if(d){
+        for(const u in d.users){
+          if(u===m.f)continue;
+          const q=d.gifts[u]||{};
+          q.bmsg=[...(Array.isArray(q.bmsg)?q.bmsg:[]),m].slice(-20);
+          d.gifts[u]=q;sent++;
+        }
+        ok=await regPut(d);
+      }
+    }
+  }catch(e){}
+  $('admMsgTxt').value='';
+  $('admMsg').textContent=ok?('📢 '+tr('שודר ל-','Broadcast to ')+sent+tr(' שחקנים ⚡',' players ⚡')):tr('שגיאת רשת — נסו שוב','Network error — try again');
+};
+/* 💌 יומן הברכות — קריאה ומענה בלחיצה */
+function buildBlessList(){
+  const g=$('admBlessList');if(!g)return;g.innerHTML='';
+  let L=[];try{L=JSON.parse(localStorage.getItem('mzBlessLog')||'[]');}catch(e){}
+  if(!L.length)return;
+  const cap=document.createElement('div');
+  cap.style.cssText='font-size:11px;color:#8a94a8';
+  cap.textContent=tr('💌 הודעות אחרונות שקיבלת — לחצו כדי להשיב','💌 Recent messages — tap to reply');
+  g.appendChild(cap);
+  L.forEach(m=>{
+    const row=document.createElement('button');
+    row.className='chip';
+    row.style.cssText='text-align:right;font-size:11.5px;white-space:normal;line-height:1.5';
+    row.textContent='💌 '+m.f+': '+m.t+((m.co|0)>0?' (+'+m.co+'🪙)':'');
+    row.onclick=()=>{
+      $('admTarget').value=m.f;
+      $('admMsg').textContent=tr('משיבים ל-','Replying to ')+m.f+' 💬';
+      try{$('admMsgTxt').focus();}catch(e){}
+    };
+    g.appendChild(row);
+  });
+}
 $('admGiveLevel').onclick=()=>{
   const n=Math.max(1,Math.min(1000,$('admLevel').value|0)); // עד 1000, לא רק 100
   admGive({unl:n},'פתיחה עד שלב '+n);

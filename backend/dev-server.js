@@ -127,6 +127,20 @@ const server = http.createServer((req, res) => {
       doc.users[u].sv = b.sv;
       persist(); return J({ ok: 1, kept: 'client' });
     }
+    if (p === '/api/bcast' && req.method === 'POST') {
+      const m = { f: cleanName(b.f).slice(0, 14) || 'גליקי', t: String(b.t || '').slice(0, 90), co: 0 };
+      if (!m.t) return J({ err: 'bad' }, 400);
+      let n = 0;
+      for (const u in doc.users) {
+        if (u === m.f) continue;
+        const q = doc.gifts[u] || {};
+        q.bmsg = [...(Array.isArray(q.bmsg) ? q.bmsg : []), m].slice(-20);
+        doc.gifts[u] = q; n++;
+      }
+      persist();
+      for (const u in doc.users) notify(u);
+      return J({ ok: 1, sent: n });
+    }
     if (p === '/api/gift' && req.method === 'POST') {
       const t = cleanName(b.t);
       if (!doc.users[t]) return J({ err: 'nouser' }, 404);
