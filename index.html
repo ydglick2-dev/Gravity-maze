@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v129</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v130</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5574,10 +5574,10 @@ DFX.push(
  {name:'ברקים',en:'Bolts',icon:'⚡',price:550,rar:2},
  {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:750,rar:3});
 POWSKINS.forEach(s=>SKINS.push(s));
-/* 👑 ליאו מסי — הסקין האגדי. נפתח רק עם 3 גביעי מונדיאל 🏆 */
+/* 👑 גליקי — הסקין האגדי של יוצר המשחק! (החליף את מסי — מי שכבר השיג נשאר עם האגדה) */
 const MESSI_IMG=new Image();
-MESSI_IMG.src='messi.png';
-SKINS.push({name:'ליאו מסי',en:'Leo Messi',price:0,rar:5,wc:3,vkey:'messi',shout:'אנקרה מסי! אנקרה מסי! גול גול גול!',draw:(c,r,rot,T)=>{
+MESSI_IMG.src='gliki.png';
+SKINS.push({name:'גליקי',en:'Gliki',price:0,rar:5,wc:3,vkey:'gliki',shout:'גליקי המלך!! יומולדת שמח!!',draw:(c,r,rot,T)=>{
   c.save();c.rotate(rot*.25);
   if(MESSI_IMG.complete&&MESSI_IMG.naturalWidth){
     c.drawImage(MESSI_IMG,-r*1.02,-r*1.02,r*2.04,r*2.04);
@@ -5596,7 +5596,7 @@ const MESSI_IDX=SKINS.length-1;
 /* ⚽ עוד כוכבי כדורגל — פנים אמיתיות (בלי פרצוף מצויר), נופלים מתיבות */
 function pushFaceSkin(nm,en,img,rar,shout,vkey){
   const im=new Image();im.src=img;
-  SKINS.push({name:nm,en,price:0,rar,face:1,shout,vkey,draw:(c,r,rot,T)=>{
+  SKINS.push({name:nm,en,price:0,rar,face:1,leg:1,shout,vkey,draw:(c,r,rot,T)=>{ // 🏅 leg: אקסקלוסיב — לא מושג יותר
     c.save();c.rotate(rot*.25);
     if(im.complete&&im.naturalWidth)c.drawImage(im,-r*1.02,-r*1.02,r*2.04,r*2.04);
     else{
@@ -5629,6 +5629,73 @@ pushFaceSkin('רונאלדו','Ronaldo','ronaldo.png',5,'סיוווווו! כר�
 pushFaceSkin('נוימאר','Neymar','neymar.png',4,'אולה אולה אולה! נוימאר הקוסם!','neymar');
 pushFaceSkin('אמבפה','Mbappé','mbappe.png',4,'קיליאן אמבפה! מהיר כמו ברק!','mbappe');
 pushFaceSkin('האלנד','Haaland','haaland.png',4,'ארלינג האלנד! המכונה משער!','haaland');
+/* 🎂 סקיני יומולדת — מחליפים את הכדורגלנים בחנות ובתיבות */
+SKINS.push(
+ {name:'בלון מסיבה',en:'Party Balloon',price:400,rar:2,draw:(c,r,rot,T)=>{
+   const bg=c.createLinearGradient(-r,-r,r,r);
+   bg.addColorStop(0,'#2a0f38');bg.addColorStop(1,'#150722');
+   c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
+   const g=c.createRadialGradient(-r*.25,-r*.3,r*.1,0,-r*.05,r*.85);
+   g.addColorStop(0,'#ff9bb0');g.addColorStop(.5,'#ff4d6d');g.addColorStop(1,'#c9184a');
+   c.fillStyle=g;c.beginPath();c.ellipse(0,-r*.08,r*.62,r*.72,0,0,TAU);c.fill();
+   c.fillStyle='rgba(255,255,255,.55)'; // ברק
+   c.beginPath();c.ellipse(-r*.22,-r*.34,r*.16,r*.24,-.5,0,TAU);c.fill();
+   c.fillStyle='#c9184a'; // קשר
+   c.beginPath();c.moveTo(0,r*.62);c.lineTo(-r*.09,r*.76);c.lineTo(r*.09,r*.76);c.closePath();c.fill();
+   c.strokeStyle='#ffd9a8';c.lineWidth=r*.045; // חוט מתנדנד
+   c.beginPath();c.moveTo(0,r*.76);
+   c.quadraticCurveTo(r*.14*Math.sin(rot),r*.86,0,r*.96);c.stroke();}},
+ {name:'קונפטי',en:'Confetti',price:700,rar:3,draw:(c,r,rot,T)=>{
+   const bg=c.createLinearGradient(-r,-r,r,r);
+   bg.addColorStop(0,'#1b0b33');bg.addColorStop(1,'#0b0518');
+   c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
+   const cols=['#ff4d6d','#ffc23e','#4dd77a','#59b8ff','#ff7ad9','#b76bff'];
+   for(let k=0;k<16;k++){
+     const a=rot*.7+k*(TAU/16),d=r*(.25+((k*37)%50)/100*.65);
+     c.save();c.translate(Math.cos(a)*d,Math.sin(a)*d);c.rotate(a*2.4);
+     c.fillStyle=cols[k%cols.length];
+     c.fillRect(-r*.07,-r*.045,r*.14,r*.09);c.restore();
+   }
+   c.font='900 '+(r*.5|0)+'px system-ui';c.textAlign='center';c.textBaseline='middle';
+   c.fillText('🎉',0,r*.02);}},
+ {name:'מתנת יומולדת',en:'Birthday Gift',price:0,rar:4,draw:(c,r,rot,T)=>{
+   const g=c.createLinearGradient(-r,-r,r,r);
+   g.addColorStop(0,'#ff7ad9');g.addColorStop(1,'#c9184a');
+   c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
+   c.fillStyle='rgba(255,255,255,.16)'; // נקודות עטיפה
+   for(let k=0;k<9;k++){const a=k*2.35,d=r*(.28+(k%3)*.24);
+     c.beginPath();c.arc(Math.cos(a)*d,Math.sin(a)*d,r*.07,0,TAU);c.fill();}
+   c.fillStyle='#ffc23e'; // סרט זהב
+   c.fillRect(-r,-r*.12,r*2,r*.24);c.fillRect(-r*.12,-r,r*.24,r*2);
+   c.save();c.translate(0,-r*.16);c.rotate(Math.sin(rot*.8)*.08); // פפיון
+   c.fillStyle='#ffd76a';
+   c.beginPath();c.ellipse(-r*.2,0,r*.19,r*.12,-.5,0,TAU);c.fill();
+   c.beginPath();c.ellipse(r*.2,0,r*.19,r*.12,.5,0,TAU);c.fill();
+   c.fillStyle='#f6b40e';c.beginPath();c.arc(0,0,r*.09,0,TAU);c.fill();c.restore();}},
+ {name:'עוגת יומולדת',en:'Birthday Cake',price:0,rar:5,draw:(c,r,rot,T)=>{
+   const bg=c.createLinearGradient(-r,-r,r,r);
+   bg.addColorStop(0,'#2a0f38');bg.addColorStop(1,'#12061f');
+   c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
+   c.fillStyle='#7c4a1e'; // בסיס
+   c.beginPath();c.roundRect(-r*.62,r*.12,r*1.24,r*.5,r*.1);c.fill();
+   c.fillStyle='#ff9bb0'; // קומת קרם
+   c.beginPath();c.roundRect(-r*.5,-r*.22,r,r*.42,r*.09);c.fill();
+   c.fillStyle='#fff0fa'; // זיגוג נוטף
+   c.beginPath();c.moveTo(-r*.5,-r*.14);
+   for(let k=0;k<=6;k++){const x=-r*.5+k*(r/6);c.quadraticCurveTo(x+r/12,-r*.02+(k%2?r*.06:0),x+r/6,-r*.14);}
+   c.lineTo(r*.5,-r*.3);c.lineTo(-r*.5,-r*.3);c.closePath();c.fill();
+   for(let k=-1;k<=1;k++){ // נרות
+     const x=k*r*.3;
+     c.fillStyle=k===0?'#59b8ff':'#4dd77a';
+     c.fillRect(x-r*.035,-r*.52,r*.07,r*.24);
+     const fl=Math.sin(rot*3+k)*r*.02; // להבה מרצדת
+     const fg=c.createRadialGradient(x,-r*.58,0,x,-r*.58,r*.1);
+     fg.addColorStop(0,'#fff3b0');fg.addColorStop(1,'rgba(255,140,20,0)');
+     c.fillStyle=fg;c.beginPath();c.ellipse(x+fl,-r*.58,r*.05,r*.09,0,0,TAU);c.fill();
+   }
+   c.fillStyle='#ffc23e';c.font='900 '+(r*.2|0)+'px system-ui';
+   c.textAlign='center';c.textBaseline='middle';c.fillText('🎂',r*.42,r*.5);}}
+);
 /* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
    רים-לייט תלת-ממדי לכולם, טבעת נדירות מסתובבת (אדיר+), ניצוצות מקיפים
    (מיתי+) והילת זהב פועמת לאגדיים. בלי לשכתב אף ציור. */
@@ -6691,6 +6758,7 @@ function buildSkins(){
   const cat=shopCat(),g=$('skinGrid');g.innerHTML='';
   cat.list.forEach((s,i)=>{
     const owned=cat.ow.includes(i),sel=cat.getSel()===i;
+    if(s.leg&&!owned)return; // 🏅 אקסקלוסיב שלא בבעלות — לא מוצג יותר בחנות
     const card=document.createElement('button');
     card.className='skCard'+(sel?' sel':'')+(owned?'':' lock');
     if(shopTab==='skin'){
@@ -6706,7 +6774,7 @@ function buildSkins(){
     }
     const nm=document.createElement('div');nm.textContent=tr(s.name,s.en||s.name);card.appendChild(nm);
     const rr=document.createElement('div');
-    rr.textContent=tr(RAR[s.rar|0].n,RAR[s.rar|0].en);
+    rr.textContent=tr(RAR[s.rar|0].n,RAR[s.rar|0].en)+(s.leg?tr(' · 🏅 אקסקלוסיב',' · 🏅 Exclusive'):'');
     rr.style.cssText='font-size:10px;font-weight:900;letter-spacing:.5px;color:'+RAR[s.rar|0].c;
     card.appendChild(rr);
     if(s.pow&&POWDESC[s.pow]){ // 🦸 מה הכוח עושה — סוף סוף כתוב
@@ -6734,7 +6802,7 @@ function buildSkins(){
         tone(140,.12,'sawtooth',.2);
         if(navigator.vibrate)navigator.vibrate(30);
       };
-      if(s.wc&&!owned){deny();return showToast(tr('🐐 מסי נופל רק מתיבות — סיכוי 1% לכל פתיחה. בהצלחה!','🐐 Messi only drops from chests — 1% per open. Good luck!'));}
+      if(s.wc&&!owned){deny();return showToast(tr('👑 גליקי נופל רק מתיבות — סיכוי 1% לכל פתיחה. בהצלחה!','👑 Gliki only drops from chests — 1% per open. Good luck!'));}
       if(s.fs&&!owned){deny();return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));}
       if((s.rar|0)>=4&&!s.pow){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
       if(coins>=s.price){
@@ -6783,7 +6851,7 @@ function grantTier(t){
   for(let dn=t-1;dn>=1;dn--)order.push(dn);
   for(const tier of order){
     const cands=[];
-    SKINS.forEach((it,i)=>{if((it.rar|0)===tier&&!it.pow&&!it.wc&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
+    SKINS.forEach((it,i)=>{if((it.rar|0)===tier&&!it.pow&&!it.wc&&!it.leg&&!skinOwned.includes(i))cands.push({k:'skin',i,it});}); // leg = אקסקלוסיב, לא נופל יותר
     WFX.forEach((it,i)=>{if((it.rar|0)===tier&&!it.fs&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
     DFX.forEach((it,i)=>{if((it.rar|0)===tier&&!dOw.includes(i))cands.push({k:'dfx',i,it});});
     if(!cands.length)continue;
@@ -6807,12 +6875,12 @@ function grantTier(t){
 }
 function rollChest(){
   const drops=[];
-  // 🐐 מסי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
+  // 👑 גליקי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
   let messi=null;
   if(!skinOwned.includes(MESSI_IDX)&&Math.random()<.01){
     skinOwned.push(MESSI_IDX);
-    messi={icon:'🐐',label:tr('ליאו מסי!!','Leo Messi!!'),rar:5,
-      rv:{kind:'skin',idx:MESSI_IDX,rar:5,label:tr('ליאו מסי','Leo Messi'),story:loreOf(MESSI_IDX)}};
+    messi={icon:'👑',label:tr('גליקי!!','Gliki!!'),rar:5,
+      rv:{kind:'skin',idx:MESSI_IDX,rar:5,label:tr('גליקי','Gliki'),story:loreOf(MESSI_IDX)}};
     const gfx=grantGoalFx();if(gfx)messi._extra=gfx;
   }
   // ⭐ מגרילים את נדירות התיבה לפי הסיכויים הרשמיים של סטאר דרופ
@@ -6838,7 +6906,7 @@ function rollChest(){
   return drops;
 }
 let chestBusy=false;
-/* 🏆 תיבת מונדיאל — כל 50 שלבים. 20% לגביע מונדיאל; 3 גביעים = ליאו מסי! */
+/* 🏆 תיבת מונדיאל — כל 50 שלבים. 20% לגביע מונדיאל; 3 גביעים = גליקי! */
 function mondialBox(){ // 🏆 תיבת בונוס כל 50 שלבים (מסי עבר לתיבות רגילות — 0.01%)
   showToast(tr('🏆 תיבת מונדיאל — שלב ','🏆 World Cup box — level ')+(levelIdx+1)+'!');
   playBoxOpen(5,()=>{
@@ -6852,7 +6920,7 @@ function checkMessi(){
   if(wcCups>=3&&!skinOwned.includes(MESSI_IDX)){
     skinOwned.push(MESSI_IDX);
     save();
-    setTimeout(()=>showReveal({kind:'skin',idx:MESSI_IDX,rar:5,label:tr('ליאו מסי','Leo Messi'),story:loreOf(MESSI_IDX)},()=>{
+    setTimeout(()=>showReveal({kind:'skin',idx:MESSI_IDX,rar:5,label:tr('גליקי','Gliki'),story:loreOf(MESSI_IDX)},()=>{
       const gfx=grantGoalFx();
       if(gfx){save();setTimeout(()=>showReveal(gfx.rv),400);}
     }),500);
@@ -8644,11 +8712,15 @@ const SKIN_LORE=[
  ['לגם בטעות שיקוי זמן. מאז — העולם רץ, והוא צועד בנחת.','Accidentally sipped a time potion. The world rushes; it strolls.'],
  ['רוח של כדור מהעולם הבא. קירות? הוא כבר לא מרגיש אותם.','A ball\'s ghost from the other side. Walls? It barely feels them anymore.'],
  ['התגלגל פעם דרך בנק. יצא מהצד השני — כפול.','Once rolled through a bank. Came out the other side — doubled.'],
- ['ה-GOAT בכבודו ובעצמו. שלושה גביעי מונדיאל הביאו אותו למבוך — עכשיו הוא משחק בקבוצה שלך. 🐐🇦🇷','The GOAT himself. Three World Cups brought him to the maze — now he plays for your team. 🐐🇦🇷'],
+ ['מלך היומולדת בכבודו ובעצמו! יוצר המבוך ירד לשחק איתכם — עם כתר, משקפיים וריז אינסופי. 👑🎂','The Birthday King himself! The maze creator came down to play — crown, shades and infinite rizz. 👑🎂'],
  ['סיוווו! מלך השערים עזב את המגרש בשביל המבוך. עדיין קופץ הכי גבוה. 🇵🇹','Siuuu! The goal king left the pitch for the maze. Still jumps the highest. 🇵🇹'],
  ['הקוסם מברזיל. מכדרר בין הקירות כאילו הם מגינים. 🇧🇷','The Brazilian magician. Dribbles between walls like defenders. 🇧🇷'],
  ['הצ׳יטה של פריז. מהיר מדי בשביל החורים — הם פשוט לא מספיקים לתפוס אותו. 🇫🇷','The Paris cheetah. Too fast for the holes to catch. 🇫🇷'],
- ['הרובוט הנורווגי. נכנס לתיבה בטעות — יצא ממנה עם שער. 🤖🇳🇴','The Norwegian robot. Walked into a box — scored from it. 🤖🇳🇴']];
+ ['הרובוט הנורווגי. נכנס לתיבה בטעות — יצא ממנה עם שער. 🤖🇳🇴','The Norwegian robot. Walked into a box — scored from it. 🤖🇳🇴'],
+ ['נמלט ממסיבת יומולדת שנייה לפני הפיצוץ. אל תחזיקו אותו קרוב לסיכות.','Escaped a birthday party a second before the pop. Keep it away from pins.'],
+ ['ענן צבעוני שמסרב לרדת לרצפה. כל פנייה שלו — מסיבה.','A colorful cloud that refuses to hit the floor. Every turn is a party.'],
+ ['אף אחד לא יודע מה בפנים. גם הוא לא. אולי עוד מתנה?','Nobody knows what\'s inside. Neither does it. Maybe another gift?'],
+ ['נאפתה לכבוד יומולדת של אגדה. הנרות לא נכבים אף פעם. 🎂','Baked for a legend\'s birthday. The candles never go out. 🎂']];
 function loreOf(i){const l=SKIN_LORE[i];return l?tr(l[0],l[1]):'';}
 /* 🐣 היצור: הכדור נפתח לחיה חמודה — עיניים, גבות ופה לפי מצב רוח */
 function drawCreature(g,cx,cy,R,idx,mood,t){
@@ -8785,6 +8857,7 @@ const eOutCubic=k=>1-Math.pow(1-k,3);
 const eOutQuad=k=>1-(1-k)*(1-k);
 const eOutBack=k=>{const c=1.70158;k-=1;return 1+(c+1)*k*k*k+c*k*k;};
 const KIT={
+  gliki:  {sh:'#b76bff',stripe:'#ffc23e',pants:'#2a0f38',socks:'#ffc23e',num:'1', numCol:'#fff'},
   messi:  {sh:'#75aadb',stripe:'#ffffff',pants:'#0b1d36',socks:'#75aadb',num:'10',numCol:'#0b1d36'},
   ronaldo:{sh:'#c8102e',stripe:null,     pants:'#ffffff',socks:'#0a4d3c',num:'7', numCol:'#fff'},
   neymar: {sh:'#ffdc02',stripe:null,     pants:'#1c9c48',socks:'#ffffff',num:'10',numCol:'#1c5c9e'},
