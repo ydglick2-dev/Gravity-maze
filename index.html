@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v125</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v126</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -655,6 +655,11 @@
     <button class="btn sec" id="admBan" data-en="🚫 Ban (hours)">🚫 באן (שעות)</button>
     <button class="btn sec" id="admUnban" data-en="✅ Unban">✅ הסר באן</button>
   </div>
+  <div class="row">
+    <button class="btn sec" id="admRegLock" data-en="🔒 Lock account creation (device)">🔒 נעל יצירת חשבונות</button>
+    <button class="btn sec" id="admRegUnlock" data-en="🔓 Unlock">🔓 שחרר</button>
+  </div>
+  <div style="font-size:11px;color:#8a94a8" data-en="Locks new-account creation on the device the target user is logged into">🔒 נועל יצירת חשבונות חדשים במכשיר שהשחקן היעד מחובר אליו</div>
   <div class="row">
     <input class="tin" id="admBanReason" maxlength="60" placeholder="סיבת הבאן (יוצג לשחקן)" data-en-ph="Ban reason (shown to player)" style="max-width:200px">
     <button class="chip on" id="admBanFrom">👤 ממני</button>
@@ -8273,6 +8278,12 @@ function applyGift(g,target){
       if(skinSel===ix){skinSel=0;try{supUi();}catch(e){}} // אם היה הבחור — חוזרים לברירת המחדל
     });
     if(g.st)session.forEach(s=>{s.done=true;s.stars=3;});
+    if(g.rlk!==undefined){ // 🔒 נעילת/שחרור יצירת חשבונות במכשיר הזה — מהאדמין, מרחוק
+      try{g.rlk?localStorage.setItem('mzRegLock','1'):localStorage.removeItem('mzRegLock');}catch(e){}
+      setTimeout(()=>showToast(g.rlk
+        ?tr('🔒 יצירת חשבונות חדשים נחסמה במכשיר הזה','🔒 Creating new accounts is now blocked on this device')
+        :tr('🔓 נעילת יצירת החשבונות הוסרה','🔓 Account-creation lock removed')),900);
+    }
     try{checkAch();}catch(e){}
     return true;
   }
@@ -8384,6 +8395,7 @@ async function admGive(g,label){
   if(Array.isArray(g.ski))q.ski=[...new Set([...(Array.isArray(q.ski)?q.ski:[]),...g.ski.map(n=>n|0)])].slice(0,64);
   if(Array.isArray(g.skx))q.skx=[...new Set([...(Array.isArray(q.skx)?q.skx:[]),...g.skx.map(n=>n|0)])].slice(0,64);
   if(g.unl)q.unl=Math.max(q.unl|0,g.unl|0);
+  if(g.rlk!==undefined)q.rlk=g.rlk?1:0; // 🔒 נעילת יצירת חשבונות
   if(g.dnl)q.dnl=g.dnl|0;
   if(g.clv)q.clv=g.clv;
   if('clr' in g)q.clr=g.clr|0;
@@ -9858,6 +9870,8 @@ $('admResetPw').onclick=async()=>{
   $('admMsg').textContent='🔑 '+t+tr(' — הסיסמה החדשה: ',' — new password: ')+np;
 };
 $('admUnlock').onclick=()=>admGive({un:1},'כל השלבים');
+$('admRegLock').onclick=()=>admGive({rlk:1},tr('נעילת יצירת חשבונות','account-creation lock'));
+$('admRegUnlock').onclick=()=>admGive({rlk:0},tr('שחרור יצירת חשבונות','account-creation unlock'));
 $('admGiveLevel').onclick=()=>{
   const n=Math.max(1,Math.min(1000,$('admLevel').value|0)); // עד 1000, לא רק 100
   admGive({unl:n},'פתיחה עד שלב '+n);

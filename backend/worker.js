@@ -240,6 +240,7 @@ export class Registry {
       if (Array.isArray(g.ski)) q.ski = [...new Set([...(Array.isArray(q.ski) ? q.ski : []), ...g.ski.map(n => n | 0)])].slice(0, 64);
       if (Array.isArray(g.skx)) q.skx = [...new Set([...(Array.isArray(q.skx) ? q.skx : []), ...g.skx.map(n => n | 0)])].slice(0, 64);
       if (g.unl) q.unl = Math.max(q.unl | 0, g.unl | 0);
+      if (g.rlk !== undefined) q.rlk = g.rlk ? 1 : 0; // 🔒 נעילת יצירת חשבונות במכשיר היעד
       if (g.dnl) q.dnl = g.dnl | 0;
       if (g.clv) q.clv = g.clv;
       if ('clr' in g) q.clr = g.clr | 0;
