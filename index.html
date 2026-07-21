@@ -350,7 +350,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v136</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v137</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -8859,10 +8859,22 @@ function _vapidKey(){
   for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);
   return a;
 }
+/* 🔔 אין תמיכה בסביבה הנוכחית (iframe של האתר וכו') — מפנים לדף המלא/לאפליקציה, ששם זה עובד */
+function pushUnsupportedHelp(){
+  try{
+    $('settingsOv').classList.add('hidden');
+    openInstallModal();
+    $('instTitle').textContent=tr('🔔 הפעלת התראות','🔔 Enable notifications');
+    const t=$('instTxt');
+    if(t)t.innerHTML=isIOS
+      ? tr('התראות עובדות רק מהאפליקציה המותקנת: שיתוף ⬆️ ← "הוסף למסך הבית" ← פותחים משם ← הגדרות ← 🔔','Notifications need the installed app: Share ⬆️ → Add to Home Screen → open it → Settings → 🔔')
+      : tr('כאן (בתוך האתר) אי אפשר להפעיל התראות. פתחו את דף המשחק המלא בכפתור למטה (או התקינו כאפליקציה) — ושם: הגדרות ← "🔔 התראות כשהמשחק סגור"','Notifications need the full game page or the installed app — open it below, then Settings → 🔔');
+  }catch(e){}
+}
 async function pushEnable(quiet){
   try{
     if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
-      if(!quiet)showToast(tr('הדפדפן הזה לא תומך בהתראות 😕','This browser does not support notifications 😕'));
+      if(!quiet)pushUnsupportedHelp();
       return false;
     }
     if(!curUser){if(!quiet)showToast(tr('צריך להתחבר קודם','Log in first'));return false;}
@@ -8883,7 +8895,7 @@ async function pushEnable(quiet){
     }
     return true;
   }catch(e){
-    if(!quiet)showToast(tr('ההתראות לא נתמכות כאן — נסו מהאפליקציה המותקנת 📲','Not supported here — try from the installed app 📲'));
+    if(!quiet)pushUnsupportedHelp();
     return false;
   }
 }
