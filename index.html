@@ -259,31 +259,18 @@
   #toast { position:fixed; top:28%; left:0; right:0; text-align:center; z-index:30; pointer-events:none;
     font-size:22px; font-weight:900; color:#ffe9b8; text-shadow:0 0 18px rgba(255,184,77,.8), 0 2px 6px #000;
     opacity:0; transition:opacity .3s; }
-  /* 🌆 שכבת עיצוב "איוונט ניאון" — מוחלת כשאייקון העונה 🌆 (לפי קובץ העיצוב שנשלח) */
-  html.neonui h1 { background:none; -webkit-text-fill-color:#eef1ff; color:#eef1ff;
-    filter:drop-shadow(0 2px 12px rgba(73,207,253,.3)); }
-  html.neonui #menuOv h1, html.neonui #lbTitle {
-    background:linear-gradient(90deg,#49cffd,#8b7bff,#e452f1);
-    -webkit-background-clip:text; background-clip:text;
-    -webkit-text-fill-color:transparent; color:transparent;
-    filter:drop-shadow(0 2px 14px rgba(73,207,253,.35)); }
-  html.neonui .mTile { background:rgba(24,25,54,.88); border:1px solid rgba(73,207,253,.10); }
-  html.neonui .mPill { background:rgba(24,25,54,.82); border-color:rgba(73,207,253,.16); }
-  html.neonui .pill { background:rgba(24,25,54,.72); box-shadow:inset 0 0 0 1.5px rgba(73,207,253,.16); }
-  html.neonui .btn.sec { background:rgba(24,25,54,.88); box-shadow:0 0 0 1px rgba(73,207,253,.15), 0 4px 14px rgba(0,0,0,.4); }
-  html.neonui #menuOv .btn.sec { background:rgba(24,25,54,.88); border:1px solid rgba(73,207,253,.12); }
-  html.neonui .chip { background:rgba(24,25,54,.88); color:#c6ccf2; }
-  html.neonui .tin { background:rgba(24,25,54,.82) !important; border:1px solid rgba(73,207,253,.15) !important; color:#eef1ff; }
-  html.neonui .achRow { background:rgba(24,25,54,.82) !important; border:1px solid rgba(73,207,253,.10); }
-  html.neonui .skCard { background:rgba(24,25,54,.88); border:1px solid rgba(73,207,253,.10); }
-  html.neonui .ic { background:rgba(24,25,54,.72); box-shadow:inset 0 0 0 1.5px rgba(73,207,253,.2); }
-  /* תוויות האריחים בצבעי האייקונים מהמוקאפ */
-  html.neonui .mTile:nth-child(6n+1) div:last-child { color:#ff5b6e; }
-  html.neonui .mTile:nth-child(6n+2) div:last-child { color:#49cffd; }
-  html.neonui .mTile:nth-child(6n+3) div:last-child { color:#ffc943; }
-  html.neonui .mTile:nth-child(6n+4) div:last-child { color:#e452f1; }
-  html.neonui .mTile:nth-child(6n+5) div:last-child { color:#43e58b; }
-  html.neonui .mTile:nth-child(6n+6) div:last-child { color:#8b7bff; }
+  /* 🌆 נגיעות ניאון לתפריט — מסגרות זוהרות על העיצוב הרגיל (מופעל בעונת 🌆) */
+  html.neonui .mTile { background:rgba(8,14,24,.82); border:1px solid rgba(0,245,212,.30);
+    box-shadow:0 0 14px rgba(0,245,212,.10), inset 0 0 16px rgba(0,245,212,.05); }
+  html.neonui .mTile .mIc { filter:drop-shadow(0 0 7px rgba(0,245,212,.6)); }
+  html.neonui .mTile:nth-child(even) { border-color:rgba(241,91,255,.30);
+    box-shadow:0 0 14px rgba(241,91,255,.10), inset 0 0 16px rgba(241,91,255,.05); }
+  html.neonui .mTile:nth-child(even) .mIc { filter:drop-shadow(0 0 7px rgba(241,91,255,.6)); }
+  html.neonui #menuOv .btn.sec { border:1px solid rgba(0,245,212,.22); }
+  html.neonui .mPill { border-color:rgba(241,91,255,.30); }
+  html.neonui #menuPassBar { border-color:rgba(0,245,212,.35) !important;
+    box-shadow:0 0 16px rgba(0,245,212,.10); }
+  html.neonui #lbTitle { filter:drop-shadow(0 0 14px rgba(0,245,212,.45)); }
   /* 📣 באנר הודעות אדמין/ברכות — נשאר 5 שניות, לא נדרס ע"י טוסטים אחרים ולא נסגר בלחיצה */
   #toastAdm { position:fixed; top:12%; left:12px; right:12px; text-align:center; z-index:31; pointer-events:none;
     opacity:0; transition:opacity .35s; }
@@ -382,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v142</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v143</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -4845,10 +4832,6 @@ function render3D(dt){
         T3.neonRing.visible=neon;T3.neonRing2.visible=neon;T3.neonGlow.visible=neon;
         T3.neonOrb.visible=neon;T3.orbGlow.visible=neon;T3.neonFloor.visible=neon;
       }
-      try{ // רקע הסצנה לפי העונה
-        const bgHex=neon?0x0d0e2d:0x070d1e;
-        if(T3.scene.background&&T3.scene.background.getHex()!==bgHex){T3.scene.background.setHex(bgHex);T3.scene.fog.color.setHex(bgHex);}
-      }catch(e){}
       if(bday){
         T3.gift3.position.copy(T3.sb3.position);
         T3.gift3.quaternion.copy(T3.sb3.quaternion);
@@ -7203,33 +7186,24 @@ function pickUnowned(cat,ow){
 const DROP_PCT=[[5,7],[4,10],[3,20],[2,28],[1,35]]; // [נדירות, אחוז] — נדיב! אגדי 7%, מדהים 10%, אדיר 20%
 let pity=0; // נשמר לתאימות שמירות ישנות — כבר לא בשימוש (פריט מובטח בכל תיבה)
 function grantTier(t){
-  // אוסף מועמדים בנדירות המבוקשת; אם אין — מטפסים למעלה ואז יורדים
-  const order=[t];
-  for(let up=t+1;up<=5;up++)order.push(up);
-  for(let dn=t-1;dn>=1;dn--)order.push(dn);
-  for(const tier of order){
-    const cands=[];
-    SKINS.forEach((it,i)=>{if((it.rar|0)===tier&&!it.pow&&!it.wc&&!it.leg&&!skinOwned.includes(i))cands.push({k:'skin',i,it});}); // leg = אקסקלוסיב, לא נופל יותר
-    WFX.forEach((it,i)=>{if((it.rar|0)===tier&&!it.fs&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
-    DFX.forEach((it,i)=>{if((it.rar|0)===tier&&!dOw.includes(i))cands.push({k:'dfx',i,it});});
-    if(!cands.length)continue;
-    // ⚽ סקיני כדורגלנים נדירים באמת: רק 10% מהפילים בדרגה שלהם
-    const faces=cands.filter(c2=>c2.k==='skin'&&c2.it.face),rest=cands.filter(c2=>!(c2.k==='skin'&&c2.it.face));
-    let pool2=rest.length?rest:faces;
-    if(faces.length&&rest.length&&Math.random()<.10)pool2=faces;
-    const c=pool2[(Math.random()*pool2.length)|0];
-    if(c.k==='skin'){
-      skinOwned.push(c.i);
-      const drop={icon:'🎨',label:tr(c.it.name,c.it.en||c.it.name),rar:tier,
-        rv:{kind:'skin',idx:c.i,rar:tier,label:tr(c.it.name,c.it.en||c.it.name),story:loreOf(c.i)}};
-      if(c.it.face){const gfx=grantGoalFx();if(gfx)drop._extra=gfx;} // ⚽ +אפקט GOAL במתנה
-      return drop;
-    }
-    if(c.k==='wfx')wOw.push(c.i);else dOw.push(c.i);
-    return {icon:c.it.icon,label:(c.k==='wfx'?tr('ניצחון: ','Victory: '):tr('מוות: ','Death: '))+tr(c.it.name,c.it.en||c.it.name),rar:tier,
-      rv:{kind:'fx',icon:c.it.icon,rar:tier,label:tr(c.it.name,c.it.en||c.it.name)}};
+  // 🎁 המאגר: כל פריט בנדירות של התיבה ומטה (תיבה אגדית → הכל כולל אגדי; לעולם לא מעל)
+  const cands=[];
+  SKINS.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!it.pow&&!it.wc&&!it.leg&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
+  WFX.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!it.fs&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
+  DFX.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!dOw.includes(i))cands.push({k:'dfx',i,it});});
+  if(!cands.length)return null;
+  const c=cands[(Math.random()*cands.length)|0];
+  const rr=c.it.rar|0;
+  if(c.k==='skin'){
+    skinOwned.push(c.i);
+    const drop={icon:'🎨',label:tr(c.it.name,c.it.en||c.it.name),rar:rr,
+      rv:{kind:'skin',idx:c.i,rar:rr,label:tr(c.it.name,c.it.en||c.it.name),story:loreOf(c.i)}};
+    if(c.it.face){const gfx=grantGoalFx();if(gfx)drop._extra=gfx;}
+    return drop;
   }
-  return null;
+  if(c.k==='wfx')wOw.push(c.i);else dOw.push(c.i);
+  return {icon:c.it.icon,label:(c.k==='wfx'?tr('ניצחון: ','Victory: '):tr('מוות: ','Death: '))+tr(c.it.name,c.it.en||c.it.name),rar:rr,
+    rv:{kind:'fx',icon:c.it.icon,rar:rr,label:tr(c.it.name,c.it.en||c.it.name)}};
 }
 function rollChest(){
   const drops=[];
@@ -7245,21 +7219,23 @@ function rollChest(){
   const r=Math.random()*100;
   let tier=1,acc=0;
   for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
-  const item=messi||grantTier(tier); // פריט מובטח (null רק אם כל האוסף כבר אצלך)
-  const mxR=item?item.rar|0:0;
-  // 🪙 תקרת המטבעות עולה עם נדירות התיבה: אדיר +25%, מדהים +50%, אגדי +100%
-  const capMul=mxR>=5?2:mxR>=4?1.5:mxR>=3?1.25:1;
+  // 🎁 פריט יוצא רק ב-30% מהתיבות (מנדירות התיבה ומטה) — לא כל תיבה נותנת סקין
+  const item=messi||(Math.random()<.30?grantTier(tier):null);
+  // 🪙 התשלום נקבע לפי נדירות התיבה שהוגרלה — גם כשאין פריט וגם כשהאוסף מלא, התיבות משתדרגות
+  const capMul=tier>=5?2:tier>=4?1.5:tier>=3?1.25:1;
   let coinCap=Math.round(30*capMul);
   const n=Math.round((10+((Math.random()*13)|0))*capMul);
   addCoins(n);coinCap-=n;drops.push({icon:'🪙',label:'+'+n,rar:0});
   if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
   if(item){
     drops.push(item);if(item._extra)drops.push(item._extra);
-  }else if(coinCap>=5){ // האוסף מלא — פיצוי מטבעות/יהלום
-    const m=Math.min(coinCap,Math.round((5+((Math.random()*9)|0))*capMul));
-    addCoins(m);coinCap-=m;drops.push({icon:'🪙',label:'+'+m,rar:0});
-  }else{
-    gems+=1;drops.push({icon:'💎',label:'+1',rar:1});
+  }else{ // אין פריט הפעם — התיבה עדיין משלמת לפי הנדירות שלה
+    if(coinCap>=5){
+      const m=Math.min(coinCap,Math.round((5+((Math.random()*9)|0))*capMul));
+      addCoins(m);coinCap-=m;drops.push({icon:'🪙',label:'+'+m,rar:0});
+    }
+    const gm=tier>=5?8:tier>=4?5:tier>=3?3:tier>=2?2:1; // 💎 בונוס לפי נדירות התיבה
+    gems+=gm;drops.push({icon:'💎',label:'+'+gm,rar:Math.max(1,tier-1)});
   }
   return drops;
 }
@@ -7801,7 +7777,7 @@ $('chestBtn').onclick=()=>{
   $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
   $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
   $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
-  $('chestOdds').textContent=tr('⭐ פריט מובטח בכל תיבה! ','⭐ Guaranteed item! ')+'🟢35% · 🔵28% · 🟣20% · 🔴10% · 🟡7% · 🐐1%';
+  $('chestOdds').textContent=tr('🎁 30% לפריט (עד נדירות התיבה) · נדירות: ','🎁 30% item chance (up to chest rarity) · ')+'🟢35% · 🔵28% · 🟣20% · 🔴10% · 🟡7% · 🐉1%';
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
@@ -10283,12 +10259,11 @@ const SEASON_PACKS={ // ⚽ אלביסלסטה — לפי קובץ העיצוב 
     gl:'rgba(94,160,230,.17)',
     bg1:'rgba(11,29,54,.93)',bg2:'rgba(5,14,28,.95)',
     gd:'rgba(126,200,242,.07)'},
-  neon:{ic:'🌆',st:'1', // 🌆 איוונט ניאון — לפי קובץ העיצוב: נייבי עמוק, טורקיז/מגנטה, כפתורי זהב
-    g1:'#ffd75a',g2:'#ffb62a',
-    t1:'#49cffd',t2:'#8b7bff',t3:'#e452f1',
-    gl:'rgba(73,207,253,.20)',
-    bg1:'rgba(24,25,54,.94)',bg2:'rgba(9,10,31,.97)',
-    gd:'rgba(73,207,253,.07)'},
+  neon:{ic:'🌆',st:'1', // 🌆 עונת ניאון — טורקיז/מגנטה על כהה; הכותרת נשארת בגרדיאנט הדיפולטי
+    g1:'#00f5d4',g2:'#f15bff',
+    gl:'rgba(0,245,212,.22)',
+    bg1:'rgba(6,8,20,.95)',bg2:'rgba(2,3,10,.97)',
+    gd:'rgba(0,245,212,.08)'},
   birthday:{ic:'🎂',st:'1', // 🎂 עונת יומולדת — ורוד/זהב על סגול חגיגי
     g1:'#ff7ad9',g2:'#ffc23e',
     t1:'#fff0fa',t2:'#f3cdeb',t3:'#d29ac4',
