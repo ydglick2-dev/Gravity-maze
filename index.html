@@ -357,7 +357,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v138</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v139</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -410,6 +410,7 @@
   <div style="font-size:11.5px;color:#8a94a8;max-width:290px" data-en="Paste a Spotify track/playlist/album link — a mini player appears in the lobby (tap it to start)">הדביקו קישור לשיר / פלייליסט / אלבום מספוטיפיי — נגן קטן יופיע בלובי (הקישו עליו כדי לנגן)</div>
   <button class="btn sec" id="spClear" style="display:none" data-en="✕ Remove Spotify player">✕ הסרת נגן ספוטיפיי</button>
   <button class="btn sec" id="setPush" data-en="🔔 Notifications when the game is closed">🔔 התראות כשהמשחק סגור</button>
+  <button class="btn sec" id="setFrAuto"></button>
   <button class="btn sec" id="setTut" data-en="🎓 Replay tutorials">🎓 הצג הדרכה מחדש</button>
   <button class="btn" id="setBack" data-en="✕ Close">✕ סגירה</button>
 </div>
@@ -485,7 +486,7 @@
       <button class="mTile" id="achBtn"><div class="mIc">🏅</div><div data-en="Achievements">הישגים</div></button>
       <button class="mTile" id="mnuSet"><div class="mIc">⚙️</div><div data-en="Settings">הגדרות</div></button>
       <button class="mTile" id="adminBtn" style="display:none"><div class="mIc">🛠</div><div data-en="Admin">אדמין</div></button>
-      <button class="mTile" id="giftAdmBtn" style="display:none"><div class="mIc">🎁</div><div data-en="Gift for Gliki">מתנה לגליקי</div></button>
+      <button class="mTile" id="giftAdmBtn" style="display:none"><div class="mIc">💬</div><div data-en="Chat">צ'אט</div></button>
       <button id="passBtn" style="display:none"></button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:18px 20px;gap:12px;margin-top:auto">
@@ -618,6 +619,7 @@
   <div class="row" style="flex-wrap:wrap;align-items:center">
     <button class="chip" id="admSeaBall">⚽ ערכת כדורגל</button>
     <button class="chip" id="admSeaBday">🎂 ערכת יומולדת</button>
+    <button class="chip" id="admSeaNeon">🌆 ערכת ניאון</button>
     <button class="chip" id="admSeaUp">🖼 העלאת קובץ עיצוב</button>
     <input type="file" id="admSeaFile" accept=".json,application/json" style="display:none">
   </div>
@@ -4409,8 +4411,10 @@ function syncLobbyUI(){
   $('lobbyUI').style.display=(!running&&!anyOv)?'flex':'none';
   try{ // 🎂 טקסט העזרה של הלובי מתחלף עם העונה
     const _bd=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🎂');
+    const _ne=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🌆');
     const lh=$('lbHint');
-    const txt=_bd?tr('🎁 דחפו את המתנה אל עוגת היומולדת של גליקי!','🎁 Push the gift to Gliki\'s birthday cake!')
+    const txt=_ne?tr('⚡ דחפו את כדור האנרגיה אל פורטל הניאון!','⚡ Push the energy orb into the neon portal!')
+             :_bd?tr('🎁 דחפו את המתנה אל עוגת היומולדת של גליקי!','🎁 Push the gift to Gliki\'s birthday cake!')
                  :tr('⚽ תתנגשו בכדורגל ותדחפו אותו לשער!','⚽ Bump the soccer ball and push it into the goal!');
     if(lh&&lh.textContent!==txt)lh.textContent=txt;
   }catch(e){}
@@ -4476,16 +4480,19 @@ function lobbyFrame(dt,t){
   }
   if(SB.z<1){
     const _bday=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🎂');
-    if(Math.abs(SB.x)<2.7){ // ⚽ גול! / 🎁 המתנה הוגשה!
+    const _neon=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🌆');
+    if(Math.abs(SB.x)<2.7){ // ⚽ גול! / 🎁 מתנה! / ⚡ פורטל!
       LB.goals++;LB.glow=1;
-      try{const g2=$('lbGoals');g2.style.display='';g2.textContent=(_bday?'🎁 ':'⚽ ')+LB.goals;}catch(e){}
-      showToast(_bday?tr('🎁 המתנה הוגשה לגליקי! (','🎁 Gift delivered to Gliki! (')+LB.goals+')'
-                    :tr('⚽ גוֹל! (','⚽ GOAL! (')+LB.goals+')');
+      try{const g2=$('lbGoals');g2.style.display='';g2.textContent=(_neon?'⚡ ':_bday?'🎁 ':'⚽ ')+LB.goals;}catch(e){}
+      showToast(_neon?tr('⚡ טעינת פורטל! (','⚡ Portal charged! (')+LB.goals+')'
+               :_bday?tr('🎁 המתנה הוגשה לגליקי! (','🎁 Gift delivered to Gliki! (')+LB.goals+')'
+                     :tr('⚽ גוֹל! (','⚽ GOAL! (')+LB.goals+')');
       sfx.win();
-      if(!_bday)goalFxShow(LB.goals%2?'comic':'fly');
+      if(!_bday&&!_neon)goalFxShow(LB.goals%2?'comic':'fly');
       skinShout();
       try{confetti3D(SB.x,Math.max(1.2,SB.z));}catch(e){} // 🎉 קונפטי תלת-ממדי
-      emojiBurst(_bday?{e:['🎁','🎂','🎈','💜','✨'],n:22,m:'burst',d:1700}
+      emojiBurst(_neon?{e:['⚡','💜','🌀','✨','🔮'],n:22,m:'burst',d:1700}
+                :_bday?{e:['🎁','🎂','🎈','💜','✨'],n:22,m:'burst',d:1700}
                       :{e:['🎉','⚽','✨','🎊'],n:20,m:'burst',d:1600});
       for(let i=0;i<30;i++){
         if(particles.length>240)particles.shift();
@@ -4714,9 +4721,34 @@ function init3D(){
   });
   const gift3=new THREE.Mesh(new THREE.BoxGeometry(.85,.85,.85),new THREE.MeshLambertMaterial({map:giftTex}));
   gift3.visible=false;scene.add(gift3);
+  /* 🌆 מיני-משחק ניאון: דוחפים כדור אנרגיה זוהר אל פורטל ניאון */
+  const neonRing=new THREE.Mesh(new THREE.TorusGeometry(1.7,.13,12,48),
+    new THREE.MeshBasicMaterial({color:0x00f5d4,transparent:true,opacity:.95}));
+  neonRing.position.set(0,1.75,.9);neonRing.visible=false;scene.add(neonRing);
+  const neonRing2=new THREE.Mesh(new THREE.TorusGeometry(1.35,.06,10,40),
+    new THREE.MeshBasicMaterial({color:0xf15bff,transparent:true,opacity:.85}));
+  neonRing2.position.copy(neonRing.position);neonRing2.visible=false;scene.add(neonRing2);
+  const neonGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(0,245,212,.75)'),transparent:true,opacity:.5,depthWrite:false}));
+  neonGlow.scale.set(6,6,1);neonGlow.position.set(0,1.75,.88);neonGlow.visible=false;scene.add(neonGlow);
+  const neonOrb=new THREE.Mesh(new THREE.SphereGeometry(.45,22,16),
+    new THREE.MeshBasicMaterial({color:0xf15bff}));
+  neonOrb.visible=false;scene.add(neonOrb);
+  const orbGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(241,91,255,.8)'),transparent:true,opacity:.7,depthWrite:false}));
+  orbGlow.scale.set(2.2,2.2,1);orbGlow.visible=false;scene.add(orbGlow);
+  const neonFloor=new THREE.Mesh(new THREE.PlaneGeometry(20,26.4),
+    new THREE.MeshBasicMaterial({map:cvTex(1024,(g,w,h)=>{ // רצפת גריד בסגנון טרון
+      g.fillStyle='#04060f';g.fillRect(0,0,w,h);
+      g.strokeStyle='rgba(0,245,212,.55)';g.lineWidth=3;
+      for(let k=0;k<=w;k+=w/14){g.beginPath();g.moveTo(k,0);g.lineTo(k,h);g.stroke();}
+      for(let k=0;k<=h;k+=h/18){g.beginPath();g.moveTo(0,k);g.lineTo(w,k);g.stroke();}
+      g.strokeStyle='rgba(241,91,255,.35)';g.lineWidth=6;
+      g.strokeRect(w*.02,h*.02,w*.96,h*.96);
+    })}));
+  neonFloor.rotation.x=-Math.PI/2;neonFloor.position.set(0,.006,14);neonFloor.visible=false;scene.add(neonFloor);
   return {ren,scene,cam,ball3,blob,gGlow,stars,bTex,sb3,blob2,lastSkin:skinSel,
     aura,auraRar:-1,conf,cvel:new Float32Array(CN*3),confT:0,party,banner,
-    cake3,gift3,flames,goalNear:goal,goalFar:goal2};
+    cake3,gift3,flames,goalNear:goal,goalFar:goal2,
+    neonRing,neonRing2,neonGlow,neonOrb,orbGlow,neonFloor};
 }
 /* 🎉 פרץ קונפטי תלת-ממדי — צבעוני, קופץ על הדשא ונמוג */
 function confetti3D(x,z){
@@ -4776,13 +4808,18 @@ function render3D(dt){
       });
       if(T3.banner){T3.banner.position.y=4.6+Math.sin(_now*1.1)*.25;}
     }
-    // 🎁 המיני-משחק מתחלף: שער⇄עוגה, כדורגל⇄קופסת מתנה
+    // 🎁/🌆 המיני-משחק מתחלף לפי העונה: שער⇄עוגה⇄פורטל ניאון
     if(T3.cake3){
+      const neon=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🌆');
       T3.cake3.visible=bday;
-      if(T3.goalNear)T3.goalNear.visible=!bday;
-      if(T3.goalFar)T3.goalFar.visible=!bday;
       T3.gift3.visible=bday;
-      T3.sb3.visible=!bday;
+      if(T3.goalNear)T3.goalNear.visible=!bday&&!neon;
+      if(T3.goalFar)T3.goalFar.visible=!bday&&!neon;
+      T3.sb3.visible=!bday&&!neon;
+      if(T3.neonRing){
+        T3.neonRing.visible=neon;T3.neonRing2.visible=neon;T3.neonGlow.visible=neon;
+        T3.neonOrb.visible=neon;T3.orbGlow.visible=neon;T3.neonFloor.visible=neon;
+      }
       if(bday){
         T3.gift3.position.copy(T3.sb3.position);
         T3.gift3.quaternion.copy(T3.sb3.quaternion);
@@ -4790,6 +4827,16 @@ function render3D(dt){
           fl.material.opacity=.75+.25*Math.sin(_now*9+k*2.1);
           fl.scale.set(.42+.06*Math.sin(_now*7+k),.62+.09*Math.sin(_now*8+k),1);
         });
+      }else if(neon){
+        T3.neonOrb.position.copy(T3.sb3.position);
+        T3.orbGlow.position.copy(T3.sb3.position);
+        T3.neonRing.rotation.z+=dt*.8; // הפורטל מסתובב ופועם
+        T3.neonRing2.rotation.z-=dt*1.3;
+        const pu=.85+.15*Math.sin(_now*3.2);
+        T3.neonRing.scale.set(pu,pu,1);
+        T3.neonRing.material.opacity=.75+.25*Math.sin(_now*4);
+        T3.neonGlow.material.opacity=.35+.2*Math.sin(_now*2.6);
+        T3.neonOrb.material.color.setHSL((_now*.15)%1,1,.62); // הכדור מחליף צבעי ניאון
       }
     }
   }
@@ -4876,7 +4923,19 @@ function lobbyDraw(t){
   ctx.stroke();
   // שער — או עוגת יומולדת בעונת ה-🎂
   const _bd2=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🎂');
-  if(_bd2){
+  const _ne2=!!(seasonOv&&seasonOv.th&&seasonOv.th.ic==='🌆');
+  if(_ne2){ // פורטל ניאון זוהר
+    const pk=pj(0,1.7,.9);
+    if(pk){
+      ctx.save();
+      ctx.strokeStyle='#00f5d4';ctx.lineWidth=pk.s*.16;
+      ctx.shadowColor='#00f5d4';ctx.shadowBlur=18;
+      ctx.beginPath();ctx.arc(pk.x,pk.y,pk.s*1.55,0,TAU);ctx.stroke();
+      ctx.strokeStyle='#f15bff';ctx.lineWidth=pk.s*.08;ctx.shadowColor='#f15bff';
+      ctx.beginPath();ctx.arc(pk.x,pk.y,pk.s*1.2,0,TAU);ctx.stroke();
+      ctx.restore();
+    }
+  }else if(_bd2){
     const ck=pj(0,.9,.9);
     if(ck){ctx.font=(ck.s*2.2|0)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🎂',ck.x,ck.y);}
   }else{
@@ -5512,6 +5571,7 @@ async function api(path,body){
 }
 let KEY='mazeUltra100_v2';
 let trophies=0,myName='',dailyLast='',skinSel=0,skinOwned=[0],runBest=0,friends=[],gameLog=[];
+let frAuto=true,frReqs=[]; // 👥 אישור אוטומטי לבקשות חברות + בקשות ממתינות
 /* 📖 יומן משחקים: 30 האירועים האחרונים, נשמר בענן וגלוי לחברים */
 function logEv(ty,a,b2){
   const e=[ty,(Date.now()/60000)|0];
@@ -5551,6 +5611,7 @@ function saveBlob(){
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10),x.edone?1:0,x.estars|0]),
     lg:gameLog.slice(0,30),
     cl:customLevels,
+    fra:frAuto?1:0,frq:frReqs.slice(0,20),
     sens:Math.round(SENS*100),mut:muted?1:0,nb:neutB,ng:neutG,wl:wheelD,py:pity,psn:passN,psp:passP,psc:passC,wcc:wcCups};
 }
 function save(){
@@ -5605,6 +5666,8 @@ function applySave(d){
     stFalls=d.fd|0;stTime=d.tm|0;stDailies=d.dd|0;stRaceWins=d.rw|0;
     stBossClean=!!d.bc;achEarned=Array.isArray(d.ac)?d.ac:[];
     friends=Array.isArray(d.fr)?d.fr.filter(x=>typeof x==='string').slice(0,50):[];
+    frAuto=d.fra===undefined?true:!!d.fra;
+    frReqs=Array.isArray(d.frq)?d.frq.filter(x=>typeof x==='string').slice(0,20):[];
     gameLog=Array.isArray(d.lg)?d.lg.slice(0,30):[];
     customLevels=(d.cl&&typeof d.cl==='object'&&!Array.isArray(d.cl))?d.cl:{};
     (d.s||[]).forEach((a,i)=>{if(!session[i]||!Array.isArray(a))return;
@@ -7691,9 +7754,40 @@ async function buildFriends(){
   g.innerHTML='<div class="ldg">'+tr('טוען…','Loading…')+'</div>';
   const d=await regCached();
   g.innerHTML='';
+  /* 📨 בקשות חברות ממתינות — אישור הופך לחברות דו-צדדית, דחייה מוחקת */
+  const _pend=frReqs.filter(n2=>!friends.includes(n2));
+  _pend.forEach(n2=>{
+    const row=document.createElement('div');
+    row.className='achRow';
+    row.style.border='1px solid rgba(255,194,62,.5)';
+    const inner=document.createElement('div');
+    inner.style.cssText='flex:1;display:flex;align-items:center;gap:10px';
+    inner.innerHTML=avHTML(n2,36)+'<div><b>'+esc(n2)+'</b><br><small>'+tr('📨 מבקש להיות חבר שלך','📨 wants to be your friend')+'</small></div>';
+    row.appendChild(inner);
+    const ok=document.createElement('button');
+    ok.className='chip on';ok.textContent='✔';
+    ok.onclick=async()=>{
+      frReqs=frReqs.filter(x=>x!==n2);
+      if(!friends.includes(n2)&&friends.length<50)friends.push(n2);
+      save();buildFriends();
+      showToast(tr('👥 אתם עכשיו חברים!','👥 You are now friends!'));
+      try{ // הצד השני מקבל אישור — נוספים גם אצלו
+        if(beOn())await be('/api/fraccept',{u:curUser,t:n2});
+        else{
+          const d2=await regFetch();
+          if(d2){const q=d2.gifts[n2]||{};q.fradd=[...new Set([...(Array.isArray(q.fradd)?q.fradd:[]),curUser])].slice(-20);d2.gifts[n2]=q;regPut(d2);}
+        }
+      }catch(e){}
+    };
+    const no=document.createElement('button');
+    no.className='chip';no.textContent='✕';
+    no.onclick=()=>{frReqs=frReqs.filter(x=>x!==n2);save();buildFriends();};
+    row.appendChild(ok);row.appendChild(no);
+    g.appendChild(row);
+  });
   if(!friends.length){
-    g.innerHTML='<div style="color:#aeb8c8">'+tr('אין חברים עדיין — הוסיפו לפי שם משתמש','No friends yet — add by username')+'</div>';
-    return;
+    if(!_pend.length)g.innerHTML='<div style="color:#aeb8c8">'+tr('אין חברים עדיין — הוסיפו לפי שם משתמש','No friends yet — add by username')+'</div>';
+    return; // הבקשות הממתינות כבר מצוירות למעלה — לא דורסים אותן
   }
   friends.forEach(n=>{
     const rec=d&&d.users[n],s=statsOf(rec&&rec.sv,n);
@@ -7835,7 +7929,29 @@ $('frAdd').onclick=async()=>{
   if(!d)return $('frMsg').textContent=tr('דרוש אינטרנט','Internet required');
   if(!d.users[n])return $('frMsg').textContent=tr('לא נמצא שחקן בשם הזה','No player with that name');
   friends.push(n);save();
-  $('frName').value='';$('frMsg').textContent='';
+  $('frName').value='';
+  /* 👥 חברות דו-צדדית: אם לצד השני מוגדר אישור אוטומטי — נוספים אצלו מיד;
+     אחרת נשלחת לו בקשת חברות לאישור */
+  let mode='';
+  try{
+    if(curUser){
+      if(beOn()){
+        const r=await be('/api/fradd',{u:curUser,t:n});
+        mode=(r&&r.mode)||'';
+      }else{
+        const sv2=d.users[n].sv;
+        const auto=!sv2||sv2.fra===undefined?true:!!sv2.fra;
+        const q=d.gifts[n]||{};
+        const key=auto?'fradd':'frreq';
+        q[key]=[...new Set([...(Array.isArray(q[key])?q[key]:[]),curUser])].slice(-20);
+        d.gifts[n]=q;
+        if(await regPut(d))mode=auto?'added':'request';
+      }
+    }
+  }catch(e){}
+  $('frMsg').textContent=mode==='added'?tr('👥 נוספתם זה לזה!','👥 You are now mutual friends!')
+    :mode==='request'?tr('📨 נשלחה בקשת חברות — מחכה לאישור','📨 Friend request sent')
+    :'';
   buildFriends();
 };
 function agoTxt(m){
@@ -8006,10 +8122,12 @@ function applyInbox(r){ // {gift,summon,ban,season,snv,chat} — מכל מקור
     const hadRst=!!g.rst;
     applyGift(g,null);
     save();refreshTro();
-    showAdmToast(tr('🎁 קיבלת עדכון מהאדמין!','🎁 Admin update received!'));
+    // 📣 "קיבלת עדכון" רק כשיש באמת מתנה/פעולה — הודעת טקסט בלבד מציגה רק את עצמה
+    const hasStuff=Object.keys(g).some(k2=>k2!=='bmsg');
+    if(hasStuff)showAdmToast(tr('🎁 קיבלת עדכון מהאדמין!','🎁 Admin update received!'));
     tone(880,.1,'sine',.3);setTimeout(()=>tone(1318,.18,'sine',.3),110);
     if(navigator.vibrate)navigator.vibrate([50,60,50]); // 📳 התראה מורגשת גם למתנות
-    try{emojiBurst({e:['🎁','✨'],n:10,m:'burst',d:1100});}catch(e){}
+    if(hasStuff)try{emojiBurst({e:['🎁','✨'],n:10,m:'burst',d:1100});}catch(e){}
     if(hadRst&&running){ // איפוס באמצע משחק — יציאה נקייה ללובי
       running=false;paused=false;runMode=false;duelLive=false;hushRoll();recStop(false);
       $('raceBar').style.display='none';
@@ -8604,7 +8722,7 @@ function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;wcCups=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
-  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];gameLog=[];customLevels={};
+  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];frReqs=[];frAuto=true;gameLog=[];customLevels={};
   session.forEach(s=>{s.done=false;s.stars=0;s.best=0;s.edone=false;s.estars=0;});
   cloudForce=true; // שהאיפוס ינצח את שומר-הדריסה של הענן
   refreshTro();
@@ -8638,6 +8756,18 @@ function applyGift(g,target){
       if(skinSel===ix){skinSel=0;try{supUi();}catch(e){}} // אם היה הבחור — חוזרים לברירת המחדל
     });
     if(g.st)session.forEach(s=>{s.done=true;s.stars=3;});
+    if(Array.isArray(g.fradd))g.fradd.forEach(n2=>{ // 👥 חברות דו-צדדית — אושר אוטומטית
+      n2=cleanName(n2);
+      if(!n2||n2===curUser||friends.includes(n2))return;
+      if(friends.length<50){friends.push(n2);
+        setTimeout(()=>showAdmToast(tr('👥 ','👥 ')+n2+tr(' הוסיף אותך כחבר — אתם עכשיו חברים!',' added you — you are now friends!')),700);}
+    });
+    if(Array.isArray(g.frreq))g.frreq.forEach(n2=>{ // 📨 בקשת חברות — ממתינה לאישור
+      n2=cleanName(n2);
+      if(!n2||n2===curUser||friends.includes(n2)||frReqs.includes(n2))return;
+      if(frReqs.length<20){frReqs.push(n2);
+        setTimeout(()=>showAdmToast(tr('📨 בקשת חברות מ-','📨 Friend request from ')+n2+tr(' — אישור במסך החברים',' — approve in Friends')),700);}
+    });
     if(Array.isArray(g.bmsg))g.bmsg.forEach((m,k)=>{ // 💌 ברכות והודעות
       try{ // נשמר ביומן — כדי שהאדמין יוכל לקרוא ולהשיב גם אחרי שהטוסט נעלם
         const L=JSON.parse(localStorage.getItem('mzBlessLog')||'[]');
@@ -8824,13 +8954,13 @@ $('setBtn').onclick=()=>{
 /* 🎁 מתנה לגליקי — שחקנים שולחים לאדמין מטבעות משלהם + ברכה */
 const GIFT_ADMIN='גליקי';
 let giftAmt=20;
-function syncGiftAdmBtn(){ // מוצג רק למחוברים שאינם האדמין עצמו
-  try{$('giftAdmBtn').style.display=(curUser&&curUser!==GIFT_ADMIN)?'':'none';}catch(e){}
+function syncGiftAdmBtn(){ // 💬 אריח הצ'אט — לכל מי שמחובר
+  try{$('giftAdmBtn').style.display=curUser?'':'none';}catch(e){}
 }
-$('giftAdmBtn').onclick=()=>{
+$('giftAdmBtn').onclick=()=>{ // 💬 קיצור דרך לצ'אט — נפתח מסך החברים
   $('menuOv').classList.add('hidden');
-  $('giftAdmMsg').textContent='🪙 '+tr('יש לך: ','You have: ')+coins;
-  $('giftAdmOv').classList.remove('hidden');
+  buildFriends();
+  $('friendsOv').classList.remove('hidden');
 };
 $('giftAdmBack').onclick=()=>{$('giftAdmOv').classList.add('hidden');$('menuOv').classList.remove('hidden');};
 $('giftAmtRow').querySelectorAll('.chip').forEach(ch=>{
@@ -8924,6 +9054,16 @@ async function pushEnable(quiet){
   }
 }
 $('setPush').onclick=()=>pushEnable(false);
+/* 👥 בקשות חברות: אישור אוטומטי או ידני */
+function syncFrAutoBtn(){
+  try{$('setFrAuto').textContent='👥 '+tr('בקשות חברות: ','Friend requests: ')+(frAuto?tr('אישור אוטומטי','auto-accept'):tr('אישור ידני','manual approval'));}catch(e){}
+}
+$('setFrAuto').onclick=()=>{
+  frAuto=!frAuto;save();syncFrAutoBtn();
+  showToast(frAuto?tr('👥 חברים חדשים יתווספו אוטומטית','👥 New friends auto-accepted')
+                  :tr('📨 בקשות חברות יחכו לאישור שלך','📨 Friend requests will wait for your approval'));
+};
+setTimeout(syncFrAutoBtn,1200);
 // אם כבר אושר בעבר — מרעננים את המנוי בשקט אחרי התחברות (מכשיר חדש נרשם אוטומטית)
 function pushAutoRefresh(){
   try{if(curUser&&'Notification' in window&&Notification.permission==='granted')setTimeout(()=>pushEnable(true),2500);}catch(e){}
@@ -10019,6 +10159,12 @@ const SEASON_PACKS={ // ⚽ אלביסלסטה — לפי קובץ העיצוב 
     gl:'rgba(94,160,230,.17)',
     bg1:'rgba(11,29,54,.93)',bg2:'rgba(5,14,28,.95)',
     gd:'rgba(126,200,242,.07)'},
+  neon:{ic:'🌆',st:'1', // 🌆 עונת ניאון — טורקיז/מגנטה זוהרים על שחור עמוק
+    g1:'#00f5d4',g2:'#f15bff',
+    t1:'#eafffb',t2:'#b7fff0',t3:'#7de8d8',
+    gl:'rgba(0,245,212,.22)',
+    bg1:'rgba(6,8,20,.95)',bg2:'rgba(2,3,10,.97)',
+    gd:'rgba(0,245,212,.08)'},
   birthday:{ic:'🎂',st:'1', // 🎂 עונת יומולדת — ורוד/זהב על סגול חגיגי
     g1:'#ff7ad9',g2:'#ffc23e',
     t1:'#fff0fa',t2:'#f3cdeb',t3:'#d29ac4',
@@ -10038,6 +10184,12 @@ $('admSeaBday').onclick=()=>{
   if(!$('admSeaName').value)$('admSeaName').value='עונת יומולדת לגליקי';
   applySeasonTheme(admSeaTh);
   $('admMsg').textContent=tr('🎂 ערכת יומולדת נטענה (תצוגה מקדימה) — לחצו "החלף עונה" להפצה','🎂 Birthday pack loaded (preview) — hit Switch season to publish');
+};
+$('admSeaNeon').onclick=()=>{
+  admSeaTh=SEASON_PACKS.neon;
+  if(!$('admSeaName').value)$('admSeaName').value='עונת הניאון';
+  applySeasonTheme(admSeaTh);
+  $('admMsg').textContent=tr('🌆 ערכת ניאון נטענה (תצוגה מקדימה) — לחצו "החלף עונה" להפצה','🌆 Neon pack loaded (preview) — hit Switch season to publish');
 };
 $('admSeaUp').onclick=()=>$('admSeaFile').click();
 $('admSeaFile').onchange=e=>{

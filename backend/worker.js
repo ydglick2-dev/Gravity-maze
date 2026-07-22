@@ -285,6 +285,36 @@ export class Registry {
       return J({ ok: 1 });
     }
 
+    /* 👥 חברות דו-צדדית: לפי הגדרת האישור של היעד — הוספה מיידית או בקשה */
+    if (p === '/api/fradd' && req.method === 'POST') {
+      const u = cleanName(b.u), t = cleanName(b.t);
+      if (!u || !t || u === t) return J({ err: 'bad' }, 400);
+      if (!d.users[u] || !d.users[t]) return J({ err: 'nouser' }, 404);
+      const sv = d.users[t].sv;
+      const auto = !sv || sv.fra === undefined ? true : !!sv.fra;
+      const q = d.gifts[t] || {};
+      const key = auto ? 'fradd' : 'frreq';
+      q[key] = [...new Set([...(Array.isArray(q[key]) ? q[key] : []), u])].slice(-20);
+      d.gifts[t] = q;
+      await this.saveDoc();
+      this.notify(t, { t: 'inbox' });
+      await this.sendPush(t);
+      return J({ ok: 1, mode: auto ? 'added' : 'request' });
+    }
+
+    /* 👥 אישור בקשת חברות: המבקש מקבל אישור ונוספים אצלו */
+    if (p === '/api/fraccept' && req.method === 'POST') {
+      const u = cleanName(b.u), t = cleanName(b.t);
+      if (!u || !t || u === t) return J({ err: 'bad' }, 400);
+      if (!d.users[t]) return J({ err: 'nouser' }, 404);
+      const q = d.gifts[t] || {};
+      q.fradd = [...new Set([...(Array.isArray(q.fradd) ? q.fradd : []), u])].slice(-20);
+      d.gifts[t] = q;
+      await this.saveDoc();
+      this.notify(t, { t: 'inbox' });
+      return J({ ok: 1 });
+    }
+
     /* 💬 צ'אט בין חברים — שמור לפי זוג שחקנים, נדחף ב-WS */
     if (p === '/api/chat' && req.method === 'POST') {
       const u = cleanName(b.u), to = cleanName(b.to);

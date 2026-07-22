@@ -136,6 +136,29 @@ const server = http.createServer((req, res) => {
       doc.push[u] = [...(doc.push[u] || []).filter(s2 => s2.endpoint !== ep), { endpoint: ep }].slice(-3);
       persist(); return J({ ok: 1 }); // בסביבת פיתוח אין שליחת push אמיתית
     }
+    if (p === '/api/fradd' && req.method === 'POST') {
+      const u = cleanName(b.u), t = cleanName(b.t);
+      if (!u || !t || u === t) return J({ err: 'bad' }, 400);
+      if (!doc.users[u] || !doc.users[t]) return J({ err: 'nouser' }, 404);
+      const sv = doc.users[t].sv;
+      const auto = !sv || sv.fra === undefined ? true : !!sv.fra;
+      const q = doc.gifts[t] || {};
+      const key = auto ? 'fradd' : 'frreq';
+      q[key] = [...new Set([...(Array.isArray(q[key]) ? q[key] : []), u])].slice(-20);
+      doc.gifts[t] = q;
+      persist(); notify(t);
+      return J({ ok: 1, mode: auto ? 'added' : 'request' });
+    }
+    if (p === '/api/fraccept' && req.method === 'POST') {
+      const u = cleanName(b.u), t = cleanName(b.t);
+      if (!u || !t || u === t) return J({ err: 'bad' }, 400);
+      if (!doc.users[t]) return J({ err: 'nouser' }, 404);
+      const q = doc.gifts[t] || {};
+      q.fradd = [...new Set([...(Array.isArray(q.fradd) ? q.fradd : []), u])].slice(-20);
+      doc.gifts[t] = q;
+      persist(); notify(t);
+      return J({ ok: 1 });
+    }
     if (p === '/api/chat' && req.method === 'POST') {
       const u = cleanName(b.u), to = cleanName(b.to);
       const t = String(b.t || '').trim().slice(0, 120);
