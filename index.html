@@ -357,7 +357,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v140</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v141</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -4723,25 +4723,25 @@ function init3D(){
   gift3.visible=false;scene.add(gift3);
   /* 🌆 מיני-משחק ניאון: דוחפים כדור אנרגיה זוהר אל פורטל ניאון */
   const neonRing=new THREE.Mesh(new THREE.TorusGeometry(1.7,.13,12,48),
-    new THREE.MeshBasicMaterial({color:0x00f5d4,transparent:true,opacity:.95}));
+    new THREE.MeshBasicMaterial({color:0x49cffd,transparent:true,opacity:.95}));
   neonRing.position.set(0,1.75,.9);neonRing.visible=false;scene.add(neonRing);
   const neonRing2=new THREE.Mesh(new THREE.TorusGeometry(1.35,.06,10,40),
-    new THREE.MeshBasicMaterial({color:0xf15bff,transparent:true,opacity:.85}));
+    new THREE.MeshBasicMaterial({color:0xe452f1,transparent:true,opacity:.85}));
   neonRing2.position.copy(neonRing.position);neonRing2.visible=false;scene.add(neonRing2);
-  const neonGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(0,245,212,.75)'),transparent:true,opacity:.5,depthWrite:false}));
+  const neonGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(73,207,253,.75)'),transparent:true,opacity:.5,depthWrite:false}));
   neonGlow.scale.set(6,6,1);neonGlow.position.set(0,1.75,.88);neonGlow.visible=false;scene.add(neonGlow);
   const neonOrb=new THREE.Mesh(new THREE.SphereGeometry(.45,22,16),
-    new THREE.MeshBasicMaterial({color:0xf15bff}));
+    new THREE.MeshBasicMaterial({color:0xe452f1}));
   neonOrb.visible=false;scene.add(neonOrb);
-  const orbGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(241,91,255,.8)'),transparent:true,opacity:.7,depthWrite:false}));
+  const orbGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:radialTex('rgba(228,82,241,.8)'),transparent:true,opacity:.7,depthWrite:false}));
   orbGlow.scale.set(2.2,2.2,1);orbGlow.visible=false;scene.add(orbGlow);
   const neonFloor=new THREE.Mesh(new THREE.PlaneGeometry(20,26.4),
     new THREE.MeshBasicMaterial({map:cvTex(1024,(g,w,h)=>{ // רצפת גריד בסגנון טרון
-      g.fillStyle='#04060f';g.fillRect(0,0,w,h);
-      g.strokeStyle='rgba(0,245,212,.55)';g.lineWidth=3;
+      g.fillStyle='#090a1f';g.fillRect(0,0,w,h);
+      g.strokeStyle='rgba(73,207,253,.5)';g.lineWidth=3;
       for(let k=0;k<=w;k+=w/14){g.beginPath();g.moveTo(k,0);g.lineTo(k,h);g.stroke();}
       for(let k=0;k<=h;k+=h/18){g.beginPath();g.moveTo(0,k);g.lineTo(w,k);g.stroke();}
-      g.strokeStyle='rgba(241,91,255,.35)';g.lineWidth=6;
+      g.strokeStyle='rgba(228,82,241,.35)';g.lineWidth=6;
       g.strokeRect(w*.02,h*.02,w*.96,h*.96);
     })}));
   neonFloor.rotation.x=-Math.PI/2;neonFloor.position.set(0,.006,14);neonFloor.visible=false;scene.add(neonFloor);
@@ -4836,7 +4836,7 @@ function render3D(dt){
         T3.neonRing.scale.set(pu,pu,1);
         T3.neonRing.material.opacity=.75+.25*Math.sin(_now*4);
         T3.neonGlow.material.opacity=.35+.2*Math.sin(_now*2.6);
-        T3.neonOrb.material.color.setHSL((_now*.15)%1,1,.62); // הכדור מחליף צבעי ניאון
+        T3.neonOrb.material.color.setHSL(.55+.27*(.5+.5*Math.sin(_now*1.2)),1,.62); // מתנדנד בין טורקיז למגנטה של העיצוב
       }
     }
   }
@@ -4928,10 +4928,10 @@ function lobbyDraw(t){
     const pk=pj(0,1.7,.9);
     if(pk){
       ctx.save();
-      ctx.strokeStyle='#00f5d4';ctx.lineWidth=pk.s*.16;
-      ctx.shadowColor='#00f5d4';ctx.shadowBlur=18;
+      ctx.strokeStyle='#49cffd';ctx.lineWidth=pk.s*.16;
+      ctx.shadowColor='#49cffd';ctx.shadowBlur=18;
       ctx.beginPath();ctx.arc(pk.x,pk.y,pk.s*1.55,0,TAU);ctx.stroke();
-      ctx.strokeStyle='#f15bff';ctx.lineWidth=pk.s*.08;ctx.shadowColor='#f15bff';
+      ctx.strokeStyle='#e452f1';ctx.lineWidth=pk.s*.08;ctx.shadowColor='#e452f1';
       ctx.beginPath();ctx.arc(pk.x,pk.y,pk.s*1.2,0,TAU);ctx.stroke();
       ctx.restore();
     }
@@ -5939,49 +5939,49 @@ const GLIKI_IDX=SKINS.length-1;
 /* 🌆 סקיני עונת הניאון — טורקיז/מגנטה זוהרים על שחור, בעיצובי העונה */
 SKINS.push(
  {name:'כדור ניאון',en:'Neon Glow',price:400,rar:2,draw:(c,r,rot,T)=>{
-   c.fillStyle='#04060f';c.fillRect(-r,-r,r*2,r*2);
+   c.fillStyle='#0d0e2d';c.fillRect(-r,-r,r*2,r*2);
    const g=c.createRadialGradient(-r*.2,-r*.25,r*.05,0,0,r);
-   g.addColorStop(0,'#eafffb');g.addColorStop(.4,'#00f5d4');g.addColorStop(1,'#03332c');
+   g.addColorStop(0,'#eef9ff');g.addColorStop(.4,'#49cffd');g.addColorStop(1,'#0d3550');
    c.fillStyle=g;c.beginPath();c.arc(0,0,r*.8,0,TAU);c.fill();
-   c.strokeStyle='rgba(0,245,212,.9)';c.lineWidth=r*.09; // טבעת זוהר
+   c.strokeStyle='rgba(73,207,253,.9)';c.lineWidth=r*.09; // טבעת זוהר
    c.beginPath();c.arc(0,0,r*.88,0,TAU);c.stroke();
-   c.strokeStyle='rgba(241,91,255,.65)';c.lineWidth=r*.045;
+   c.strokeStyle='rgba(228,82,241,.65)';c.lineWidth=r*.045;
    c.beginPath();c.arc(0,0,r*.66,rot,rot+4.4);c.stroke();}},
  {name:'גריד טרון',en:'Tron Grid',price:700,rar:3,draw:(c,r,rot,T)=>{
-   c.fillStyle='#04060f';c.fillRect(-r,-r,r*2,r*2);
+   c.fillStyle='#090a1f';c.fillRect(-r,-r,r*2,r*2);
    c.save();c.rotate(rot*.3);
-   c.strokeStyle='rgba(0,245,212,.8)';c.lineWidth=r*.05;
+   c.strokeStyle='rgba(73,207,253,.8)';c.lineWidth=r*.05;
    for(let k=-4;k<=4;k++){ // קווי גריד מעוקלים על הכדור
      c.beginPath();c.ellipse(0,0,r*.92,Math.abs(k)*r*.22+r*.06,0,0,TAU);c.stroke();
      c.beginPath();c.ellipse(0,0,Math.abs(k)*r*.22+r*.06,r*.92,0,0,TAU);c.stroke();
    }
    c.restore();
-   c.strokeStyle='rgba(241,91,255,.85)';c.lineWidth=r*.07;
+   c.strokeStyle='rgba(228,82,241,.85)';c.lineWidth=r*.07;
    c.beginPath();c.arc(0,0,r*.93,0,TAU);c.stroke();}},
  {name:'פורטל ניאון',en:'Neon Portal',price:0,rar:4,draw:(c,r,rot,T)=>{
-   c.fillStyle='#04060f';c.fillRect(-r,-r,r*2,r*2);
+   c.fillStyle='#0d0e2d';c.fillRect(-r,-r,r*2,r*2);
    const sw=c.createRadialGradient(0,0,r*.05,0,0,r*.8); // מערבולת
-   sw.addColorStop(0,'#eafffb');sw.addColorStop(.5,'rgba(0,245,212,.35)');sw.addColorStop(1,'rgba(4,6,15,0)');
+   sw.addColorStop(0,'#eef9ff');sw.addColorStop(.5,'rgba(73,207,253,.35)');sw.addColorStop(1,'rgba(13,14,45,0)');
    c.fillStyle=sw;c.beginPath();c.arc(0,0,r*.8,0,TAU);c.fill();
    c.save();c.rotate(rot); // שתי טבעות מסתובבות — כמו הפורטל בלובי
-   c.strokeStyle='#00f5d4';c.lineWidth=r*.1;
+   c.strokeStyle='#49cffd';c.lineWidth=r*.1;
    c.beginPath();c.ellipse(0,0,r*.82,r*.5,0,0,TAU);c.stroke();
    c.restore();c.save();c.rotate(-rot*1.4);
-   c.strokeStyle='#f15bff';c.lineWidth=r*.07;
+   c.strokeStyle='#e452f1';c.lineWidth=r*.07;
    c.beginPath();c.ellipse(0,0,r*.62,r*.36,.9,0,TAU);c.stroke();
    c.restore();
    for(let k=0;k<5;k++){ // ניצוצות נשאבים פנימה
      const a=rot*1.8+k*(TAU/5),d=r*(.35+.4*((k*29)%10)/10);
-     c.fillStyle=k%2?'#f15bff':'#00f5d4';
+     c.fillStyle=k%2?'#e452f1':'#49cffd';
      c.beginPath();c.arc(Math.cos(a)*d,Math.sin(a)*d,r*.05,0,TAU);c.fill();
    }}},
  {name:'ניאון סיטי',en:'Neon City',price:0,rar:5,draw:(c,r,rot,T)=>{
    const sky=c.createLinearGradient(0,-r,0,r); // שמי לילה סגולים
-   sky.addColorStop(0,'#0b0322');sky.addColorStop(.65,'#1c0a3a');sky.addColorStop(1,'#04060f');
+   sky.addColorStop(0,'#0d0e2d');sky.addColorStop(.65,'#181936');sky.addColorStop(1,'#090a1f');
    c.fillStyle=sky;c.fillRect(-r,-r,r*2,r*2);
-   c.fillStyle='#f15bff'; // שמש סינת'ווייב מפוספסת
+   c.fillStyle='#e452f1'; // שמש סינת'ווייב מפוספסת
    c.beginPath();c.arc(0,-r*.18,r*.42,0,TAU);c.fill();
-   c.fillStyle='#0b0322';
+   c.fillStyle='#0d0e2d';
    for(let k=0;k<4;k++)c.fillRect(-r*.5,-r*.18+k*r*.11,r,r*.045);
    const bld=[[-.9,.5],[-.68,.32],[-.46,.62],[-.24,.22],[-.02,.5],[.2,.3],[.42,.58],[.64,.26],[.84,.48]];
    c.fillStyle='#05070f'; // צללית העיר
@@ -5989,11 +5989,11 @@ SKINS.push(
    bld.forEach((bd,bi)=>{ // חלונות ניאון דולקים
      for(let wy=0;wy<3;wy++){
        if(((bi*7+wy*3)%4)===0)continue;
-       c.fillStyle=(bi+wy)%2?'#00f5d4':'#f15bff';
+       c.fillStyle=(bi+wy)%2?'#49cffd':'#ffc943';
        c.fillRect(bd[0]*r+r*.05,r*(1-bd[1])+r*.07+wy*r*.11,r*.05,r*.05);
      }
    });
-   c.strokeStyle='rgba(0,245,212,.8)';c.lineWidth=r*.06; // מסגרת ניאון
+   c.strokeStyle='rgba(73,207,253,.8)';c.lineWidth=r*.06; // מסגרת ניאון
    c.beginPath();c.arc(0,0,r*.94,0,TAU);c.stroke();}}
 );
 /* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
@@ -10223,12 +10223,12 @@ const SEASON_PACKS={ // ⚽ אלביסלסטה — לפי קובץ העיצוב 
     gl:'rgba(94,160,230,.17)',
     bg1:'rgba(11,29,54,.93)',bg2:'rgba(5,14,28,.95)',
     gd:'rgba(126,200,242,.07)'},
-  neon:{ic:'🌆',st:'1', // 🌆 עונת ניאון — טורקיז/מגנטה זוהרים על שחור עמוק
-    g1:'#00f5d4',g2:'#f15bff',
-    t1:'#eafffb',t2:'#b7fff0',t3:'#7de8d8',
-    gl:'rgba(0,245,212,.22)',
-    bg1:'rgba(6,8,20,.95)',bg2:'rgba(2,3,10,.97)',
-    gd:'rgba(0,245,212,.08)'},
+  neon:{ic:'🌆',st:'1', // 🌆 איוונט ניאון — לפי קובץ העיצוב: נייבי עמוק, טורקיז/מגנטה, כפתורי זהב
+    g1:'#ffd75a',g2:'#ffb62a',
+    t1:'#eef1ff',t2:'#c6ccf2',t3:'#8d94c8',
+    gl:'rgba(73,207,253,.20)',
+    bg1:'rgba(24,25,54,.94)',bg2:'rgba(9,10,31,.97)',
+    gd:'rgba(73,207,253,.07)'},
   birthday:{ic:'🎂',st:'1', // 🎂 עונת יומולדת — ורוד/זהב על סגול חגיגי
     g1:'#ff7ad9',g2:'#ffc23e',
     t1:'#fff0fa',t2:'#f3cdeb',t3:'#d29ac4',
