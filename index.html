@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v143</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v144</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -10097,7 +10097,7 @@ function passSync(){
   if(passN!==cur){passN=cur;passP=0;passC=0;} // עונה חדשה — הפס מתאפס
 }
 function passReward(i){ // סולם פרסים דטרמיניסטי
-  if(i===PASS_T-1)return{gm:25,ch:2,ic:'👑',lb:'25💎 + 2🎁'};
+  if(i===PASS_T-1)return{gm:25,ch:2,fb:1,ic:'👑',lb:'25💎 + 2🎁 + '+tr('⚽1% סקין כדורגל','⚽1% football skin')};
   if(i%10===9)return{gm:10,ch:1,ic:'🎁',lb:'10💎 + 🎁'};
   if(i%5===4)return{gm:6,ic:'💎',lb:'6💎'};
   const c=[{co:30,ic:'🪙',lb:'30🪙'},{gm:3,ic:'💎',lb:'3💎'},{co:25,ic:'🪙',lb:'25🪙'},{gm:4,ic:'💎',lb:'4💎'}];
@@ -10179,6 +10179,20 @@ function passClaimAll(){
   while(passC<passTierNow()){
     const r=passReward(passC);
     if(r.co)coins+=r.co;if(r.gm)gems+=r.gm;if(r.ch)chests+=r.ch;
+    if(r.fb){ // ⚽ סוף הפס: הגרלת 1% לסקין כדורגל אקסקלוסיבי (רק מה שעוד אין לך)
+      const pool=[];
+      for(let k=MESSI_IDX;k<=MESSI_IDX+4&&k<SKINS.length;k++)if(!skinOwned.includes(k))pool.push(k);
+      if(pool.length&&Math.random()<.01){
+        const ix=pool[(Math.random()*pool.length)|0];
+        skinOwned.push(ix);
+        try{grantGoalFx(1);}catch(e){} // ⚽ סקין שחקן מגיע עם אפקט GOAL במתנה
+        const nm=tr(SKINS[ix].name,SKINS[ix].en);
+        got2.push('⚽ '+nm+'!');
+        logEv('ps','⚽1% '+nm);
+        setTimeout(()=>showReveal({kind:'skin',idx:ix,rar:SKINS[ix].rar,label:nm,
+          story:tr('הגרלת ה-⚽1% של סוף הפס פגעה!! סקין כדורגל אקסקלוסיבי — כולו שלך!','The end-of-pass ⚽1% raffle hit!! An exclusive football skin — all yours!')}),1000);
+      }
+    }
     got2.push(r.lb);
     passC++;
   }
