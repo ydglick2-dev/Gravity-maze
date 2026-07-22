@@ -357,7 +357,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v139</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v140</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5852,7 +5852,7 @@ pushFaceSkin('אמבפה','Mbappé','mbappe.png',4,'קיליאן אמבפה! מ�
 pushFaceSkin('האלנד','Haaland','haaland.png',4,'ארלינג האלנד! המכונה משער!','haaland');
 /* 🎂 סקיני יומולדת — מחליפים את הכדורגלנים בחנות ובתיבות */
 SKINS.push(
- {name:'בלון מסיבה',en:'Party Balloon',price:400,rar:2,draw:(c,r,rot,T)=>{
+ {name:'בלון מסיבה',en:'Party Balloon',price:0,rar:2,leg:1,draw:(c,r,rot,T)=>{
    const bg=c.createLinearGradient(-r,-r,r,r);
    bg.addColorStop(0,'#2a0f38');bg.addColorStop(1,'#150722');
    c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
@@ -5866,7 +5866,7 @@ SKINS.push(
    c.strokeStyle='#ffd9a8';c.lineWidth=r*.045; // חוט מתנדנד
    c.beginPath();c.moveTo(0,r*.76);
    c.quadraticCurveTo(r*.14*Math.sin(rot),r*.86,0,r*.96);c.stroke();}},
- {name:'קונפטי',en:'Confetti',price:700,rar:3,draw:(c,r,rot,T)=>{
+ {name:'קונפטי',en:'Confetti',price:0,rar:3,leg:1,draw:(c,r,rot,T)=>{
    const bg=c.createLinearGradient(-r,-r,r,r);
    bg.addColorStop(0,'#1b0b33');bg.addColorStop(1,'#0b0518');
    c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
@@ -5879,7 +5879,7 @@ SKINS.push(
    }
    c.font='900 '+(r*.5|0)+'px system-ui';c.textAlign='center';c.textBaseline='middle';
    c.fillText('🎉',0,r*.02);}},
- {name:'מתנת יומולדת',en:'Birthday Gift',price:0,rar:4,draw:(c,r,rot,T)=>{
+ {name:'מתנת יומולדת',en:'Birthday Gift',price:0,rar:4,leg:1,draw:(c,r,rot,T)=>{
    const g=c.createLinearGradient(-r,-r,r,r);
    g.addColorStop(0,'#ff7ad9');g.addColorStop(1,'#c9184a');
    c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
@@ -5893,7 +5893,7 @@ SKINS.push(
    c.beginPath();c.ellipse(-r*.2,0,r*.19,r*.12,-.5,0,TAU);c.fill();
    c.beginPath();c.ellipse(r*.2,0,r*.19,r*.12,.5,0,TAU);c.fill();
    c.fillStyle='#f6b40e';c.beginPath();c.arc(0,0,r*.09,0,TAU);c.fill();c.restore();}},
- {name:'עוגת יומולדת',en:'Birthday Cake',price:0,rar:5,draw:(c,r,rot,T)=>{
+ {name:'עוגת יומולדת',en:'Birthday Cake',price:0,rar:5,leg:1,draw:(c,r,rot,T)=>{
    const bg=c.createLinearGradient(-r,-r,r,r);
    bg.addColorStop(0,'#2a0f38');bg.addColorStop(1,'#12061f');
    c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
@@ -5936,6 +5936,66 @@ SKINS.push({name:'גליקי',en:'Gliki',price:0,rar:5,wc:1,vkey:'gliki',shout:'
   c.beginPath();c.arc(0,0,r*.95,0,TAU);c.stroke();
 }});
 const GLIKI_IDX=SKINS.length-1;
+/* 🌆 סקיני עונת הניאון — טורקיז/מגנטה זוהרים על שחור, בעיצובי העונה */
+SKINS.push(
+ {name:'כדור ניאון',en:'Neon Glow',price:400,rar:2,draw:(c,r,rot,T)=>{
+   c.fillStyle='#04060f';c.fillRect(-r,-r,r*2,r*2);
+   const g=c.createRadialGradient(-r*.2,-r*.25,r*.05,0,0,r);
+   g.addColorStop(0,'#eafffb');g.addColorStop(.4,'#00f5d4');g.addColorStop(1,'#03332c');
+   c.fillStyle=g;c.beginPath();c.arc(0,0,r*.8,0,TAU);c.fill();
+   c.strokeStyle='rgba(0,245,212,.9)';c.lineWidth=r*.09; // טבעת זוהר
+   c.beginPath();c.arc(0,0,r*.88,0,TAU);c.stroke();
+   c.strokeStyle='rgba(241,91,255,.65)';c.lineWidth=r*.045;
+   c.beginPath();c.arc(0,0,r*.66,rot,rot+4.4);c.stroke();}},
+ {name:'גריד טרון',en:'Tron Grid',price:700,rar:3,draw:(c,r,rot,T)=>{
+   c.fillStyle='#04060f';c.fillRect(-r,-r,r*2,r*2);
+   c.save();c.rotate(rot*.3);
+   c.strokeStyle='rgba(0,245,212,.8)';c.lineWidth=r*.05;
+   for(let k=-4;k<=4;k++){ // קווי גריד מעוקלים על הכדור
+     c.beginPath();c.ellipse(0,0,r*.92,Math.abs(k)*r*.22+r*.06,0,0,TAU);c.stroke();
+     c.beginPath();c.ellipse(0,0,Math.abs(k)*r*.22+r*.06,r*.92,0,0,TAU);c.stroke();
+   }
+   c.restore();
+   c.strokeStyle='rgba(241,91,255,.85)';c.lineWidth=r*.07;
+   c.beginPath();c.arc(0,0,r*.93,0,TAU);c.stroke();}},
+ {name:'פורטל ניאון',en:'Neon Portal',price:0,rar:4,draw:(c,r,rot,T)=>{
+   c.fillStyle='#04060f';c.fillRect(-r,-r,r*2,r*2);
+   const sw=c.createRadialGradient(0,0,r*.05,0,0,r*.8); // מערבולת
+   sw.addColorStop(0,'#eafffb');sw.addColorStop(.5,'rgba(0,245,212,.35)');sw.addColorStop(1,'rgba(4,6,15,0)');
+   c.fillStyle=sw;c.beginPath();c.arc(0,0,r*.8,0,TAU);c.fill();
+   c.save();c.rotate(rot); // שתי טבעות מסתובבות — כמו הפורטל בלובי
+   c.strokeStyle='#00f5d4';c.lineWidth=r*.1;
+   c.beginPath();c.ellipse(0,0,r*.82,r*.5,0,0,TAU);c.stroke();
+   c.restore();c.save();c.rotate(-rot*1.4);
+   c.strokeStyle='#f15bff';c.lineWidth=r*.07;
+   c.beginPath();c.ellipse(0,0,r*.62,r*.36,.9,0,TAU);c.stroke();
+   c.restore();
+   for(let k=0;k<5;k++){ // ניצוצות נשאבים פנימה
+     const a=rot*1.8+k*(TAU/5),d=r*(.35+.4*((k*29)%10)/10);
+     c.fillStyle=k%2?'#f15bff':'#00f5d4';
+     c.beginPath();c.arc(Math.cos(a)*d,Math.sin(a)*d,r*.05,0,TAU);c.fill();
+   }}},
+ {name:'ניאון סיטי',en:'Neon City',price:0,rar:5,draw:(c,r,rot,T)=>{
+   const sky=c.createLinearGradient(0,-r,0,r); // שמי לילה סגולים
+   sky.addColorStop(0,'#0b0322');sky.addColorStop(.65,'#1c0a3a');sky.addColorStop(1,'#04060f');
+   c.fillStyle=sky;c.fillRect(-r,-r,r*2,r*2);
+   c.fillStyle='#f15bff'; // שמש סינת'ווייב מפוספסת
+   c.beginPath();c.arc(0,-r*.18,r*.42,0,TAU);c.fill();
+   c.fillStyle='#0b0322';
+   for(let k=0;k<4;k++)c.fillRect(-r*.5,-r*.18+k*r*.11,r,r*.045);
+   const bld=[[-.9,.5],[-.68,.32],[-.46,.62],[-.24,.22],[-.02,.5],[.2,.3],[.42,.58],[.64,.26],[.84,.48]];
+   c.fillStyle='#05070f'; // צללית העיר
+   bld.forEach(bd=>{c.fillRect(bd[0]*r,r*(1-bd[1]),r*.2,r*bd[1]);});
+   bld.forEach((bd,bi)=>{ // חלונות ניאון דולקים
+     for(let wy=0;wy<3;wy++){
+       if(((bi*7+wy*3)%4)===0)continue;
+       c.fillStyle=(bi+wy)%2?'#00f5d4':'#f15bff';
+       c.fillRect(bd[0]*r+r*.05,r*(1-bd[1])+r*.07+wy*r*.11,r*.05,r*.05);
+     }
+   });
+   c.strokeStyle='rgba(0,245,212,.8)';c.lineWidth=r*.06; // מסגרת ניאון
+   c.beginPath();c.arc(0,0,r*.94,0,TAU);c.stroke();}}
+);
 /* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
    רים-לייט תלת-ממדי לכולם, טבעת נדירות מסתובבת (אדיר+), ניצוצות מקיפים
    (מיתי+) והילת זהב פועמת לאגדיים. בלי לשכתב אף ציור. */
@@ -9271,7 +9331,11 @@ const SKIN_LORE=[
  ['ענן צבעוני שמסרב לרדת לרצפה. כל פנייה שלו — מסיבה.','A colorful cloud that refuses to hit the floor. Every turn is a party.'],
  ['אף אחד לא יודע מה בפנים. גם הוא לא. אולי עוד מתנה?','Nobody knows what\'s inside. Neither does it. Maybe another gift?'],
  ['נאפתה לכבוד יומולדת של אגדה. הנרות לא נכבים אף פעם. 🎂','Baked for a legend\'s birthday. The candles never go out. 🎂'],
- ['מלך היומולדת בכבודו ובעצמו! יוצר המבוך ירד לשחק איתכם — עם כתר, משקפיים וריז אינסופי. 👑🎂','The Birthday King himself! The maze creator came down to play — crown, shades and infinite rizz. 👑🎂']];
+ ['מלך היומולדת בכבודו ובעצמו! יוצר המבוך ירד לשחק איתכם — עם כתר, משקפיים וריז אינסופי. 👑🎂','The Birthday King himself! The maze creator came down to play — crown, shades and infinite rizz. 👑🎂'],
+ ['נטען בתחנת כוח של עיר העתיד. זוהר גם כשכל האורות כבים.','Charged in a future city power plant. Glows when every light goes out.'],
+ ['ברח מתוך משחק ארקייד ישן. הגריד זורם לו בדם.','Escaped an old arcade game. The grid runs in its veins.'],
+ ['שער בין העולמות שהתכווץ לכדור. אף אחד לא יודע לאן הוא מוביל.','A gate between worlds, shrunk to a ball. Nobody knows where it leads.'],
+ ['עיר שלמה שלא ישנה אף פעם — דחוסה לכדור אחד. שומעים את הבאסים מבפנים. 🌆','A city that never sleeps, packed into one ball. You can hear the bass inside. 🌆']];
 function loreOf(i){const l=SKIN_LORE[i];return l?tr(l[0],l[1]):'';}
 /* 🐣 היצור: הכדור נפתח לחיה חמודה — עיניים, גבות ופה לפי מצב רוח */
 function drawCreature(g,cx,cy,R,idx,mood,t){
