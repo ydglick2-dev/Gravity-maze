@@ -259,6 +259,31 @@
   #toast { position:fixed; top:28%; left:0; right:0; text-align:center; z-index:30; pointer-events:none;
     font-size:22px; font-weight:900; color:#ffe9b8; text-shadow:0 0 18px rgba(255,184,77,.8), 0 2px 6px #000;
     opacity:0; transition:opacity .3s; }
+  /* 🌆 שכבת עיצוב "איוונט ניאון" — מוחלת כשאייקון העונה 🌆 (לפי קובץ העיצוב שנשלח) */
+  html.neonui h1 { background:none; -webkit-text-fill-color:#eef1ff; color:#eef1ff;
+    filter:drop-shadow(0 2px 12px rgba(73,207,253,.3)); }
+  html.neonui #menuOv h1, html.neonui #lbTitle {
+    background:linear-gradient(90deg,#49cffd,#8b7bff,#e452f1);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent;
+    filter:drop-shadow(0 2px 14px rgba(73,207,253,.35)); }
+  html.neonui .mTile { background:rgba(24,25,54,.88); border:1px solid rgba(73,207,253,.10); }
+  html.neonui .mPill { background:rgba(24,25,54,.82); border-color:rgba(73,207,253,.16); }
+  html.neonui .pill { background:rgba(24,25,54,.72); box-shadow:inset 0 0 0 1.5px rgba(73,207,253,.16); }
+  html.neonui .btn.sec { background:rgba(24,25,54,.88); box-shadow:0 0 0 1px rgba(73,207,253,.15), 0 4px 14px rgba(0,0,0,.4); }
+  html.neonui #menuOv .btn.sec { background:rgba(24,25,54,.88); border:1px solid rgba(73,207,253,.12); }
+  html.neonui .chip { background:rgba(24,25,54,.88); color:#c6ccf2; }
+  html.neonui .tin { background:rgba(24,25,54,.82) !important; border:1px solid rgba(73,207,253,.15) !important; color:#eef1ff; }
+  html.neonui .achRow { background:rgba(24,25,54,.82) !important; border:1px solid rgba(73,207,253,.10); }
+  html.neonui .skCard { background:rgba(24,25,54,.88); border:1px solid rgba(73,207,253,.10); }
+  html.neonui .ic { background:rgba(24,25,54,.72); box-shadow:inset 0 0 0 1.5px rgba(73,207,253,.2); }
+  /* תוויות האריחים בצבעי האייקונים מהמוקאפ */
+  html.neonui .mTile:nth-child(6n+1) div:last-child { color:#ff5b6e; }
+  html.neonui .mTile:nth-child(6n+2) div:last-child { color:#49cffd; }
+  html.neonui .mTile:nth-child(6n+3) div:last-child { color:#ffc943; }
+  html.neonui .mTile:nth-child(6n+4) div:last-child { color:#e452f1; }
+  html.neonui .mTile:nth-child(6n+5) div:last-child { color:#43e58b; }
+  html.neonui .mTile:nth-child(6n+6) div:last-child { color:#8b7bff; }
   /* 📣 באנר הודעות אדמין/ברכות — נשאר 5 שניות, לא נדרס ע"י טוסטים אחרים ולא נסגר בלחיצה */
   #toastAdm { position:fixed; top:12%; left:12px; right:12px; text-align:center; z-index:31; pointer-events:none;
     opacity:0; transition:opacity .35s; }
@@ -357,7 +382,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v141</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v142</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -4820,6 +4845,10 @@ function render3D(dt){
         T3.neonRing.visible=neon;T3.neonRing2.visible=neon;T3.neonGlow.visible=neon;
         T3.neonOrb.visible=neon;T3.orbGlow.visible=neon;T3.neonFloor.visible=neon;
       }
+      try{ // רקע הסצנה לפי העונה
+        const bgHex=neon?0x0d0e2d:0x070d1e;
+        if(T3.scene.background&&T3.scene.background.getHex()!==bgHex){T3.scene.background.setHex(bgHex);T3.scene.fog.color.setHex(bgHex);}
+      }catch(e){}
       if(bday){
         T3.gift3.position.copy(T3.sb3.position);
         T3.gift3.quaternion.copy(T3.sb3.quaternion);
@@ -5920,7 +5949,7 @@ SKINS.push(
 /* 👑 גליקי — הסקין האגדי החדש של יוצר המשחק! הג'קפוט: 1% מכל תיבה */
 const GLIKI_IMG=new Image();
 GLIKI_IMG.src='gliki.png';
-SKINS.push({name:'גליקי',en:'Gliki',price:0,rar:5,wc:1,vkey:'gliki',shout:'גליקי המלך!! יומולדת שמח!!',draw:(c,r,rot,T)=>{
+SKINS.push({name:'גליקי',en:'Gliki',price:0,rar:5,face:1,leg:1,vkey:'gliki',shout:'גליקי המלך!! יומולדת שמח!!',draw:(c,r,rot,T)=>{
   c.save();c.rotate(rot*.25);
   if(GLIKI_IMG.complete&&GLIKI_IMG.naturalWidth){
     c.drawImage(GLIKI_IMG,-r*1.02,-r*1.02,r*2.04,r*2.04);
@@ -5996,6 +6025,35 @@ SKINS.push(
    c.strokeStyle='rgba(73,207,253,.8)';c.lineWidth=r*.06; // מסגרת ניאון
    c.beginPath();c.arc(0,0,r*.94,0,TAU);c.stroke();}}
 );
+/* 🐉 דרקון ניאון — האגדי החדש של הג'קפוט: 1% מכל תיבה */
+SKINS.push({name:'דרקון ניאון',en:'Neon Dragon',price:0,rar:5,wc:1,shout:'הדרקון התעורר!! 🐉',draw:(c,r,rot,T)=>{
+  c.fillStyle='#090a1f';c.fillRect(-r,-r,r*2,r*2);
+  // קשקשי מגנטה — קשתות סביב העין
+  c.strokeStyle='rgba(228,82,241,.55)';c.lineWidth=r*.07;
+  for(let k=0;k<7;k++){
+    const a=rot*.4+k*(TAU/7);
+    c.beginPath();c.arc(Math.cos(a)*r*.72,Math.sin(a)*r*.72,r*.22,a+2.4,a+4.6);c.stroke();
+  }
+  // עין הדרקון — קשתית טורקיז זוהרת
+  const iris=c.createRadialGradient(0,0,r*.06,0,0,r*.52);
+  iris.addColorStop(0,'#eef9ff');iris.addColorStop(.35,'#49cffd');
+  iris.addColorStop(.75,'#1a6a9e');iris.addColorStop(1,'#0d0e2d');
+  c.fillStyle=iris;c.beginPath();c.ellipse(0,0,r*.55,r*.5,0,0,TAU);c.fill();
+  // סיבי קשתית
+  c.strokeStyle='rgba(9,10,31,.5)';c.lineWidth=r*.02;
+  for(let k=0;k<12;k++){const a=k*(TAU/12)+rot*.15;
+    c.beginPath();c.moveTo(Math.cos(a)*r*.14,Math.sin(a)*r*.13);
+    c.lineTo(Math.cos(a)*r*.5,Math.sin(a)*r*.46);c.stroke();}
+  // אישון סדק — נושם
+  const pw=r*(.09+.025*Math.sin(rot*2.2));
+  c.fillStyle='#05060f';
+  c.beginPath();c.ellipse(0,0,pw,r*.42,0,0,TAU);c.fill();
+  c.fillStyle='rgba(255,201,67,.9)'; // ברק זהב בעין
+  c.beginPath();c.ellipse(-r*.16,-r*.18,r*.07,r*.11,-.5,0,TAU);c.fill();
+  c.strokeStyle='rgba(228,82,241,.85)';c.lineWidth=r*.08; // טבעת מגנטה
+  c.beginPath();c.arc(0,0,r*.93,0,TAU);c.stroke();
+}});
+const DRAGON_IDX=SKINS.length-1;
 /* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
    רים-לייט תלת-ממדי לכולם, טבעת נדירות מסתובבת (אדיר+), ניצוצות מקיפים
    (מיתי+) והילת זהב פועמת לאגדיים. בלי לשכתב אף ציור. */
@@ -7102,7 +7160,7 @@ function buildSkins(){
         tone(140,.12,'sawtooth',.2);
         if(navigator.vibrate)navigator.vibrate(30);
       };
-      if(s.wc&&!owned){deny();return showToast(tr('👑 גליקי נופל רק מתיבות — סיכוי 1% לכל פתיחה. בהצלחה!','👑 Gliki only drops from chests — 1% per open. Good luck!'));}
+      if(s.wc&&!owned){deny();return showToast(tr('🐉 דרקון הניאון נופל רק מתיבות — סיכוי 1% לכל פתיחה. בהצלחה!','🐉 The Neon Dragon only drops from chests — 1% per open. Good luck!'));}
       if(s.fs&&!owned){deny();return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));}
       if((s.rar|0)>=4&&!s.pow){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
       if(coins>=s.price){
@@ -7177,10 +7235,10 @@ function rollChest(){
   const drops=[];
   // 👑 גליקי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
   let messi=null;
-  if(!skinOwned.includes(GLIKI_IDX)&&Math.random()<.01){
-    skinOwned.push(GLIKI_IDX);
-    messi={icon:'👑',label:tr('גליקי!!','Gliki!!'),rar:5,
-      rv:{kind:'skin',idx:GLIKI_IDX,rar:5,label:tr('גליקי','Gliki'),story:loreOf(GLIKI_IDX)}};
+  if(!skinOwned.includes(DRAGON_IDX)&&Math.random()<.01){
+    skinOwned.push(DRAGON_IDX);
+    messi={icon:'🐉',label:tr('דרקון ניאון!!','Neon Dragon!!'),rar:5,
+      rv:{kind:'skin',idx:DRAGON_IDX,rar:5,label:tr('דרקון ניאון','Neon Dragon'),story:loreOf(DRAGON_IDX)}};
     const gfx=grantGoalFx();if(gfx)messi._extra=gfx;
   }
   // ⭐ מגרילים את נדירות התיבה לפי הסיכויים הרשמיים של סטאר דרופ
@@ -9335,7 +9393,8 @@ const SKIN_LORE=[
  ['נטען בתחנת כוח של עיר העתיד. זוהר גם כשכל האורות כבים.','Charged in a future city power plant. Glows when every light goes out.'],
  ['ברח מתוך משחק ארקייד ישן. הגריד זורם לו בדם.','Escaped an old arcade game. The grid runs in its veins.'],
  ['שער בין העולמות שהתכווץ לכדור. אף אחד לא יודע לאן הוא מוביל.','A gate between worlds, shrunk to a ball. Nobody knows where it leads.'],
- ['עיר שלמה שלא ישנה אף פעם — דחוסה לכדור אחד. שומעים את הבאסים מבפנים. 🌆','A city that never sleeps, packed into one ball. You can hear the bass inside. 🌆']];
+ ['עיר שלמה שלא ישנה אף פעם — דחוסה לכדור אחד. שומעים את הבאסים מבפנים. 🌆','A city that never sleeps, packed into one ball. You can hear the bass inside. 🌆'],
+ ['ישן מתחת לעיר הניאון אלף שנים. עכשיו הוא ער — והעין שלו עוקבת אחריך בכל פנייה. 🐉','Slept beneath the neon city for a thousand years. Now it is awake — and its eye follows your every turn. 🐉']];
 function loreOf(i){const l=SKIN_LORE[i];return l?tr(l[0],l[1]):'';}
 /* 🐣 היצור: הכדור נפתח לחיה חמודה — עיניים, גבות ופה לפי מצב רוח */
 function drawCreature(g,cx,cy,R,idx,mood,t){
@@ -10020,6 +10079,7 @@ let passN=0,passP=0,passC=0;
 let seasonOv=null;
 try{seasonOv=JSON.parse(localStorage.getItem('mazeSeason')||'null');}catch(e){}
 function applySeasonTheme(th){ // 🖼 ערכת העיצוב של העונה — צבעי המשחק מתחלפים אצל כולם
+  try{document.documentElement.classList.toggle('neonui',!!(th&&th.ic==='🌆'));}catch(e){} // 🌆 שכבת איוונט ניאון
   const r=document.documentElement.style;
   const set=(k,v)=>{if(v&&typeof v==='string'&&v.length<48)r.setProperty(k,v);else r.removeProperty(k);};
   th=th||{};
@@ -10225,7 +10285,7 @@ const SEASON_PACKS={ // ⚽ אלביסלסטה — לפי קובץ העיצוב 
     gd:'rgba(126,200,242,.07)'},
   neon:{ic:'🌆',st:'1', // 🌆 איוונט ניאון — לפי קובץ העיצוב: נייבי עמוק, טורקיז/מגנטה, כפתורי זהב
     g1:'#ffd75a',g2:'#ffb62a',
-    t1:'#eef1ff',t2:'#c6ccf2',t3:'#8d94c8',
+    t1:'#49cffd',t2:'#8b7bff',t3:'#e452f1',
     gl:'rgba(73,207,253,.20)',
     bg1:'rgba(24,25,54,.94)',bg2:'rgba(9,10,31,.97)',
     gd:'rgba(73,207,253,.07)'},
