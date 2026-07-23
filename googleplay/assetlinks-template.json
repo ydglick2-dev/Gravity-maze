@@ -1,12 +1,8 @@
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.gravitymaze.game",
-      "sha256_cert_fingerprints": [
-        "REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
-      ]
-    }
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.gravitymaze.game",
+    "sha256_cert_fingerprints": ["D9:D2:6D:11:F4:5D:F5:69:16:C7:FE:EE:7C:D9:91:92:D6:92:F2:45:8E:A9:B5:5D:2E:91:DC:EA:15:5C:A3:82"]
   }
-]
+}]
