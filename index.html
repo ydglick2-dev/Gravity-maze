@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v160</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v161</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -7800,10 +7800,11 @@ function rollChest(){
   if(petPerk('luck')&&tier<6&&Math.random()<.01)tier=6; // 🐰 ארנב המזל: +1% לתיבה קוסמית
   let fLeg=false,fSea=false;
   lastRollGifted=false;
+  lastRollSecret=false;
   const _gt=gcQueueTake(); // 🎁 תיבת-מתנה בתור? היא קובעת את הנדירות
   if(_gt){tier=_gt;lastRollGifted=true;if(tier===7)fSea=true;}
-  else if(_cx2){tier=7;fSea=true;_cx2=false;_cx1=false;}
-  else if(_cx1){fLeg=true;if(tier<5)tier=5;_cx1=false;}
+  else if(_cx2){tier=7;fSea=true;lastRollSecret=true;_cx2=false;_cx1=false;}
+  else if(_cx1){fLeg=true;lastRollSecret=true;if(tier<5)tier=5;_cx1=false;}
   // עונתי טבעי כשכל סקיני העונה כבר אצלך — משודרג לקוסמי; עונתי כפוי נשאר עונתי תמיד
   if(tier===7&&!fSea&&SEASON_SKINS.every(ix=>skinOwned.includes(ix)))tier=6;
   // 🏷 תיבה נדירה מכריזה על עצמה — רואים מה יצא בהגרלת הנדירות
@@ -7862,7 +7863,7 @@ function rollChest(){
   lastRollTier=tier;
   return drops;
 }
-let lastRollTier=0,lastRollGifted=false;
+let lastRollTier=0,lastRollGifted=false,lastRollSecret=false;
 let chestBusy=false;
 /* 🏆 תיבת מונדיאל — כל 50 שלבים. 20% לגביע מונדיאל; 3 גביעים = ליאו מסי (מורשת)! */
 function mondialBox(){ // 🏆 תיבת בונוס כל 50 שלבים (מסי עבר לתיבות רגילות — 0.01%)
@@ -7955,8 +7956,8 @@ function openChest(){
   gcShareClear();
   const drops=rollChest();
   checkAch();save();refreshTro();
-  // 🔗 תיבה נדירה (אדיר+) שלא הגיעה בעצמה ממתנה — מייצרת קישור מתנה ומעתיקה ללוח
-  if(lastRollTier>=4&&!lastRollGifted&&curUser&&beOn())setTimeout(()=>gcMakeLink(lastRollTier),900);
+  // 🎟 קוד-מתנה נוצר רק מתיבה שהגיעה מאחת השיטות המיוחדות — לא מתיבות רגילות
+  if(lastRollSecret&&lastRollTier>=4&&curUser&&beOn())setTimeout(()=>gcMakeLink(lastRollTier),900);
   const mx=drops.reduce((m,d)=>Math.max(m,d.rar|0),0);
   playBoxOpen(mx,()=>{ // 📦 הקשות, סדקים, טיזר ופיצוץ
     emojiBurst({e:['🎁','✨','🎊'],n:18,m:'nova',d:1300,z:75}); // רסיסי מתנה מהפיצוץ
@@ -8512,8 +8513,14 @@ $('chestOpen').onclick=openChest;
     try{ // 🎁 קפיצונת משוב על כל הקשה — נראית כמו ג'וס רגיל של התיבה
       cbx.animate([{transform:'scale(1)'},{transform:'scale(1.08) rotate(-2deg)'},{transform:'scale(1)'}],{duration:160});
     }catch(e){}
-    if(hOk&&tN>=3){_cx2=true;_cx1=false;hOk=false;tN=0;wink();}
-    else if(!hOk&&tN>=5){_cx1=true;tN=0;wink();}
+    // 🎯 דיוק חובה: בדיוק המספר הנכון של לחיצות. לחיצה עודפת שורפת את המפתח בשקט.
+    if(hOk){
+      if(tN===3){_cx2=true;_cx1=false;wink();}       // בדיוק 3 אחרי החזקה — נטען
+      else if(tN>3){_cx2=false;hOk=false;tN=0;}       // רביעית ומעלה — נשרף, מתחילים מההתחלה
+    }else{
+      if(tN===5){_cx1=true;wink();}                   // בדיוק 5 — נטען
+      else if(tN>5){_cx1=false;tN=0;}                 // שישית — נשרף
+    }
   };
   if(window.PointerEvent){
     stg.addEventListener('pointerdown',e=>{try{stg.setPointerCapture(e.pointerId);}catch(e2){}onDown();});
