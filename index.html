@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v145</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v146</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -3805,6 +3805,21 @@ const PETS=[
 ];
 let petOw=[0],petSel=0,petX=0,petY=0,dfxRef=false;
 const petPerk=k=>petSel>0&&PETS[petSel]&&PETS[petSel].perk===k;
+/* 🎁🐾 תיבת החיות — הדרך היחידה להשיג חיה: 1000🪙 לפתיחה.
+   הסיכוי יורד ככל שהחיה נדירה יותר; כשאין חיה — מטבעות (עד 50) */
+const PET_CHEST_COST=1000;
+const PET_ODDS=[[1,20],[2,10],[3,8],[4,5],[5,4],[6,2]]; // [אינדקס חיה, אחוז]
+function rollPetChest(){
+  let r=Math.random()*100;
+  for(const [i,pct] of PET_ODDS){
+    if(r<pct){
+      if(!petOw.includes(i))return{pet:i};
+      break; // יצאה חיה שכבר יש — נופלים למטבעות
+    }
+    r-=pct;
+  }
+  return{co:10+((Math.random()*41)|0)}; // 🪙 10–50, לעולם לא מעל 50
+}
 /* 🌈 FEVER (קומבו כוכבים ×3) · 🔥 שובל אש (רצף ניצחונות) · 🌟 שלב זהב */
 let feverT=0,feverHit=false,goldLv=false,trailAcc=0;
 const RAINBOW=['#ff5c5c','#ffb340','#ffe14d','#5cff8a','#5cc9ff','#c17aff'];
@@ -5286,9 +5301,10 @@ function finishLevel(){
   unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,levelIdx+1));
   grantPowSkins();
   // 🪙 כוכבים=כסף · 🐱 חתול זהב +10% · 🔥 רצף בוער +20% · 🌟 שלב זהב ×3 · 🌈 FEVER +12
-  const _cg=Math.round((3+got*2+(firstClear?10:0)+((levelIdx/10)|0)*.5)
+  // 🔁 שלב שכבר הושלם — בלי פרסים (מטבעות רק על שלבים חדשים)
+  const _cg=firstClear?Math.round((3+got*2+10+((levelIdx/10)|0)*.5)
     *(POW()==='rich'?1.5:1)*(petPerk('coin')?1.1:1)*(winStreak>=3?1.2:1)*(goldLv?3:1))
-    +(feverHit?12:0);
+    +(feverHit?12:0):0;
   addCoins(_cg);
 
   if((levelIdx+1)%100===0){bossDefeatFx();if(lvDeaths===0)stBossClean=true;
@@ -5308,9 +5324,10 @@ function finishLevel(){
   $('medalBig').textContent=last?'🏆':medal;
   $('doneTitle').textContent=last?tr('סוף הפרק הראשון!','End of Chapter One!'):tr('שלב ','Level ')+(levelIdx+1)+tr(' הושלם!',' complete!');
   starsBigAnim(got,starGot.length);
-  let txt=tr('זמן: ','Time: ')+fmt(lvTime)+' '+medal+(lvDeaths?tr(' · נפילות: ',' · falls: ')+lvDeaths:tr(' · בלי נפילות!',' · no falls!'))+' · +'+_cg+'🪙'+(troGain?' · +'+troGain+'🏆':'');
-  if(goldLv)txt+='\n🌟 '+tr('שלב זהב — המטבעות שולשו!','Golden level — coins tripled!');
-  if(feverHit)txt+='\n🌈 '+tr('FEVER! בונוס +12🪙 על קומבו מלא','FEVER! +12🪙 full-combo bonus');
+  let txt=tr('זמן: ','Time: ')+fmt(lvTime)+' '+medal+(lvDeaths?tr(' · נפילות: ',' · falls: ')+lvDeaths:tr(' · בלי נפילות!',' · no falls!'))+(firstClear?' · +'+_cg+'🪙':'')+(troGain?' · +'+troGain+'🏆':'');
+  if(!firstClear)txt+='\n🔁 '+tr('שלב חוזר — פרסים מקבלים רק על שלבים חדשים','Replay — rewards only on new levels');
+  if(firstClear&&goldLv)txt+='\n🌟 '+tr('שלב זהב — המטבעות שולשו!','Golden level — coins tripled!');
+  if(firstClear&&feverHit)txt+='\n🌈 '+tr('FEVER! בונוס +12🪙 על קומבו מלא','FEVER! +12🪙 full-combo bonus');
   if(last){
     const tot=session.reduce((a,x)=>a+x.stars,0);
     txt+=tr(' — כבשת את כל 100 השלבים! ',' — you conquered all 100 levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
@@ -5321,7 +5338,9 @@ function finishLevel(){
   { // 🏅 צ'יפי פרסים — קופצים בזה אחר זה, אחרי הכוכבים
     let _ci=0;
     const chip=t2=>'<span style="display:inline-block;background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:'+(.95+(_ci++)*.15)+'s">'+t2+'</span>';
-    $('winChips').innerHTML=chip('+'+_cg+' 🪙')+(goldLv?chip('🌟 ×3'):'')+(feverHit?chip('🌈 FEVER'):'')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫');
+    $('winChips').innerHTML=firstClear
+      ?chip('+'+_cg+' 🪙')+(goldLv?chip('🌟 ×3'):'')+(feverHit?chip('🌈 FEVER'):'')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫')
+      :chip('🔁 '+tr('שלב חוזר','Replay'));
   }
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('המשך לשלב ','Continue to level ')+(levelIdx+2)+' ‹';
   addDailyWin();
@@ -5419,8 +5438,8 @@ function startRun(i){
   $('raceBar').style.display='none';
   loadLevel(i);
   running=true;paused=false;
-  // 🌟 שלב זהב! הגרלה נדירה — כל המטבעות ×3 והמסך זוהר זהב
-  goldLv=!customLv&&!duelLive&&levelIdx>2&&Math.random()<.07;
+  // 🌟 שלב זהב! הגרלה נדירה — כל המטבעות ×3 והמסך זוהר זהב (רק בשלבים חדשים — אין פרסים בשלב חוזר)
+  goldLv=!customLv&&!duelLive&&levelIdx>2&&!(session[levelIdx]&&session[levelIdx].done)&&Math.random()<.07;
   goldOvSync();
   if(goldLv)setTimeout(()=>{
     if(!running||!goldLv)return;
@@ -7125,6 +7144,19 @@ function buildSkins(){
   $('tabWin').className='chip'+(shopTab==='win'?' on':'');
   $('tabPet').className='chip'+(shopTab==='pet'?' on':'');
   const cat=shopCat(),g=$('skinGrid');g.innerHTML='';
+  if(shopTab==='pet'){ // 🎁🐾 תיבת החיות — הדרך היחידה להשיג חיה
+    const pc=document.createElement('button');
+    pc.className='skCard';
+    pc.style.cssText='grid-column:1/-1;background:linear-gradient(135deg,rgba(255,180,60,.15),rgba(255,255,255,.04));box-shadow:inset 0 0 0 1.5px #ffb84d66';
+    const allOwned=PETS.every((p,j)=>j===0||petOw.includes(j));
+    pc.innerHTML='<div style="font-size:34px;line-height:48px">🎁🐾</div>'
+      +'<div><b>'+tr('תיבת החיות','Pet Chest')+'</b></div>'
+      +'<div style="font-size:10px;line-height:1.55;opacity:.85">🐶 20% · 🐱 10% · 🦉 8% · 🐰 5% · 🐆 4% · 🐲 2%<br>'
+      +tr('לא יצאה חיה? מקבלים עד 50🪙 בחזרה','No pet? You get up to 50🪙 back')+'</div>'
+      +'<div class="skPrice">'+(allOwned?tr('🏆 יש לך את כל החיות!','🏆 You own every pet!'):PET_CHEST_COST+' 🪙')+'</div>';
+    pc.onclick=()=>openPetChest(pc);
+    g.appendChild(pc);
+  }
   cat.list.forEach((s,i)=>{
     const owned=cat.ow.includes(i),sel=cat.getSel()===i;
     if(s.leg&&!owned)return; // 🏅 אקסקלוסיב שלא בבעלות — לא מוצג יותר בחנות
@@ -7162,7 +7194,8 @@ function buildSkins(){
     pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select')
       :(s.wc?tr('🍀 1% מכל תיבה!','🍀 1% from any chest!')
       :(s.fs?tr('⚽ מגיע עם סקין שחקן','⚽ Comes with a player skin')
-      :(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙'))));
+      :(shopTab==='pet'&&i>0?tr('🎁🐾 מתיבת החיות בלבד','🎁🐾 Pet Chest only')
+      :(chestOnly?tr('🎁 מהתיבות בלבד','🎁 Chests only'):s.price+' 🪙')))));
     card.appendChild(pr);
     card.onclick=()=>{
       const rc=card.getBoundingClientRect(),ccx=rc.left+rc.width/2,ccy=rc.top+rc.height/2;
@@ -7176,6 +7209,7 @@ function buildSkins(){
         tone(140,.12,'sawtooth',.2);
         if(navigator.vibrate)navigator.vibrate(30);
       };
+      if(shopTab==='pet'&&i>0&&!owned){deny();return showToast(tr('🐾 חיות משיגים רק מתיבת החיות — 1000🪙 לפתיחה!','🐾 Pets come only from the Pet Chest — 1000🪙 per open!'));}
       if(s.wc&&!owned){deny();return showToast(tr('🐉 דרקון הניאון נופל רק מתיבות — סיכוי 1% לכל פתיחה. בהצלחה!','🐉 The Neon Dragon only drops from chests — 1% per open. Good luck!'));}
       if(s.fs&&!owned){deny();return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));}
       if((s.rar|0)>=4&&!s.pow&&shopTab!=='pet'){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
@@ -7204,6 +7238,35 @@ function buildSkins(){
 $('tabSkin').onclick=()=>{shopTab='skin';buildSkins();};
 $('tabWin').onclick=()=>{shopTab='win';buildSkins();};
 $('tabPet').onclick=()=>{shopTab='pet';buildSkins();};
+/* 🎁🐾 פתיחת תיבת החיות */
+function openPetChest(card){
+  const shakeNo=()=>{
+    try{card.animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(7px)'},{transform:'translateX(0)'}],{duration:200,iterations:2});}catch(e){}
+    tone(140,.12,'sawtooth',.2);
+    if(navigator.vibrate)navigator.vibrate(30);
+  };
+  if(PETS.every((p,j)=>j===0||petOw.includes(j)))return showToast(tr('🏆 יש לך כבר את כל החיות — אין מה להגריל!','🏆 You already own every pet!'));
+  if(coins<PET_CHEST_COST){shakeNo();return showToast(tr('חסרים ','Missing ')+(PET_CHEST_COST-coins)+tr('🪙 לתיבת החיות','🪙 for the Pet Chest'));}
+  if(!confirm(tr('לפתוח תיבת חיות ב-'+PET_CHEST_COST+' מטבעות?','Open a Pet Chest for '+PET_CHEST_COST+' coins?'))){tone(300,.06,'sine',.15);return;}
+  coins-=PET_CHEST_COST;
+  const res=rollPetChest();
+  if(res.pet){
+    petOw.push(res.pet);petSel=res.pet;
+    const p=PETS[res.pet];
+    logEv('pt',tr(p.name,p.en));
+    checkAch();save();refreshTro();buildSkins();sfx.win();
+    try{emojiBurst({e:[p.icon,'🎉','✨','💖'],n:24,m:'burst',d:1700});}catch(e){}
+    if(navigator.vibrate)navigator.vibrate([40,60,40]);
+    showReveal({kind:'fx',icon:p.icon,rar:p.rar|0,label:tr('חיה חדשה: ','New pet: ')+tr(p.name,p.en),story:tr(p.pd[0],p.pd[1])});
+  }else{
+    addCoins(res.co);
+    logEv('pt',res.co+'🪙');
+    save();refreshTro();buildSkins();
+    showToast(tr('הפעם בלי חיה — קיבלת ','No pet this time — you got ')+res.co+tr('🪙 בחזרה. נסה שוב!','🪙 back. Try again!'));
+    try{emojiPop(innerWidth/2,innerHeight/2,['🪙','✨'],10,120);}catch(e){}
+    tone(500,.1,'sine',.25);
+  }
+}
 /* ---- 🎁 תיבות ---- */
 function pickUnowned(cat,ow){
   const locked=cat.map((s,i)=>({s,i})).filter(x=>!ow.includes(x.i));
@@ -8103,6 +8166,7 @@ function logLine(e){
    case 'rn':return['🏃',tr('שיא ריצה חדש: ','New run record: ')+v+tr(' מ׳',' m')];
    case 'ac':{const a=ACH.find(x=>x.id===v);return['🏅',tr('הישג: ','Achievement: ')+(a?tr(a.name,a.en?a.en[0]:a.name):'')];}
    case 'wh':return['🎟',tr('כרטיס גירוד: זכה ב-','Scratch card: won ')+(v||'')];
+   case 'pt':return['🐾',tr('תיבת החיות: זכה ב-','Pet chest: won ')+(v||'')];
    case 'ps':return['🎫',tr('פס העונה: אסף ','Season pass: collected ')+(v||'')];
    case 'wc':return['🏆',tr('זכה בגביע מונדיאל! ','Won a World Cup! ')+(v||'')];
   }
