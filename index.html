@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v147</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v148</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -7303,6 +7303,59 @@ function eggCrackUp(){
   if(hint)hint.textContent=eggStage>=EGG_STAGES-1?tr('עוד רגע... זה קורה!! 🤩','Almost... it\'s happening!! 🤩'):tr('יופי! תמשיך להחליק! ','Nice! Keep swiping! ')+'🥚'.repeat(Math.max(1,EGG_STAGES-eggStage));
   if(eggStage>=EGG_STAGES)eggBurst();
 }
+/* 🐣 בקיעה: החיה מגיחה מתוך חצי הקליפה, מקפצת ומנצנצת */
+function eggShellBottom(g,cx,cy){
+  g.save();
+  const grad=g.createLinearGradient(0,cy,0,cy+110);
+  grad.addColorStop(0,'#ffe9b0');grad.addColorStop(1,'#d99c3e');
+  g.fillStyle=grad;
+  const w=76;
+  g.beginPath();
+  g.moveTo(cx-w,cy+6);
+  for(let i=0;i<7;i++)g.lineTo(cx-w+(i*2+1)*w/7,cy+(i%2?16:-8)); // שפה משוננת
+  g.lineTo(cx+w,cy+6);
+  g.quadraticCurveTo(cx+w,cy+92,cx,cy+102);
+  g.quadraticCurveTo(cx-w,cy+92,cx-w,cy+6);
+  g.closePath();g.fill();
+  g.strokeStyle='rgba(120,75,20,.5)';g.lineWidth=2;g.stroke();
+  g.fillStyle='rgba(255,255,255,.4)'; // ברק על הקליפה
+  g.beginPath();g.ellipse(cx-30,cy+42,10,20,-.4,0,TAU);g.fill();
+  g.restore();
+}
+function eggHatchAnim(icon,cb){
+  const cv=eggCvs;if(!cv)return cb();
+  const g=cv.getContext('2d'),W2=cv.width,H2=cv.height,cx=W2/2,cy=H2/2+8;
+  const t0=performance.now();
+  (function frame(){
+    if(!eggCvs){cb();return;} // השכבה נסגרה — לא ממשיכים לצייר
+    const t=(performance.now()-t0)/1000;
+    g.clearRect(0,0,W2,H2);
+    // הילה חמה מאחורי הבקיעה
+    const hg=g.createRadialGradient(cx,cy-30,8,cx,cy-30,110);
+    hg.addColorStop(0,'rgba(255,240,170,.55)');hg.addColorStop(1,'rgba(255,240,170,0)');
+    g.fillStyle=hg;g.fillRect(0,0,W2,H2);
+    // החיה מגיחה: עולה מתוך הקליפה עם קפיצת סיום
+    const up=Math.min(1,t/.7);
+    const rise=(1-Math.pow(1-up,3))*95;
+    const bob=t>.7?Math.sin((t-.7)*9)*5*Math.exp(-(t-.7)*2.2):0;
+    const wob=t<.7?Math.sin(t*26)*.09:0; // רעד קטן בזמן היציאה
+    g.save();
+    g.translate(cx,cy+26-rise+bob);g.rotate(wob);
+    g.font='82px system-ui';g.textAlign='center';g.textBaseline='middle';
+    g.fillText(icon,0,0);
+    g.restore();
+    eggShellBottom(g,cx,cy+8); // הקליפה מכסה את החלק התחתון
+    // ניצוצות מרקדים סביב
+    for(let k=0;k<6;k++){
+      const a=t*2.4+k*1.05,rr2=58+12*Math.sin(t*3+k);
+      g.globalAlpha=.5+.5*Math.sin(t*5+k*2);
+      g.font='16px system-ui';
+      g.fillText('✨',cx+Math.cos(a)*rr2,cy-34+Math.sin(a)*rr2*.6);
+      g.globalAlpha=1;
+    }
+    if(t<1.7)requestAnimationFrame(frame);else cb();
+  })();
+}
 function eggBurst(){
   if(eggDone)return;
   eggDone=true;
@@ -7318,7 +7371,7 @@ function eggBurst(){
   try{confetti(110);}catch(e){}
   try{tone(180,.18,'sawtooth',.4);setTimeout(()=>tone(660,.14,'sine',.32),140);setTimeout(()=>tone(1046,.2,'sine',.34),280);}catch(e){}
   if(navigator.vibrate)navigator.vibrate([60,40,90]);
-  setTimeout(()=>{
+  const finish=()=>{
     try{eggOv&&eggOv.remove();}catch(e){}
     eggOv=null;eggCvs=null;
     buildSkins();
@@ -7329,14 +7382,24 @@ function eggBurst(){
       showToast(tr('הביצה הייתה ריקה... אבל בפנים היו ','The egg was empty... but inside were ')+res.co+'🪙!');
       try{emojiPop(innerWidth/2,innerHeight/2,['🪙','✨'],12,130);}catch(e){}
     }
-  },420);
+  };
+  if(res&&res.pet!==undefined){ // 🐣 יצאה חיה — אנימציית בקיעה מלאה לפני החשיפה
+    try{
+      const tt=eggOv&&eggOv.firstChild;
+      if(tt)tt.textContent='🐣 '+tr('הביצה בוקעת!!','It\'s hatching!!');
+      const hint=eggOv&&eggOv.querySelector('.eggHint');
+      if(hint)hint.textContent=tr('משהו זז שם בפנים...','Something\'s moving in there...');
+    }catch(e){}
+    try{emojiBurst({e:['🐣','💖','✨'],n:16,m:'rise',d:1700});}catch(e){}
+    setTimeout(()=>eggHatchAnim(PETS[res.pet].icon,finish),260);
+  }else setTimeout(finish,420);
 }
 function eggStart(res){
   eggRes=res;eggRub=0;eggStage=0;eggDone=false;eggPrevPt=null;
   const d=document.createElement('div');
   d.style.cssText='position:fixed;inset:0;z-index:48;background:rgba(3,5,12,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
   d.innerHTML='<div style="font-weight:900;font-size:22px">🥚 '+tr('ביצה מסתורית!','Mystery Egg!')+'</div>'
-    +'<div class="eggHint" style="font-size:14px;color:#ffd257;font-weight:800">'+tr('החלק על הביצה שוב ושוב כדי לסדוק אותה!','Swipe the egg again and again to crack it!')+'</div>';
+    +'<div class="eggHint" style="font-size:14px;color:#ffd257;font-weight:800">'+tr('החלק או הקש על הביצה שוב ושוב כדי לסדוק אותה!','Swipe or tap the egg again and again to crack it!')+'</div>';
   const cv=document.createElement('canvas');
   cv.width=260;cv.height=300;
   cv.style.cssText='width:230px;height:265px;touch-action:none;cursor:grab;filter:drop-shadow(0 10px 26px rgba(255,190,80,.35))';
@@ -7349,7 +7412,15 @@ function eggStart(res){
   eggOv=d;eggCvs=cv;
   eggDraw();
   let down=false;
-  cv.addEventListener('pointerdown',e=>{down=true;eggPrevPt=[e.clientX,e.clientY];try{cv.setPointerCapture(e.pointerId);}catch(e2){}});
+  cv.addEventListener('pointerdown',e=>{
+    down=true;eggPrevPt=[e.clientX,e.clientY];
+    try{cv.setPointerCapture(e.pointerId);}catch(e2){}
+    if(eggDone)return;
+    eggRub+=EGG_RUB_PER/3; // 👆 גם לחיצה מקדמת — 3 לחיצות לכל סדק
+    try{cv.animate([{transform:'scale(1)'},{transform:'scale(.94)'},{transform:'scale(1)'}],{duration:130});}catch(e2){}
+    try{tone(330+eggStage*40,.05,'sine',.2);}catch(e2){}
+    while(eggRub>=EGG_RUB_PER*(eggStage+1)&&!eggDone)eggCrackUp();
+  });
   cv.addEventListener('pointerup',()=>{down=false;eggPrevPt=null;});
   cv.addEventListener('pointercancel',()=>{down=false;eggPrevPt=null;});
   cv.addEventListener('pointermove',e=>{
