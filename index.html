@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v144</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v145</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -848,7 +848,7 @@
   <div class="row">
     <button class="chip on" id="tabSkin" data-en="🎨 Skins">🎨 סקינים</button>
     <button class="chip" id="tabWin" data-en="✨ Victory">✨ ניצחון</button>
-    <button class="chip" id="tabDeath" data-en="💀 Death">💀 מוות</button>
+    <button class="chip" id="tabPet" data-en="🐾 Pets">🐾 חיות מחמד</button>
   </div>
   <div id="skinGrid"></div>
   <button class="btn sec" id="skinBack" data-en="Back">חזרה</button>
@@ -2075,6 +2075,7 @@ function loadLevel(i){
   keyGot=(lv.keys||[]).map(()=>false);
   swState=(lv.switches||[]).map(()=>({open:false,inside:false}));
   lvTime=0;lvDeaths=0;comboN=0;comboT=0;
+  petX=ball.x;petY=ball.y-ball.r*1.9;feverT=0;feverHit=false;trailAcc=0;
   bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;supAimDrag=null;bossCycN=0;bossSupN=0;supShieldT=0;supRapidT=0;supSlowT=0;supMudT=0;supStopT=0;supBombT=0;supSalvoN=0;
   try{supUi();}catch(e){}
   if(lv.boss&&!customLv){bossMaxHp=bossZone()===9?60:16+bossZone()*4;bossHp=bossMaxHp;bossHpShown=bossMaxHp;bossMode='idle';bossStT=1.2;} // 💪 פס חיים ארוך
@@ -2377,8 +2378,28 @@ function physics(dt,t){
   if(comboT>0){comboT-=dt;if(comboT<=0){comboN=0;try{updateHud();}catch(e){}}}
 
   const scale=md()/400,lv=L();
-  ball.vx+=effX()*2800*scale*dt;
-  ball.vy+=effY()*2800*scale*dt;
+  const _pacc=2800*(petPerk('speed')?1.08:1); // 🐆 הצ'יטה מאיצה את הכדור
+  ball.vx+=effX()*_pacc*scale*dt;
+  ball.vy+=effY()*_pacc*scale*dt;
+  if(petSel>0){ // 🐾 החיה רודפת אחרי הכדור בקפיציות
+    petX+=(ball.x-petX)*Math.min(1,dt*4.5);
+    petY+=(ball.y-ball.r*1.9-petY)*Math.min(1,dt*4.5);
+  }
+  if(feverT>0)feverT-=dt;
+  { // 🌈 FEVER / 🔥 רצף ניצחונות — שובל זוהר רודף אחרי הכדור
+    const _tc=feverT>0?RAINBOW:(winStreak>=3?['#ffd257','#ff9e4d','#ff5c2a']:null);
+    if(_tc){
+      trailAcc+=dt;
+      while(trailAcc>=.03){
+        trailAcc-=.03;
+        if(particles.length>240)particles.shift();
+        particles.push({x:ball.x+(Math.random()-.5)*ball.r,y:ball.y+(Math.random()-.5)*ball.r,
+          vx:-ball.vx*.12+(Math.random()-.5)*30,vy:-ball.vy*.12+(Math.random()-.5)*30-(feverT>0?0:35),
+          life:.8,decay:1.7,size:2.2+Math.random()*1.6,color:_tc[(Math.random()*_tc.length)|0],
+          gl:true,grav:0,rot:0,vr:0});
+      }
+    }else trailAcc=0;
+  }
   // fans
   for(const f of(lv.fans||[])){
     const r=R([f.x,f.y,f.w,f.h]);
@@ -2467,7 +2488,16 @@ function physics(dt,t){
       emojiPop(p.x,p.y,comboN>=3?['⭐','🌟','✨','🔥']:['⭐','✨','🌟'],10+Math.min(10,comboN*2),130);
       flashW=Math.max(flashW,comboN>=3?.22:.16);
       if(navigator.vibrate)navigator.vibrate(comboN>=3?[18,25,32]:[14,22]);
-      if(comboN>=3)showToast(tr('🔥 קומבו ×','🔥 Combo ×')+comboN+'!');
+      if(comboN>=3){
+        showToast(tr('🔥 קומבו ×','🔥 Combo ×')+comboN+'!');
+        if(!feverHit){ // 🌈 קומבו מלא = FEVER: שובל קשת + בונוס בסיום
+          feverHit=true;feverT=8;
+          shake=Math.max(shake,.5);flashW=Math.max(flashW,.35);
+          setTimeout(()=>showToast(tr('🌈 FEVER!! שובל קשת + 12🪙 בונוס בסיום!','🌈 FEVER!! Rainbow trail + 12🪙 finish bonus!')),700);
+          try{emojiBurst({e:['🌈','✨','🎉','⭐'],n:22,m:'burst',d:1600});}catch(e){}
+          if(navigator.vibrate)navigator.vibrate([30,40,60]);
+        }
+      }
     }
   });
   // keys
@@ -3707,6 +3737,7 @@ function draw(t){
     }
   }
   drawBall(T);
+  drawPet(T);
   drawShocks();
   if(perfectT>0){
     ctx.save();
@@ -3762,14 +3793,35 @@ const WFX=[
  {name:'חור שחור',en:'Black Hole',icon:'🌌',price:900,rar:3},
  {name:'גשם כוכבים',en:'Star Rain',icon:'⭐',price:1600,rar:4}
 ];
-const DFX=[
- {name:'שאיבה',en:'Vortex',icon:'🌀',price:0,rar:1},
- {name:'פיצוץ',en:'Explosion',icon:'💥',price:220,rar:1},
- {name:'ברק',en:'Lightning',icon:'⚡',price:450,rar:2},
- {name:'קרח נשבר',en:'Ice Shatter',icon:'❄️',price:450,rar:2},
- {name:'להבות',en:'Flames',icon:'🔥',price:850,rar:3},
- {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:1500,rar:4}
+/* 🐾 חיות מחמד — חברים קטנים שרצים אחרי הכדור בשלב, וכל אחד עם כוח משלו */
+const PETS=[
+ {name:'בלי חיה',en:'No Pet',icon:'✖️',price:0,rar:1,pd:['משחק סולו — בלי ליווי','Solo — no companion']},
+ {name:'כלבלב',en:'Puppy',icon:'🐶',price:150,rar:1,pd:['חבר נאמן שרודף אחריך לכל מקום','A loyal friend chasing you everywhere']},
+ {name:'חתול זהב',en:'Gold Cat',icon:'🐱',price:400,rar:2,perk:'coin',pd:['+10% מטבעות בסיום שלב','+10% coins on level finish']},
+ {name:'ינשוף חכם',en:'Wise Owl',icon:'🦉',price:600,rar:2,perk:'xp',pd:['+15% נקודות לפס העונה','+15% season-pass XP']},
+ {name:'ארנב מזל',en:'Lucky Bunny',icon:'🐰',price:900,rar:3,perk:'luck',pd:['+5% סיכוי לפריט מכל תיבה','+5% item chance from every chest']},
+ {name:'צ׳יטה',en:'Cheetah',icon:'🐆',price:1200,rar:3,perk:'speed',pd:['הכדור מאיץ 8% מהר יותר','Ball accelerates 8% faster']},
+ {name:'דרקונון',en:'Baby Dragon',icon:'🐲',price:2500,rar:3,perk:'boss',pd:['+3💎 על כל ניצחון על בוס','+3💎 for every boss win']}
 ];
+let petOw=[0],petSel=0,petX=0,petY=0,dfxRef=false;
+const petPerk=k=>petSel>0&&PETS[petSel]&&PETS[petSel].perk===k;
+/* 🌈 FEVER (קומבו כוכבים ×3) · 🔥 שובל אש (רצף ניצחונות) · 🌟 שלב זהב */
+let feverT=0,feverHit=false,goldLv=false,trailAcc=0;
+const RAINBOW=['#ff5c5c','#ffb340','#ffe14d','#5cff8a','#5cc9ff','#c17aff'];
+function goldOvSync(){
+  try{
+    let d=document.getElementById('goldOv');
+    if(goldLv&&running){
+      if(!d){
+        d=document.createElement('div');d.id='goldOv';
+        d.style.cssText='position:fixed;inset:0;z-index:10;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,200,60,0) 55%,rgba(255,180,40,.17) 100%)';
+        document.body.appendChild(d);
+        d.animate([{opacity:.5},{opacity:1}],{duration:1500,direction:'alternate',iterations:Infinity,easing:'ease-in-out'});
+      }
+    }else if(d)d.remove();
+  }catch(e){}
+}
+setInterval(goldOvSync,2000);
 /* ⚽ אפקטי GOAL! — מגיעים במתנה עם סקין שחקן כדורגל */
 /* 🎙 קריאת שער של השחקן: קובץ קול אמיתי (voice-<שם>.mp3) אם הועלה,
    אחרת שאגת קהל אצטדיון + צופר + באנר ענק של הקריאה */
@@ -3904,15 +3956,6 @@ const FX_EMO=[
  {e:['❤️','💖','💗','💕'],n:36,m:'rise'},          // לבבות
  {e:['☄️','☄️','🔥','💥'],n:30,m:'meteor'},        // מטאורים
  {e:['⚡','💥','🔴','🟢','🔵'],n:40,m:'laser'}      // לייזרים
-];
-/* 💀 אימוג'ים גם לאפקטי ההפסד — לכל אפקט מוות הסט והתנועה שלו */
-const DFX_EMO=[
- {e:['🌀','💨','✨'],n:26,m:'hole',c:'🌀',d:1700},   // שאיבה
- {e:['💥','🔥','🧨','💢'],n:34,m:'nova',d:1700},     // פיצוץ
- {e:['⚡','⚡','🌩️'],n:26,m:'laser',d:1400},         // ברק
- {e:['❄️','🧊','💠'],n:32,m:'burst',d:1800},         // קרח נשבר
- {e:['🔥','🔥','✨'],n:30,m:'rise',d:1800},           // להבות
- {e:['💫','⚫','✨','⭐'],n:30,m:'hole',c:'🕳️',d:1800} // חור שחור
 ];
 let emoFxDiv=null;
 function emojiFx(i){const c2=FX_EMO[i];if(c2)emojiBurst(c2);}
@@ -4063,71 +4106,16 @@ function playWinFX(x,y,big){
     }
   }
 }
-/* 💀 שכבות הדרמה של ההפסד: ויניטה אדומה + גולגולת מתנפצת למרכז */
-let dVigEl=null;
-function deathVignette(){
-  try{
-    if(dVigEl)dVigEl.remove();
-    const d=document.createElement('div');
-    d.style.cssText='position:fixed;inset:0;z-index:43;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,0,0,0) 40%,rgba(190,10,10,.55) 100%);opacity:0;transition:opacity .12s';
-    document.body.appendChild(d);dVigEl=d;
-    requestAnimationFrame(()=>{d.style.opacity='1';});
-    setTimeout(()=>{d.style.transition='opacity .65s';d.style.opacity='0';},260);
-    setTimeout(()=>{d.remove();if(dVigEl===d)dVigEl=null;},1000);
-  }catch(e){}
-}
-function deathSkull(){
-  try{
-    const d=document.createElement('div');
-    d.style.cssText='position:fixed;inset:0;z-index:45;pointer-events:none;display:flex;align-items:center;justify-content:center';
-    d.innerHTML='<div style="font-size:86px;filter:drop-shadow(0 6px 26px rgba(255,40,40,.7));animation:popIn .3s cubic-bezier(.2,1.7,.4,1) both">💀</div>';
-    document.body.appendChild(d);
-    setTimeout(()=>{d.style.transition='opacity .3s';d.style.opacity='0';},520);
-    setTimeout(()=>d.remove(),860);
-  }catch(e){}
-}
+/* 💀 נפילה — פידבק קצר ונקי (אפקטי המוות הקנויים נמחקו מהמשחק) */
 function playDeathFX(x,y,T){
-  // 💀 שדרוג ענק: אימוג'ים לכל אפקט, ויניטה אדומה, גולגולת, באס עמוק ורטט כבד
-  flashR=Math.max(flashR,.62);
-  shake=Math.max(shake,1.05);
-  shock(x,y,'rgba(255,60,60,.6)',md()*.4);
-  setTimeout(()=>shock(x,y,'rgba(0,0,0,.8)',md()*.55),90);
-  setTimeout(()=>shock(x,y,'rgba(255,120,60,.35)',md()*.7),180);
-  emit(x,y,20,{color:['#ff6b5c','#2a3040','#ffb35c'],sp:280,size:2.8,decay:1.7});
-  if(navigator.vibrate)navigator.vibrate([90,40,140,40,60]);
-  deathVignette();
-  deathSkull();
-  emojiBurst(DFX_EMO[dSel]||DFX_EMO[1]); // 💀 המוני אימוג'ים של אפקט המוות
-  try{tone(90,.3,'sine',.5);setTimeout(()=>tone(52,.55,'sine',.42),90);}catch(e){} // באס כפול
-  switch(dSel){
-   case 1:
-    shock(x,y,'rgba(255,140,80,.9)',md()*.3);
-    emit(x,y,16,{shape:'shard',color:['#ffb35c','#8a95a2','#d6dde6'],sp:260,size:3,decay:1.8,grav:300});
-    emit(x,y,10,{color:'#ff9e4d',sp:180,size:3,decay:2.2,gl:true});break;
-   case 2:
-    spawnBolt(x,y);spawnBolt(x,y);
-    flashW=Math.max(flashW,.45);
-    emit(x,y,10,{color:'#cfe8ff',sp:160,size:2.5,decay:2.4,gl:true});
-    tone(120,.2,'sawtooth',.3,60);break;
-   case 3:
-    emit(x,y,18,{shape:'shard',color:['#cfefff','#7ac8e8','#eafaff'],sp:200,size:2.8,decay:1.6,grav:340});
-    shock(x,y,'rgba(160,220,255,.8)',md()*.24);break;
-   case 4:
-    for(let i=0;i<16;i++){
-      if(particles.length>260)particles.shift();
-      particles.push({x:x+(Math.random()-.5)*26,y:y+Math.random()*10,
-        vx:(Math.random()-.5)*50,vy:-120-Math.random()*160,life:1,decay:1.4,
-        size:3+Math.random()*2.5,color:['#ffd23c','#ff7a2a','#ff4a2a'][Math.random()*3|0],
-        gl:true,grav:-40,rot:0,vr:0});
-    }break;
-   case 5:
-    emitIn(x,y,26,T?T.accent2:'#c17aff');
-    shock(x,y,'rgba(120,80,220,.8)',md()*.3);
-    shock(x,y,'rgba(0,0,0,.9)',md()*.18);break;
-   default:
-    shock(x,y,T?hexA(T.accent2,.7):'rgba(255,150,90,.7)',md()*.22);
-    emitIn(x,y,16,T?T.accent2:'#ff9e4d');
-  }
+  flashR=Math.max(flashR,.4);
+  shake=Math.max(shake,.7);
+  shock(x,y,T?hexA(T.accent2,.7):'rgba(255,150,90,.7)',md()*.26);
+  emit(x,y,16,{color:['#ff6b5c','#2a3040','#ffb35c'],sp:240,size:2.6,decay:1.9});
+  emitIn(x,y,12,T?T.accent2:'#ff9e4d');
+  if(navigator.vibrate)navigator.vibrate([70,40,90]);
+  try{tone(90,.25,'sine',.42);}catch(e){}
+  if(petSel>0)try{emojiPop(petX,petY,['💧','😢'],4,70);}catch(e){} // 🐾 החיה עצובה איתך
   timeScale=Math.min(timeScale,.35);
 }
 const SKINS=[
@@ -4345,6 +4333,19 @@ function drawBall(T){
   ctx.restore();
   ctx.beginPath();ctx.arc(0,0,r*.96,Math.PI*.15,Math.PI*.7);
   ctx.strokeStyle=hexA(T.accent,.35);ctx.lineWidth=r*.12;ctx.stroke();
+  ctx.restore();
+}
+/* 🐾 החיה הרודפת — אימוג'י מקפץ עם צל, תמיד צמוד לכדור */
+function drawPet(T){
+  if(petSel<=0||!PETS[petSel])return;
+  const r=ball.r,bob=Math.abs(Math.sin(lvTime*8))*r*.35;
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(petX,petY+r*1.05,r*.7,r*.26,0,0,TAU);
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fill();
+  ctx.font=Math.round(r*1.7)+'px system-ui';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(PETS[petSel].icon,petX,petY-bob);
   ctx.restore();
 }
 
@@ -5284,10 +5285,15 @@ function finishLevel(){
   }
   unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,levelIdx+1));
   grantPowSkins();
-  const _cg=Math.round((3+got*2+(firstClear?10:0)+((levelIdx/10)|0)*.5)*(POW()==='rich'?1.5:1)); // 🪙 כוכבים=כסף, סיום ראשון=בונוס
+  // 🪙 כוכבים=כסף · 🐱 חתול זהב +10% · 🔥 רצף בוער +20% · 🌟 שלב זהב ×3 · 🌈 FEVER +12
+  const _cg=Math.round((3+got*2+(firstClear?10:0)+((levelIdx/10)|0)*.5)
+    *(POW()==='rich'?1.5:1)*(petPerk('coin')?1.1:1)*(winStreak>=3?1.2:1)*(goldLv?3:1))
+    +(feverHit?12:0);
   addCoins(_cg);
 
-  if((levelIdx+1)%100===0){bossDefeatFx();if(lvDeaths===0)stBossClean=true;} // 👑 הכתרה על ניצחון בוס
+  if((levelIdx+1)%100===0){bossDefeatFx();if(lvDeaths===0)stBossClean=true;
+    if(petPerk('boss')){gems+=3;refreshTro();setTimeout(()=>showToast(tr('🐲 הדרקונון נושף אש! +3💎','🐲 Baby dragon breathes fire! +3💎')),1600);}
+  } // 👑 הכתרה על ניצחון בוס
   questAdd('level',1);
   winStreak++; // 🔥 חגיגת רצף ניצחונות
   if(winStreak===3){addCoins(15);setTimeout(()=>showToast(tr('🔥 רצף 3 ניצחונות! +15🪙','🔥 3-win streak! +15🪙')),1200);}
@@ -5303,6 +5309,8 @@ function finishLevel(){
   $('doneTitle').textContent=last?tr('סוף הפרק הראשון!','End of Chapter One!'):tr('שלב ','Level ')+(levelIdx+1)+tr(' הושלם!',' complete!');
   starsBigAnim(got,starGot.length);
   let txt=tr('זמן: ','Time: ')+fmt(lvTime)+' '+medal+(lvDeaths?tr(' · נפילות: ',' · falls: ')+lvDeaths:tr(' · בלי נפילות!',' · no falls!'))+' · +'+_cg+'🪙'+(troGain?' · +'+troGain+'🏆':'');
+  if(goldLv)txt+='\n🌟 '+tr('שלב זהב — המטבעות שולשו!','Golden level — coins tripled!');
+  if(feverHit)txt+='\n🌈 '+tr('FEVER! בונוס +12🪙 על קומבו מלא','FEVER! +12🪙 full-combo bonus');
   if(last){
     const tot=session.reduce((a,x)=>a+x.stars,0);
     txt+=tr(' — כבשת את כל 100 השלבים! ',' — you conquered all 100 levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
@@ -5313,7 +5321,7 @@ function finishLevel(){
   { // 🏅 צ'יפי פרסים — קופצים בזה אחר זה, אחרי הכוכבים
     let _ci=0;
     const chip=t2=>'<span style="display:inline-block;background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:'+(.95+(_ci++)*.15)+'s">'+t2+'</span>';
-    $('winChips').innerHTML=chip('+'+_cg+' 🪙')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫');
+    $('winChips').innerHTML=chip('+'+_cg+' 🪙')+(goldLv?chip('🌟 ×3'):'')+(feverHit?chip('🌈 FEVER'):'')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫');
   }
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('המשך לשלב ','Continue to level ')+(levelIdx+2)+' ‹';
   addDailyWin();
@@ -5321,6 +5329,8 @@ function finishLevel(){
   if(firstClear&&(levelIdx+1)%50===0)setTimeout(mondialBox,1100); // 🏆 תיבת מונדיאל!
   checkAch();
   save();
+  goldLv=false;goldOvSync();
+  if(petSel>0)try{emojiBurst({e:[PETS[petSel].icon,'💖','✨'],n:12,m:'burst',d:1300});}catch(e){} // 🐾 החיה חוגגת איתך
   skinShout(); // 🎙 "אנקרה מסי!" וחברים
   if(!customLv&&(levelIdx+1)%10===0){
     running=true;
@@ -5409,6 +5419,16 @@ function startRun(i){
   $('raceBar').style.display='none';
   loadLevel(i);
   running=true;paused=false;
+  // 🌟 שלב זהב! הגרלה נדירה — כל המטבעות ×3 והמסך זוהר זהב
+  goldLv=!customLv&&!duelLive&&levelIdx>2&&Math.random()<.07;
+  goldOvSync();
+  if(goldLv)setTimeout(()=>{
+    if(!running||!goldLv)return;
+    showToast(tr('🌟 שלב זהב!! כל המטבעות ×3 🌟','🌟 GOLDEN LEVEL!! All coins ×3 🌟'));
+    try{emojiBurst({e:['🌟','🪙','✨'],n:24,m:'rise',d:1800});}catch(e){}
+    try{tone(880,.12,'sine',.3);setTimeout(()=>tone(1174,.18,'sine',.3),130);}catch(e){}
+    if(navigator.vibrate)navigator.vibrate([25,35,45]);
+  },900);
   try{ // 🎬 איריס פתיחה: השלב נחשף מהמרכז החוצה + שם השלב קופץ
     const d=document.createElement('div');
     d.style.cssText='position:fixed;inset:0;z-index:11;pointer-events:none;background:radial-gradient(circle at 50% 45%,transparent 0%,rgba(4,6,12,.92) 55%);transition:opacity .5s ease-out';
@@ -5618,7 +5638,7 @@ function saveBlob(){
   return {v:2,t:Date.now(),un:unlocked,tro:trophies,nm:myName,dl:dailyLast,
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
     co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,et:eTro,ec:eCo,edn:eDone,esn:eStars,pt:pTro,pc:pCo,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
-    ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,
+    ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,po:petOw,ps:petSel,dfr:dfxRef?1:0,
     la:lossAcc,gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10),x.edone?1:0,x.estars|0]),
     lg:gameLog.slice(0,30),
@@ -5672,6 +5692,18 @@ function applySave(d){
       if(!dOw.includes(0))dOw.unshift(0);
       wSel=wOw.includes(d.ws|0)?(d.ws|0):0;
       dSel=dOw.includes(d.ds2|0)?(d.ds2|0):0;
+      petOw=Array.isArray(d.po)?d.po.map(n=>n|0).filter(n=>n>=0&&n<PETS.length):[0];
+      if(!petOw.includes(0))petOw.unshift(0);
+      petSel=petOw.includes(d.ps|0)?(d.ps|0):0;
+      // 💀→🪙 אפקטי המוות נמחקו מהמשחק — החזר מלא חד-פעמי למי שקנה
+      dfxRef=!!d.dfr;
+      if(!dfxRef){
+        const _rf=[0,220,450,450,850,1500,400,550,750];
+        let _s=0;dOw.forEach(n=>{_s+=_rf[n|0]||0;});
+        dfxRef=true;
+        if(_s>0){coins+=_s;
+          setTimeout(()=>{try{showToast(tr('💀 אפקטי המוות הוסרו מהמשחק — החזר מלא: +','💀 Death effects were removed — full refund: +')+_s+'🪙');}catch(e){}},2100);}
+      }
     }
     ghostOn=d.gh!==0;musicOn=d.mu2!==0;
     lossAcc=d.la|0;
@@ -5802,10 +5834,6 @@ WFX.push(
  {name:'לבבות',en:'Hearts',icon:'💜',price:400,rar:2},
  {name:'מטאורים',en:'Meteors',icon:'☄️',price:550,rar:2},
  {name:'לייזרים',en:'Lasers',icon:'🔴',price:750,rar:3});
-DFX.push(
- {name:'קרח',en:'Ice',icon:'🧊',price:400,rar:2},
- {name:'ברקים',en:'Bolts',icon:'⚡',price:550,rar:2},
- {name:'חור שחור',en:'Black Hole',icon:'🕳️',price:750,rar:3});
 POWSKINS.forEach(s=>SKINS.push(s));
 /* 🐐 ליאו מסי — אקסקלוסיב: נשאר רק אצל מי שכבר השיג. לא מושג יותר */
 const MESSI_IMG=new Image();
@@ -6226,7 +6254,7 @@ function buildAch(){
 }
 function failLevel(){
   try{$('fireWrap').classList.add('hidden');$('supWrap').classList.add('hidden');}catch(e){}
-  winStreak=0;
+  winStreak=0;goldLv=false;feverT=0;goldOvSync();
   if(duelLive){ // במרוץ שלבים נפילה×3 רק מאתחלת את השלב הנוכחי
     hushRoll();
     playDeathFX(ball.x,ball.y,THEMES[L().th]);
@@ -6911,7 +6939,7 @@ function runFrame(dt,t){
     if(runInv>0)runInv-=dt;
     // היגוי
     const scale=md()/400;
-    ball.vx+=effX()*3400*scale*dt;
+    ball.vx+=effX()*3400*(petPerk('speed')?1.08:1)*scale*dt;
     ball.vx*=Math.pow(.9,dt*60);
     ball.x+=ball.vx*dt;
     const lo=board.x+ball.r+3,hi=board.x+board.w-ball.r-3;
@@ -7089,13 +7117,13 @@ function shopCat(){
     ?{list:SKINS,ow:skinOwned,getSel:()=>skinSel,setSel:i=>{skinSel=i;if(T3)T3.lastSkin=-1;}}
     :shopTab==='win'
     ?{list:WFX,ow:wOw,getSel:()=>wSel,setSel:i=>{wSel=i;}}
-    :{list:DFX,ow:dOw,getSel:()=>dSel,setSel:i=>{dSel=i;}};
+    :{list:PETS,ow:petOw,getSel:()=>petSel,setSel:i=>{petSel=i;}};
 }
 function buildSkins(){
   $('skinTro').textContent='🪙 '+coins+' · 🎁 '+chests;
   $('tabSkin').className='chip'+(shopTab==='skin'?' on':'');
   $('tabWin').className='chip'+(shopTab==='win'?' on':'');
-  $('tabDeath').className='chip'+(shopTab==='death'?' on':'');
+  $('tabPet').className='chip'+(shopTab==='pet'?' on':'');
   const cat=shopCat(),g=$('skinGrid');g.innerHTML='';
   cat.list.forEach((s,i)=>{
     const owned=cat.ow.includes(i),sel=cat.getSel()===i;
@@ -7123,8 +7151,13 @@ function buildSkins(){
       pw.textContent=tr(POWDESC[s.pow][0],POWDESC[s.pow][1]);
       pw.style.cssText='font-size:9.5px;color:#8fe3a8;font-weight:700;line-height:1.2';
       card.appendChild(pw);
+    }else if(s.pd){ // 🐾 מה החיה נותנת
+      const pw=document.createElement('div');
+      pw.textContent=tr(s.pd[0],s.pd[1]);
+      pw.style.cssText='font-size:9.5px;color:#8fe3a8;font-weight:700;line-height:1.2';
+      card.appendChild(pw);
     }
-    const chestOnly=(s.rar|0)>=4&&!s.pow&&!s.wc; // 🔴🟡 נדירויות גבוהות — רק מתיבות, כמו במוקאפ
+    const chestOnly=(s.rar|0)>=4&&!s.pow&&!s.wc&&shopTab!=='pet'; // 🔴🟡 נדירויות גבוהות — רק מתיבות, כמו במוקאפ
     const pr=document.createElement('div');pr.className='skPrice';
     pr.textContent=sel?tr('✓ נבחר','✓ Selected'):(owned?tr('לחץ לבחירה','Tap to select')
       :(s.wc?tr('🍀 1% מכל תיבה!','🍀 1% from any chest!')
@@ -7145,7 +7178,7 @@ function buildSkins(){
       };
       if(s.wc&&!owned){deny();return showToast(tr('🐉 דרקון הניאון נופל רק מתיבות — סיכוי 1% לכל פתיחה. בהצלחה!','🐉 The Neon Dragon only drops from chests — 1% per open. Good luck!'));}
       if(s.fs&&!owned){deny();return showToast(tr('⚽ את אפקט ה-GOAL מקבלים במתנה עם סקין של שחקן כדורגל!','⚽ GOAL effects come free with a footballer skin!'));}
-      if((s.rar|0)>=4&&!s.pow){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
+      if((s.rar|0)>=4&&!s.pow&&shopTab!=='pet'){deny();return showToast(tr('🎁 את הפריט הזה משיגים רק מתיבות!','🎁 This one only drops from chests!'));}
       if(coins>=s.price){
         // ❓ אישור לפני קנייה — שלא יקנו בטעות
         if(!confirm(tr('לקנות את "','Buy "')+tr(s.name,s.en||s.name)+tr('" ב-','" for ')+s.price+tr(' מטבעות?',' coins?'))){
@@ -7170,7 +7203,7 @@ function buildSkins(){
 }
 $('tabSkin').onclick=()=>{shopTab='skin';buildSkins();};
 $('tabWin').onclick=()=>{shopTab='win';buildSkins();};
-$('tabDeath').onclick=()=>{shopTab='death';buildSkins();};
+$('tabPet').onclick=()=>{shopTab='pet';buildSkins();};
 /* ---- 🎁 תיבות ---- */
 function pickUnowned(cat,ow){
   const locked=cat.map((s,i)=>({s,i})).filter(x=>!ow.includes(x.i));
@@ -7190,7 +7223,6 @@ function grantTier(t){
   const cands=[];
   SKINS.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!it.pow&&!it.wc&&!it.leg&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
   WFX.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!it.fs&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
-  DFX.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!dOw.includes(i))cands.push({k:'dfx',i,it});});
   if(!cands.length)return null;
   const c=cands[(Math.random()*cands.length)|0];
   const rr=c.it.rar|0;
@@ -7201,8 +7233,8 @@ function grantTier(t){
     if(c.it.face){const gfx=grantGoalFx();if(gfx)drop._extra=gfx;}
     return drop;
   }
-  if(c.k==='wfx')wOw.push(c.i);else dOw.push(c.i);
-  return {icon:c.it.icon,label:(c.k==='wfx'?tr('ניצחון: ','Victory: '):tr('מוות: ','Death: '))+tr(c.it.name,c.it.en||c.it.name),rar:rr,
+  wOw.push(c.i);
+  return {icon:c.it.icon,label:tr('ניצחון: ','Victory: ')+tr(c.it.name,c.it.en||c.it.name),rar:rr,
     rv:{kind:'fx',icon:c.it.icon,rar:rr,label:tr(c.it.name,c.it.en||c.it.name)}};
 }
 function rollChest(){
@@ -7220,7 +7252,7 @@ function rollChest(){
   let tier=1,acc=0;
   for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
   // 🎁 פריט יוצא רק ב-30% מהתיבות (מנדירות התיבה ומטה) — לא כל תיבה נותנת סקין
-  const item=messi||(Math.random()<.30?grantTier(tier):null);
+  const item=messi||(Math.random()<(petPerk('luck')?.35:.30)?grantTier(tier):null); // 🐰 ארנב המזל מוסיף 5%
   // 🪙 התשלום נקבע לפי נדירות התיבה שהוגרלה — גם כשאין פריט וגם כשהאוסף מלא, התיבות משתדרגות
   const capMul=tier>=5?2:tier>=4?1.5:tier>=3?1.25:1;
   let coinCap=Math.round(30*capMul);
@@ -8814,7 +8846,7 @@ document.addEventListener('visibilitychange',()=>{
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;eDone=0;eStars=0;pTro=0;pCo=0;
   dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;wcCups=0;
-  skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;
+  skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;petOw=[0];petSel=0;dfxRef=false;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
   stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];frReqs=[];frAuto=true;gameLog=[];customLevels={};
   session.forEach(s=>{s.done=false;s.stars=0;s.best=0;s.edone=false;s.estars=0;});
@@ -10111,8 +10143,10 @@ function passDaysLeft(){
 }
 function passAdd(n){
   passSync();
+  n=n|0;
+  if(petPerk('xp'))n=Math.round(n*1.15); // 🦉 הינשוף החכם מוסיף XP
   const t0=passTierNow();
-  passP+=n|0;
+  passP+=n;
   const t1=passTierNow();
   if(t1>t0){
     showToast('🎫 '+tr('עלית לדרגה ','Pass tier up! Tier ')+t1+tr(' בפס העונה! יש פרס לאסוף 🎁','! A reward awaits 🎁'));
