@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v151</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v152</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -8155,29 +8155,48 @@ $('buyG3').onclick=()=>buyChestsGem(3,50);
 $('chestOpen').onclick=openChest;
 { // מחוות פנימיות על במת התיבה — הרצף כולו חייב לקרות בלי לסגור את המסך
   const stg=$('chestStage'),cbx=$('chestBox');
-  let tN=0,hOk=false,downT=0;
+  let tN=0,hOk=false,downAt=0;
   const wink=()=>{try{cbx.animate([{filter:'brightness(1)'},{filter:'brightness(1.55)'},{filter:'brightness(1)'}],{duration:320});}catch(e){}};
-  const cxReset=()=>{tN=0;hOk=false;downT=0;_cx1=false;_cx2=false;};
-  // 📱 מובייל: בלי בחירת טקסט, בלי זום, בלי תפריט לחיצה-ארוכה — שההחזקה לא תתבטל
+  const cxReset=()=>{tN=0;hOk=false;downAt=0;_cx1=false;_cx2=false;};
+  // 📱 מובייל: בלי בחירת טקסט, בלי גלילה מהבמה, בלי תפריט לחיצה-ארוכה
   stg.style.touchAction='none';
   stg.style.webkitUserSelect='none';stg.style.userSelect='none';
   try{stg.style.webkitTouchCallout='none';}catch(e){}
   stg.style.cursor='pointer';
   stg.addEventListener('contextmenu',e=>e.preventDefault());
-  stg.addEventListener('pointerdown',e=>{
-    downT=performance.now();
-    try{stg.setPointerCapture(e.pointerId);}catch(e2){} // גם אם האצבע זזה — השחרור נתפס
-    e.preventDefault();
-  });
-  stg.addEventListener('pointerup',()=>{
-    if(!downT)return;
-    const dur=performance.now()-downT;
-    downT=0;
-    if(dur>=2600){hOk=true;tN=0;return;} // החזקה ארוכה הושלמה — נפתח שלב הלחיצות
+  // הקלטים נספרים מכמה ערוצים במקביל (pointer/touch/mouse) עם דדופ מבני:
+  // לחיצה פיזית אחת = זוג אחד של פתיחה/סגירה. ערוץ כפול פשוט מתעלמים ממנו,
+  // וגם אם דפדפן מבטל ערוץ אחד באמצע — הערוץ השני סוגר את הלחיצה נכון
+  const onDown=()=>{
+    const now=performance.now();
+    if(downAt&&now-downAt<8000)return; // הלחיצה כבר פתוחה — זה ערוץ כפול
+    downAt=now;
+  };
+  const onUp=()=>{
+    if(!downAt)return; // שחרור בלי לחיצה פתוחה — ערוץ כפול
+    const dur=performance.now()-downAt;
+    downAt=0;
+    if(dur>=2200){hOk=true;tN=0;return;} // החזקה ארוכה הושלמה — נפתח שלב הלחיצות
     tN++;
+    try{ // 🎁 קפיצונת משוב על כל הקשה — נראית כמו ג'וס רגיל של התיבה
+      cbx.animate([{transform:'scale(1)'},{transform:'scale(1.08) rotate(-2deg)'},{transform:'scale(1)'}],{duration:160});
+    }catch(e){}
     if(hOk&&tN>=3){_cx2=true;_cx1=false;hOk=false;tN=0;wink();}
     else if(!hOk&&tN>=5){_cx1=true;tN=0;wink();}
-  });
+  };
+  if(window.PointerEvent){
+    stg.addEventListener('pointerdown',e=>{try{stg.setPointerCapture(e.pointerId);}catch(e2){}onDown();});
+    stg.addEventListener('pointerup',onUp);
+    // רשת ביטחון ל-iOS: אם הדפדפן חטף את המגע (pointercancel) — ה-touchend עדיין סוגר נכון
+    stg.addEventListener('touchstart',()=>{if(!downAt)onDown();},{passive:true});
+    stg.addEventListener('touchend',onUp);
+    // בכוונה בלי mousedown/mouseup — אירועי mouse תואמים-לאחור אחרי מגע היו סופרים כפול
+  }else{ // דפדפנים עתיקים בלי PointerEvent
+    stg.addEventListener('touchstart',onDown,{passive:true});
+    stg.addEventListener('touchend',onUp);
+    stg.addEventListener('mousedown',onDown);
+    stg.addEventListener('mouseup',onUp);
+  }
   // סגירת התפריט או כניסה מחדש מאפסות הכל — גם התקדמות וגם מפתח טעון
   $('chestBack').addEventListener('click',cxReset);
   $('chestBtn').addEventListener('click',cxReset);
