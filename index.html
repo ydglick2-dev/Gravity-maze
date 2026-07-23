@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v159</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v160</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2175,7 +2175,7 @@ function updateHud(){
 }
 
 /* ============ INPUT ============ */
-let orientN=0,lastOrientT=0,calSoft=false; // מונה זרם החיישן · חותמת אירוע אחרון · דגל ריפוי-מהיר אחרי כיול-חירום
+let orientN=0,lastOrientT=0; // מונה זרם החיישן · חותמת האירוע האחרון
 const senProof=[]; // הוכחת-חיים לחיישן שמתעורר באיחור — דורש שונות אמיתית, לא זרם קפוא
 function onOrient(e){
   if(e.beta===null||e.gamma===null)return;
@@ -2209,48 +2209,43 @@ function onOrient(e){
       try{$('hint').style.display='none';}catch(_e){}
     }else return;
   }
-  // 🎯 כיול אוטומטי בתחילת כל שלב: איך שמחזיקים עכשיו = "ישר". חלון יציבות מבוסס-זמן.
+  // 🎯 כיול אוטומטי פסיבי: המשחק לא נעצר ולא קופא. אם בשנייה הראשונה של השלב
+  // מופיע חלון קריאות יציב (היד נחה) — נקודת ה"ישר" מאומצת ממנו בשקט. אם לא —
+  // נשארים עם הכיול הקיים, ותיקון-הסחיפה הרציף משלים את השאר.
+  // ⚠️ באנדרואיד החיישן שולח אירועים רק כשהערכים משתנים — לכן אסור לתלות את
+  // המשחק בהגעת אירועים, ואסור לנעול כיול מתוך תנועת היגוי.
   if(autoCalArm){
-    autoCalBuf.push([nowT,gx,gy]);
-    while(autoCalBuf.length&&nowT-autoCalBuf[0][0]>320)autoCalBuf.shift();
-    let stable=false,avgG=gx,avgB=gy;
-    if(autoCalBuf.length>=3&&nowT-autoCalBuf[0][0]>=200){
-      let mnG=1e9,mxG=-1e9,mnB=1e9,mxB=-1e9,sG=0,sB=0;
-      for(const[,a,b2]of autoCalBuf){mnG=Math.min(mnG,a);mxG=Math.max(mxG,a);mnB=Math.min(mnB,b2);mxB=Math.max(mxB,b2);sG+=a;sB+=b2;}
-      avgG=sG/autoCalBuf.length;avgB=sB/autoCalBuf.length;
-      stable=(mxG-mnG<3&&mxB-mnB<3);
-    }
-    if(stable&&nowT-autoCalArm>=250){ // נעילה יציבה — נשמרת גם לענן
-      neutG=avgG;neutB=avgB;calSoft=false;
-      autoCalArm=0;autoCalBuf.length=0;
-      try{save();}catch(_e){}
-    }else if(nowT-autoCalArm>=1000){ // timeout באמצע תנועה: ממוצע החלון + ריפוי-מהיר, בלי לזהם את הענן
-      neutG=avgG;neutB=avgB;calSoft=true;
-      autoCalArm=0;autoCalBuf.length=0;
-    }else{
-      neutG=gx;neutB=gy;
-      tiltX=0;tiltY=0;ball.vx=0;ball.vy=0;
-      return;
+    if(nowT-autoCalArm>1200){autoCalArm=0;autoCalBuf.length=0;} // חלון הצילום נסגר — בלי נעילת חירום
+    else{
+      autoCalBuf.push([nowT,gx,gy]);
+      while(autoCalBuf.length&&nowT-autoCalBuf[0][0]>320)autoCalBuf.shift();
+      if(autoCalBuf.length>=3&&nowT-autoCalBuf[0][0]>=180){
+        let mnG=1e9,mxG=-1e9,mnB=1e9,mxB=-1e9,sG=0,sB=0;
+        for(const[,a,b2]of autoCalBuf){mnG=Math.min(mnG,a);mxG=Math.max(mxG,a);mnB=Math.min(mnB,b2);mxB=Math.max(mxB,b2);sG+=a;sB+=b2;}
+        if(mxG-mnG<3&&mxB-mnB<3){ // היד יציבה — מאמצים את הממוצע כ"ישר"
+          neutG=sG/autoCalBuf.length;neutB=sB/autoCalBuf.length;
+          autoCalArm=0;autoCalBuf.length=0;
+          try{save();}catch(_e){}
+        }
+      }
     }
   }
   // 🧭 תיקון סחיפה מבוסס-זמן: נקודת האפס נוזלת לתנוחה רק כשאין קלט מכוון (הטיה ~אפס),
-  // לאט מאוד בטווח ההיגוי העדין (שלא תיבלע הטיה מכוונת), ומהר אחרי כיול-חירום.
+  // ולאט מאוד בטווח ההיגוי העדין — שהטיה מכוונת לא תיבלע.
   const MAX=26;
   const _tx=(gx-neutG)/MAX,_ty=(gy-neutB)/MAX;
   const idle=Math.abs(_tx)<.1&&Math.abs(_ty)<.1;
-  if(calSoft||idle||(Math.abs(_tx)<.45&&Math.abs(_ty)<.45)){
-    const rate=calSoft?2.2:(idle?.16:.02); // לשנייה — אחיד בכל קצב אירועים
-    const k=1-Math.exp(-edt*rate);
+  if(idle||(Math.abs(_tx)<.45&&Math.abs(_ty)<.45)){
+    const k=1-Math.exp(-edt*(idle?.16:.02)); // לשנייה — אחיד בכל קצב אירועים
     neutG+=(gx-neutG)*k;
     neutB+=(gy-neutB)*k;
-    if(calSoft&&idle)calSoft=false; // הריפוי הושלם — חוזרים לקצב רגיל
   }
   const dz=v=>Math.abs(v)<.05?0:v;
-  const curve=v=>Math.sign(v)*Math.pow(Math.abs(v),1.3); // 🎛 עדין ליד המרכז — שליטה מדויקת
+  const curve=v=>Math.sign(v)*Math.pow(Math.abs(v),1.15); // 🎛 מעט עדין ליד המרכז, בלי לאבד כוח
   tiltX=curve(dz(Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS))));
   tiltY=curve(dz(Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS))));
 }
-/* 📱 סיבוב מסך באמצע משחק — הצירים מתחלפים, אז מכיילים מחדש (הכדור קופא לרגע במקום לברוח) */
+/* 📱 סיבוב מסך באמצע משחק — הצירים מתחלפים, פותחים חלון-אימוץ פסיבי חדש */
 {
   const reCalOnRotate=()=>{if(!touchMode){autoCalArm=performance.now();autoCalBuf.length=0;}};
   try{
@@ -2258,14 +2253,6 @@ function onOrient(e){
     else window.addEventListener('orientationchange',reCalOnRotate);
   }catch(_e){}
 }
-/* 🐕‍🦺 חיישן שנרדם באמצע (השעיית רקע וכו') — חוזרים לג'ויסטיק אוטומטית, והחיישן
-   יצטרך להוכיח את עצמו מחדש (זרם+שונות) כדי להשתלט שוב */
-setInterval(()=>{
-  if(running&&!paused&&!touchMode&&gotOrientation&&lastOrientT&&performance.now()-lastOrientT>2500){
-    touchMode=true;orientN=0;senProof.length=0;
-    tiltX=0;tiltY=0;autoCalArm=0;autoCalBuf.length=0;
-  }
-},1000);
 let sensorBound=false,sensorHinted=false,sensorDenied=false;
 const iosMotionReq=(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function');
 async function enableSensors(){
@@ -5755,7 +5742,7 @@ $('pauseMenuBtn').onclick=()=>{
   $('menuOv').classList.remove('hidden');
   if(typeof syncLobbyUI==='function')try{syncLobbyUI();}catch(e){}
 };
-$('calibBtn').onclick=()=>{neutB=rawB;neutG=rawG;calSoft=false;autoCalArm=0;autoCalBuf.length=0;save();showToast(tr('🎯 כויל!','🎯 Calibrated!'));};
+$('calibBtn').onclick=()=>{neutB=rawB;neutG=rawG;autoCalArm=0;autoCalBuf.length=0;save();showToast(tr('🎯 כויל!','🎯 Calibrated!'));};
 $('sensSlider').oninput=e=>{SENS=e.target.value/100;save();};
 $('soundBtn').onclick=()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';save();};
 $('doneMenu').onclick=()=>{
