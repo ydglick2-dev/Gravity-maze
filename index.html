@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v153</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v154</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -701,6 +701,27 @@
     <button class="btn sec" id="admRegLock" data-en="🔒 Lock account creation (device)">🔒 נעל יצירת חשבונות</button>
     <button class="btn sec" id="admRegUnlock" data-en="🔓 Unlock">🔓 שחרר</button>
   </div>
+  <div class="row">
+    <select class="tin" id="admPetSel" style="max-width:150px"></select>
+    <button class="btn sec" id="admGivePet" data-en="🐾 Give pet">🐾 תן חיה</button>
+  </div>
+  <div class="row">
+    <select class="tin" id="admChTier" style="max-width:140px">
+      <option value="4">🔴 מדהים</option>
+      <option value="5" selected>🟡 אגדי</option>
+      <option value="6">🌌 קוסמי</option>
+      <option value="7">🌠 עונתי</option>
+    </select>
+    <button class="btn sec" id="admGiveGct" data-en="🎁 Send rarity chest">🎁 שלח תיבת נדירות</button>
+    <button class="btn sec" id="admGcLink" data-en="🔗 Gift link">🔗 קישור מתנה</button>
+  </div>
+  <div style="font-size:11px;color:#8a94a8" data-en="🎁 to the target above · 🔗 creates a one-time share link (copied)">🎁 נשלחת ליעד שלמעלה · 🔗 יוצר קישור חד-פעמי לשיתוף (מועתק ללוח)</div>
+  <div class="row">
+    <button class="btn sec" id="admGate" data-en="🌠 Neon Gate (3 skips)">🌠 שער הניאון (3 דילוגים)</button>
+    <input class="tin" id="admPx" type="number" min="1" value="100" style="max-width:86px">
+    <button class="btn sec" id="admGivePx" data-en="🎫 Pass XP">🎫 XP לפס</button>
+  </div>
+  <button class="btn sec" id="admStats" data-en="📊 World stats">📊 סטטיסטיקות עולם</button>
   <div class="row">
     <input class="tin" id="admMsgTxt" maxlength="90" placeholder="הודעה מגליקי..." data-en-ph="Message..." style="max-width:180px">
     <button class="btn sec" id="admMsgSend" data-en="📨 To player">📨 לשחקן</button>
@@ -3819,6 +3840,24 @@ function rollPetChest(){
     r-=pct;
   }
   return{co:10+((Math.random()*41)|0)}; // 🪙 10–50, לעולם לא מעל 50
+}
+/* 🎁 תור תיבות בנדירות כפויה — לפי משתמש (קישורי מתנה + מתנות אדמין) */
+function gcQKey(u){return 'mzGiftT_'+(u||curUser||'');}
+function gcQueueAdd(t,u){
+  try{
+    const k=gcQKey(u),a=JSON.parse(store().getItem(k)||'[]');
+    a.push(t|0);
+    store().setItem(k,JSON.stringify(a.slice(0,10)));
+  }catch(e){}
+}
+function gcQueueTake(){
+  try{
+    const k=gcQKey(),a=JSON.parse(store().getItem(k)||'[]');
+    if(!Array.isArray(a)||!a.length)return 0;
+    const t=a.shift()|0;
+    store().setItem(k,JSON.stringify(a));
+    return(t>=4&&t<=7)?t:0;
+  }catch(e){return 0;}
 }
 /* 🌈 FEVER (קומבו כוכבים ×3) · 🔥 שובל אש (רצף ניצחונות) · 🌟 שלב זהב */
 let feverT=0,feverHit=false,goldLv=false,trailAcc=0;
@@ -7581,7 +7620,10 @@ function rollChest(){
   for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
   if(petPerk('luck')&&tier<6&&Math.random()<.01)tier=6; // 🐰 ארנב המזל: +1% לתיבה קוסמית
   let fLeg=false;
-  if(_cx2){tier=7;_cx2=false;_cx1=false;}
+  lastRollGifted=false;
+  const _gt=gcQueueTake(); // 🎁 תיבת-מתנה בתור? היא קובעת את הנדירות
+  if(_gt){tier=_gt;lastRollGifted=true;}
+  else if(_cx2){tier=7;_cx2=false;_cx1=false;}
   else if(_cx1){fLeg=true;if(tier<5)tier=5;_cx1=false;}
   if(tier===7&&SEASON_SKINS.every(ix=>skinOwned.includes(ix)))tier=6; // כל סקיני העונה כבר אצלך — משודרג לקוסמי
   // 🏷 תיבה נדירה מכריזה על עצמה — רואים מה יצא בהגרלת הנדירות
@@ -7630,8 +7672,10 @@ function rollChest(){
     }
   }
   if(messi&&tier>=6){drops.push(messi);if(messi._extra)drops.push(messi._extra);} // 🐉 הדרקון לא הולך לאיבוד בתיבות העל
+  lastRollTier=tier;
   return drops;
 }
+let lastRollTier=0,lastRollGifted=false;
 let chestBusy=false;
 /* 🏆 תיבת מונדיאל — כל 50 שלבים. 20% לגביע מונדיאל; 3 גביעים = ליאו מסי (מורשת)! */
 function mondialBox(){ // 🏆 תיבת בונוס כל 50 שלבים (מסי עבר לתיבות רגילות — 0.01%)
@@ -7653,12 +7697,73 @@ function checkMessi(){
     }),500);
   }
 }
+/* 🔗 קישורי תיבת-מתנה: תיבה נדירה שנפתחה מייצרת קישור חד-פעמי — מי שמקבל אותו זוכה בתיבה כזו */
+let gcLink=null;
+function gcShareClear(){try{const e=document.getElementById('gcShare');if(e)e.remove();}catch(e){}gcLink=null;}
+async function gcMakeLink(t,silent){
+  try{
+    const r=await be('/api/gcmake',{u:curUser,t});
+    if(!(r&&r.tok))return null;
+    gcLink='https://gravity-maze.gravity-maze.workers.dev/?gc='+r.tok;
+    let copied=false;
+    try{await navigator.clipboard.writeText(gcLink);copied=true;}catch(e){}
+    if(!silent&&copied)showToast(tr('🔗 קישור תיבת ','🔗 A ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en)+tr(' הועתק ללוח! שלח לחבר — הוא יקבל תיבה כזאת','+ chest link copied! Send it to a friend'));
+    if(!silent){ // כפתורי שיתוף במסך התיבות — נשארים עד הפתיחה הבאה
+      const row=document.createElement('div');
+      row.id='gcShare';
+      row.style.cssText='display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;animation:popIn .4s cubic-bezier(.2,1.4,.4,1)';
+      const b1=document.createElement('button');
+      b1.className='btn sec';
+      b1.style.cssText='border-color:rgba(255,210,87,.55)';
+      b1.textContent='🔗 '+tr('העתק קישור מתנה — תיבת ','Copy gift link — ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en);
+      b1.onclick=async()=>{
+        try{await navigator.clipboard.writeText(gcLink);showToast(tr('הועתק! שלח לחבר 🔗','Copied! Send it 🔗'));}
+        catch(e){try{prompt(tr('העתק ידנית:','Copy manually:'),gcLink);}catch(e2){}}
+      };
+      row.appendChild(b1);
+      if(navigator.share){
+        const b2=document.createElement('button');
+        b2.className='btn sec';
+        b2.textContent='📤 '+tr('שתף','Share');
+        b2.onclick=()=>{try{navigator.share({title:'Gravity Maze 🎁',text:tr('שלחתי לך תיבת ','A gift chest for you: ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en)+' 🎁',url:gcLink});}catch(e){}};
+        row.appendChild(b2);
+      }
+      const anchor=$('dropRow');
+      anchor.parentElement.insertBefore(row,anchor.nextSibling);
+    }
+    return gcLink;
+  }catch(e){return null;}
+}
+try{ // קליטת קישור מתנה מה-URL — נשמר עד שמתחברים
+  const _q=new URLSearchParams(location.search);
+  if(_q.get('gc')){
+    store().setItem('mzGcTok',String(_q.get('gc')).slice(0,40));
+    history.replaceState(null,'',location.pathname);
+  }
+}catch(e){}
+async function tryClaimGc(){
+  let tok=null;try{tok=store().getItem('mzGcTok');}catch(e){}
+  if(!tok||!curUser||!beOn())return;
+  const r=await be('/api/gcclaim',{u:curUser,tok});
+  if(!r)return; // תקלת רשת — ננסה שוב בכניסה הבאה
+  try{store().removeItem('mzGcTok');}catch(e){}
+  if(r.ok){
+    chests++;gcQueueAdd(r.t|0);save();refreshTro();
+    showAdmToast('🎁 '+String(r.f||'').slice(0,14)+tr(' שלח לך תיבת ',' sent you a ')+tr((RAR[r.t|0]||RAR[5]).n,(RAR[r.t|0]||RAR[5]).en)+tr('! פתח אותה במסך התיבות',' chest! Open it in the Chests screen'));
+    try{emojiBurst({e:['🎁','💝','✨'],n:20,m:'burst',d:1600});}catch(e){}
+    try{tone(880,.1,'sine',.3);setTimeout(()=>tone(1174,.16,'sine',.3),130);}catch(e){}
+  }else if(r.err==='gone')showToast(tr('😕 קישור המתנה כבר מומש או שפג תוקפו','😕 This gift link was already used or expired'));
+  else if(r.err==='self')showToast(tr('אי אפשר לממש קישור ששלחת בעצמך 😅','You can\'t claim your own link 😅'));
+}
 function openChest(){
   if(chestBusy)return;
   if(chests<=0){showToast(tr('אין תיבות — השלימו קווסטים או קנו בחנות!','No chests — complete quests or buy some!'));return;}
   chestBusy=true;chests--;questAdd('chest',1);logEv('ch');
+  gcShareClear();
   const drops=rollChest();
   checkAch();save();refreshTro();
+  // 🔗 תיבה נדירה (אדיר+) שלא הגיעה בעצמה ממתנה — מייצרת קישור מתנה ומעתיקה ללוח
+  if(lastRollTier>=4&&!lastRollGifted&&curUser&&beOn())setTimeout(()=>gcMakeLink(lastRollTier),900);
   const mx=drops.reduce((m,d)=>Math.max(m,d.rar|0),0);
   playBoxOpen(mx,()=>{ // 📦 הקשות, סדקים, טיזר ופיצוץ
     emojiBurst({e:['🎁','✨','🎊'],n:18,m:'nova',d:1300,z:75}); // רסיסי מתנה מהפיצוץ
@@ -9184,6 +9289,7 @@ async function finishLogin(u,p){
   $('adminBtn').style.display=isAdmin?'':'none';
   checkGifts();
   pushAutoRefresh(); // 🔔 מכשיר שכבר אישר התראות — נרשם מחדש אוטומטית
+  setTimeout(tryClaimGc,1500); // 🔗 מימוש קישור תיבת-מתנה שממתין
 }
 async function checkGifts(){
   if(!curUser)return;
@@ -9316,6 +9422,27 @@ function applyGift(g,target){
         try{emojiBurst({e:['💌','🎂','✨'],n:10,m:'burst',d:1200});}catch(e){}
       },900);
     });
+    if(g.pet!==undefined)[].concat(g.pet).forEach(ix=>{ // 🐾 חיה מהאדמין
+      ix|=0;if(!PETS[ix]||ix<=0||petOw.includes(ix))return;
+      petOw.push(ix);petSel=ix;
+      setTimeout(()=>showAdmToast(tr('🐾 קיבלת חיה מהאדמין: ','🐾 The admin gave you a pet: ')+tr(PETS[ix].name,PETS[ix].en)+'!'),800);
+    });
+    if(g.gct){ // 🎁 תיבות בנדירות כפויה — נכנסות לתור וייפתחו בנדירות הזו
+      const q2=[].concat(g.gct).map(n2=>n2|0).filter(n2=>n2>=4&&n2<=7);
+      if(q2.length){
+        chests+=q2.length;
+        q2.forEach(t2=>gcQueueAdd(t2));
+        setTimeout(()=>showAdmToast(tr('🎁 קיבלת תיבת ','🎁 You got a ')+tr((RAR[q2[0]]||RAR[5]).n,(RAR[q2[0]]||RAR[5]).en)+tr(' במתנה! פתח אותה במסך התיבות',' chest! Open it in the Chests screen')),800);
+      }
+    }
+    if(g.gate){ // ⏭ שער הניאון + איפוס הדילוגים
+      if(!skinOwned.includes(SEASKIN_IDX))skinOwned.push(SEASKIN_IDX);
+      skpU=0;
+      setTimeout(()=>showAdmToast(tr('🌠 קיבלת את שער הניאון! 3 דילוגי שלב מחכים לך','🌠 You got the Neon Gate! 3 level-skips await')),800);
+    }
+    if(g.px){try{passAdd(g.px|0);}catch(e){}
+      setTimeout(()=>showAdmToast('🎫 +'+(g.px|0)+tr(' לפס העונה מהאדמין!',' season-pass XP from the admin!')),800);
+    }
     if(g.rlk!==undefined){ // 🔒 נעילת/שחרור יצירת חשבונות במכשיר הזה — מהאדמין, מרחוק
       try{g.rlk?localStorage.setItem('mzRegLock','1'):localStorage.removeItem('mzRegLock');}catch(e){}
       setTimeout(()=>showAdmToast(g.rlk
@@ -9362,6 +9489,21 @@ function applyGift(g,target){
     if(!d.ow.includes(0))d.ow.unshift(0);
     if(!d.ow.includes(d.sk|0))d.sk=0;
   }
+  if(g.pet!==undefined){ // 🐾 חיה בשמירה מקומית של שחקן אחר במכשיר
+    d.po=Array.isArray(d.po)?d.po:[0];
+    [].concat(g.pet).forEach(ix=>{ix|=0;if(ix>0&&PETS[ix]&&!d.po.includes(ix))d.po.push(ix);});
+  }
+  if(g.gct){ // 🎁 תיבות בנדירות כפויה — לשחקן אחר במכשיר
+    const q2=[].concat(g.gct).map(n2=>n2|0).filter(n2=>n2>=4&&n2<=7);
+    d.ch=(d.ch|0)+q2.length;
+    q2.forEach(t2=>gcQueueAdd(t2,target));
+  }
+  if(g.gate){
+    d.ow=Array.isArray(d.ow)?d.ow:[0];
+    if(!d.ow.includes(SEASKIN_IDX))d.ow.push(SEASKIN_IDX);
+    d.sku=0;
+  }
+  if(g.px)d.psp=(d.psp|0)+(g.px|0);
   if(g.st){ // לפני הניפוח: מקבעים את המונים האמיתיים, שהטבלאות ימשיכו להציג רק משחק אמיתי
     if(d.edn===undefined){let _ed=0,_es=0;(d.s||[]).forEach(a=>{if(a&&a[0]&&(a[2]|0)>0){_ed++;_es+=a[1]|0;}});d.edn=_ed;d.esn=_es;}
     d.s=LEVELS.map((_,i)=>{const a=(d.s&&d.s[i])||[0,0,0];
@@ -11028,6 +11170,15 @@ $('adminBtn').onclick=async()=>{
       sel.appendChild(o);
     });
   }catch(e){}
+  try{ // 🐾 רשימת החיות לבחירה
+    const sel=$('admPetSel');
+    if(!sel.options.length)PETS.forEach((p2,i)=>{
+      if(i===0)return;
+      const o=document.createElement('option');
+      o.value=i;o.textContent=p2.icon+' '+p2.name;
+      sel.appendChild(o);
+    });
+  }catch(e){}
   try{buildBlessList();}catch(e){} // 💌 יומן ההודעות שקיבלת
   $('admNet').textContent=tr('🌍 בודק חיבור…','🌍 Checking…');
   const d=await regFetch();
@@ -11041,6 +11192,40 @@ $('admGiveTro').onclick=()=>admGive({tro:Math.max(1,$('admTro').value|0)},'גב�
 $('admGiveCoins').onclick=()=>admGive({co:Math.max(1,$('admCoins').value|0)},'מטבעות');
 $('admGiveChests').onclick=()=>admGive({ch:Math.max(1,$('admChests').value|0)},'תיבות');
 $('admGiveGems').onclick=()=>admGive({gm:Math.max(1,$('admGems').value|0)},'יהלומים');
+$('admGivePet').onclick=()=>{
+  const i=$('admPetSel').value|0;
+  if(!PETS[i]||i<=0)return $('admMsg').textContent=tr('בחר חיה','Pick a pet');
+  admGive({pet:i},tr('חיה: ','Pet: ')+PETS[i].icon+' '+tr(PETS[i].name,PETS[i].en));
+};
+$('admGiveGct').onclick=()=>{
+  const t2=$('admChTier').value|0;
+  admGive({ch:1,gct:[t2]},tr('תיבת ','Chest: ')+tr((RAR[t2]||RAR[5]).n,(RAR[t2]||RAR[5]).en));
+};
+$('admGcLink').onclick=async()=>{
+  const t2=$('admChTier').value|0;
+  $('admMsg').textContent='…';
+  const link=await gcMakeLink(t2,true);
+  if(!link)return $('admMsg').textContent=tr('שגיאת רשת ביצירת הקישור','Network error creating the link');
+  let copied=false;
+  try{await navigator.clipboard.writeText(link);copied=true;}catch(e){}
+  $('admMsg').textContent=(copied?tr('🔗 הועתק ללוח! ','🔗 Copied! '):'🔗 ')+link;
+};
+$('admGate').onclick=()=>admGive({gate:1},tr('שער הניאון + 3 דילוגים','Neon Gate + 3 skips'));
+$('admGivePx').onclick=()=>admGive({px:Math.max(1,$('admPx').value|0)},tr('XP לפס העונה','Season-pass XP'));
+$('admStats').onclick=async()=>{
+  $('admMsg').textContent='…';
+  const d=await regFetch();
+  if(!d)return $('admMsg').textContent=tr('אין חיבור','Offline');
+  const us=Object.keys(d.users||{});
+  let topN='',topT=-1,chSum=0,gmSum=0;
+  us.forEach(u=>{
+    const sv=d.users[u].sv||{};
+    if((sv.tro|0)>topT){topT=sv.tro|0;topN=u;}
+    chSum+=sv.ch|0;gmSum+=sv.gm|0;
+  });
+  const bans=Object.keys(d.bans||{}).length;
+  $('admMsg').textContent='📊 '+us.length+tr(' שחקנים · 🏆 שיא: ',' players · 🏆 top: ')+topN+' ('+Math.max(0,topT)+') · 🎁 '+chSum+tr(' תיבות בעולם · 💎 ',' chests worldwide · 💎 ')+gmSum+(bans?tr(' · 🚫 באנים: ',' · 🚫 bans: ')+bans:'');
+};
 $('admTakeTro').onclick=()=>admGive({dtro:Math.max(1,$('admTake').value|0)},'הורדת גביעים');
 $('admTakeCo').onclick=()=>admGive({dco:Math.max(1,$('admTake').value|0)},'הורדת מטבעות');
 $('admTakeGm').onclick=()=>admGive({dgm:Math.max(1,$('admTake').value|0)},'הורדת יהלומים');
@@ -11234,6 +11419,7 @@ function initAuth(){
     isAdmin=!!(st&&st.getItem('mazeAdm_v1')==='1');
     $('adminBtn').style.display=isAdmin?'':'none';
     pushAutoRefresh(); // 🔔 רענון מנוי ההתראות בכניסה אוטומטית
+    setTimeout(tryClaimGc,1500); // 🔗 מימוש קישור תיבת-מתנה שממתין
     if(!users[cu]){ // הרשומה המקומית אבדה — משחזרים מהענן ברקע
       (async()=>{try{
         let rec=null;

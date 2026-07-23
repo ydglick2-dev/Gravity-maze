@@ -27,7 +27,7 @@ const nameBanned = v => {
 };
 const PORT = +(process.argv[2] || 8787);
 const FILE = path.join(__dirname, 'dev-data.json');
-let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, chat: {}, push: {}, mm: null };
+let doc = { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, chat: {}, push: {}, gch: {}, mm: null };
 try { doc = Object.assign(doc, JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) { }
 if (!doc.chat) doc.chat = {};
 if (!doc.push) doc.push = {};
@@ -89,7 +89,7 @@ const server = http.createServer((req, res) => {
       if (!b || !b.users) return J({ err: 'bad' }, 400);
       const snd0 = doc.snd;
       doc = b;
-      for (const k of ['users', 'gifts', 'summon', 'bans', 'live']) if (!doc[k]) doc[k] = {};
+      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push', 'gch']) if (!doc[k]) doc[k] = {};
       if (!doc.snd) doc.snd = snd0 || { v: 0, m: {} };
       persist(); return J({ ok: 1 });
     }
@@ -192,6 +192,33 @@ const server = http.createServer((req, res) => {
       for (const u in doc.users) notify(u);
       return J({ ok: 1, sent: n });
     }
+    if (p === '/api/gcmake' && req.method === 'POST') {
+      const u = cleanName(b.u), t = b.t | 0;
+      if (!u || !doc.users[u] || t < 4 || t > 7) return J({ err: 'bad' }, 400);
+      const now = Date.now();
+      for (const k in doc.gch) if (now - (doc.gch[k].at || 0) > 6048e5) delete doc.gch[k];
+      if (u !== 'גליקי') {
+        let mine = 0;
+        for (const k in doc.gch) if (doc.gch[k].f === u && now - doc.gch[k].at < 864e5) mine++;
+        if (mine >= 5) return J({ err: 'limit' }, 429);
+      }
+      const tok = require('crypto').randomBytes(12).toString('hex');
+      doc.gch[tok] = { t, f: u, at: now };
+      persist();
+      return J({ ok: 1, tok });
+    }
+
+    if (p === '/api/gcclaim' && req.method === 'POST') {
+      const u = cleanName(b.u), tok = String(b.tok || '').slice(0, 40);
+      if (!u || !doc.users[u] || !tok) return J({ err: 'bad' }, 400);
+      const rec = doc.gch[tok];
+      if (!rec) return J({ err: 'gone' }, 404);
+      if (rec.f === u) return J({ err: 'self' }, 400);
+      delete doc.gch[tok];
+      persist();
+      return J({ ok: 1, t: rec.t, f: rec.f });
+    }
+
     if (p === '/api/gift' && req.method === 'POST') {
       const t = cleanName(b.t);
       if (!doc.users[t]) return J({ err: 'nouser' }, 404);
@@ -210,6 +237,10 @@ const server = http.createServer((req, res) => {
       if (g.rlk !== undefined) q.rlk = g.rlk ? 1 : 0;
       if (Array.isArray(g.bmsg)) q.bmsg = [...(Array.isArray(q.bmsg) ? q.bmsg : []), ...g.bmsg.map(m => ({ f: cleanName(m && m.f).slice(0, 14), t: String((m && m.t) || '').slice(0, 90), co: (m && m.co) | 0 }))].slice(-20);
       if (g.dnl) q.dnl = g.dnl | 0;
+      if (g.pet !== undefined) q.pet = [...new Set([...(Array.isArray(q.pet) ? q.pet : []), ...[].concat(g.pet).map(n => n | 0)])].slice(0, 10);
+      if (g.gct) q.gct = [...(Array.isArray(q.gct) ? q.gct : []), ...[].concat(g.gct).map(n => n | 0).filter(n => n >= 4 && n <= 7)].slice(-10);
+      if (g.gate) q.gate = 1;
+      if (g.px) q.px = (q.px | 0) + (g.px | 0);
       if (g.clv) q.clv = g.clv;
       if ('clr' in g) q.clr = g.clr | 0;
       if (g.rst) q.rst = 1;

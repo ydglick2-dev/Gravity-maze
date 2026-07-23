@@ -84,7 +84,7 @@ export class Registry {
     if (!this.doc) {
       this.doc = (await this.state.storage.get('doc')) ||
         { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
-      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push'])
+      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push', 'gch'])
         if (!this.doc[k]) this.doc[k] = {};
     }
     if (!this.snd) this.snd = (await this.state.storage.get('sndIdx')) || { v: 0, ks: [] };
@@ -356,6 +356,36 @@ export class Registry {
       return J({ ok: 1, sent: n });
     }
 
+    /* 🔗 קישור תיבת-מתנה: יצירת טוקן חד-פעמי לתיבה בנדירות שנפתחה */
+    if (p === '/api/gcmake' && req.method === 'POST') {
+      const u = cleanName(b.u), t = b.t | 0;
+      if (!u || !d.users[u] || t < 4 || t > 7) return J({ err: 'bad' }, 400);
+      const now = Date.now();
+      // ניקוי טוקנים בני יותר משבוע + מגבלת יצירה יומית (האדמין פטור)
+      for (const k in d.gch) if (now - (d.gch[k].at || 0) > 6048e5) delete d.gch[k];
+      if (u !== 'גליקי') {
+        let mine = 0;
+        for (const k in d.gch) if (d.gch[k].f === u && now - d.gch[k].at < 864e5) mine++;
+        if (mine >= 5) return J({ err: 'limit' }, 429);
+      }
+      const tok = [...crypto.getRandomValues(new Uint8Array(12))].map(x => x.toString(16).padStart(2, '0')).join('');
+      d.gch[tok] = { t, f: u, at: now };
+      await this.saveDoc();
+      return J({ ok: 1, tok });
+    }
+
+    /* 🔗 מימוש קישור תיבת-מתנה — חד-פעמי, לא לעצמך */
+    if (p === '/api/gcclaim' && req.method === 'POST') {
+      const u = cleanName(b.u), tok = String(b.tok || '').slice(0, 40);
+      if (!u || !d.users[u] || !tok) return J({ err: 'bad' }, 400);
+      const rec = d.gch[tok];
+      if (!rec) return J({ err: 'gone' }, 404);
+      if (rec.f === u) return J({ err: 'self' }, 400);
+      delete d.gch[tok];
+      await this.saveDoc();
+      return J({ ok: 1, t: rec.t, f: rec.f });
+    }
+
     // מתנה/עונש: מיזוג אטומי לתור + דחיפה מיידית ב-WS
     if (p === '/api/gift' && req.method === 'POST') {
       const t = cleanName(b.t);
@@ -378,6 +408,10 @@ export class Registry {
       if (g.rlk !== undefined) q.rlk = g.rlk ? 1 : 0; // 🔒 נעילת יצירת חשבונות במכשיר היעד
       if (Array.isArray(g.bmsg)) q.bmsg = [...(Array.isArray(q.bmsg) ? q.bmsg : []), ...g.bmsg.map(m => ({ f: cleanName(m && m.f).slice(0, 14), t: String((m && m.t) || '').slice(0, 90), co: (m && m.co) | 0 }))].slice(-20); // 💌 ברכות יומולדת
       if (g.dnl) q.dnl = g.dnl | 0;
+      if (g.pet !== undefined) q.pet = [...new Set([...(Array.isArray(q.pet) ? q.pet : []), ...[].concat(g.pet).map(n => n | 0)])].slice(0, 10); // 🐾 חיות מהאדמין
+      if (g.gct) q.gct = [...(Array.isArray(q.gct) ? q.gct : []), ...[].concat(g.gct).map(n => n | 0).filter(n => n >= 4 && n <= 7)].slice(-10); // 🎁 תיבות בנדירות כפויה
+      if (g.gate) q.gate = 1; // ⏭ שער הניאון + איפוס דילוגים
+      if (g.px) q.px = (q.px | 0) + (g.px | 0); // 🎫 XP לפס העונה
       if (g.clv) q.clv = g.clv;
       if ('clr' in g) q.clr = g.clr | 0;
       if (g.rst) q.rst = 1;
