@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v155</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v156</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -498,7 +498,7 @@
       <button class="mTile" id="achBtn"><div class="mIc">🏅</div><div data-en="Achievements">הישגים</div></button>
       <button class="mTile" id="mnuSet"><div class="mIc">⚙️</div><div data-en="Settings">הגדרות</div></button>
       <button class="mTile" id="adminBtn" style="display:none"><div class="mIc">🛠</div><div data-en="Admin">אדמין</div></button>
-      <button class="mTile" id="giftAdmBtn" style="display:none"><div class="mIc">💬</div><div data-en="Chat">צ'אט</div></button>
+      <button class="mTile" id="giftAdmBtn" style="display:none"><div class="mIc">🛒</div><div data-en="Shop">חנות</div></button>
       <button id="passBtn" style="display:none"></button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:18px 20px;gap:12px;margin-top:auto">
@@ -535,6 +535,23 @@
   <div id="giftAdmMsg" style="min-height:20px;font-size:13px;color:#ffd257;font-weight:700"></div>
   <button class="btn" id="giftAdmSend" data-en="🎁 Send gift">🎁 שלח מתנה</button>
   <button class="btn sec" id="giftAdmBack" data-en="Back">חזרה</button>
+</div>
+
+<div class="overlay hidden" id="shopOv" style="z-index:57;background:rgba(6,10,22,.97)">
+  <div class="big">🛒</div>
+  <h1 data-en="Shop">החנות</h1>
+  <p class="sub" style="max-width:330px" data-en="Real-money packs (paid to Gliki) and gift-code redemption">חבילות בכסף אמיתי (התשלום לגליקי 💸) ומימוש קודי מתנה</p>
+  <div id="shopPacks" style="display:flex;flex-direction:column;gap:9px;width:min(330px,88vw)"></div>
+  <div id="shopMsg" style="min-height:20px;font-size:13px;color:#ffd257;font-weight:700;max-width:320px"></div>
+  <div style="width:min(330px,88vw);border-top:1px solid rgba(255,255,255,.14);margin:8px 0 2px"></div>
+  <h1 style="font-size:20px" data-en="🎟 Redeem a code">🎟 מימוש קוד</h1>
+  <p class="sub" style="max-width:320px;margin-top:-4px" data-en="Got a chest code from a friend? Enter it here — each code works once">קיבלת קוד תיבה מחבר? הכנס אותו כאן — כל קוד עובד פעם אחת בלבד</p>
+  <div class="row">
+    <input class="tin" id="shopCode" maxlength="20" placeholder="הדבק קוד..." data-en-ph="Paste code..." style="max-width:190px;text-transform:uppercase;letter-spacing:1px">
+    <button class="btn sec" id="shopRedeem" data-en="✨ Redeem">✨ ממש</button>
+  </div>
+  <div id="shopCodeMsg" style="min-height:20px;font-size:13px;font-weight:700;max-width:320px"></div>
+  <button class="btn sec" id="shopBack" data-en="Back">חזרה</button>
 </div>
 
 <div class="overlay hidden" id="instOv" style="z-index:59;background:rgba(8,12,22,.97)">
@@ -713,7 +730,7 @@
       <option value="7">🌠 עונתי</option>
     </select>
     <button class="btn sec" id="admGiveGct" data-en="🎁 Send rarity chest">🎁 שלח תיבת נדירות</button>
-    <button class="btn sec" id="admGcLink" data-en="🔗 Gift link">🔗 קישור מתנה</button>
+    <button class="btn sec" id="admGcLink" data-en="🎟 Gift code">🎟 קוד מתנה</button>
   </div>
   <div style="font-size:11px;color:#8a94a8" data-en="🎁 to the target above · 🔗 creates a one-time share link (copied)">🎁 נשלחת ליעד שלמעלה · 🔗 יוצר קישור חד-פעמי לשיתוף (מועתק ללוח)</div>
   <div class="row">
@@ -721,7 +738,10 @@
     <input class="tin" id="admPx" type="number" min="1" value="100" style="max-width:86px">
     <button class="btn sec" id="admGivePx" data-en="🎫 Pass XP">🎫 XP לפס</button>
   </div>
-  <button class="btn sec" id="admStats" data-en="📊 World stats">📊 סטטיסטיקות עולם</button>
+    <div class="row">
+    <button class="btn sec" id="admStats" data-en="📊 World stats">📊 סטטיסטיקות עולם</button>
+    <button class="btn sec" id="admGcWipe" style="border-color:rgba(255,90,90,.5);color:#ff9a9a" data-en="🧹 Wipe gift codes">🧹 מחק קודי תיבות</button>
+  </div>
   <div class="row">
     <input class="tin" id="admMsgTxt" maxlength="90" placeholder="הודעה מגליקי..." data-en-ph="Message..." style="max-width:180px">
     <button class="btn sec" id="admMsgSend" data-en="📨 To player">📨 לשחקן</button>
@@ -981,6 +1001,7 @@
   <p class="sub" style="color:#d8b8c8;max-width:300px" data-en="You were close! The level isn't going anywhere — one more try and you're there 💪">הייתם קרובים! השלב לא הולך לשום מקום — עוד ניסיון אחד ואתם שם 💪</p>
   <div id="failText" style="background:rgba(7,16,33,.6);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:7px 18px;font-weight:800;font-size:13px;color:#eaf4ff"></div>
   <div style="margin-top:26px;width:min(340px,88vw);display:flex;flex-direction:column;gap:10px">
+    <button class="btn" id="failAdRevive" style="width:100%;background:linear-gradient(135deg,#1f9d55,#137a3f);display:none" data-en="📺 Watch an ad — come back with ❤️">📺 צפו בפרסומת — חזרו עם ❤️</button>
     <button class="btn" id="failRetry" style="width:100%" data-en="↺ Try Again">↺ נסו שוב</button>
     <div class="row">
       <button class="btn sec" id="failSelect" data-en="Level Select">בחירת שלב</button>
@@ -2096,7 +2117,7 @@ function loadLevel(i){
   keyGot=(lv.keys||[]).map(()=>false);
   swState=(lv.switches||[]).map(()=>({open:false,inside:false}));
   lvTime=0;lvDeaths=0;comboN=0;comboT=0;
-  petX=ball.x;petY=ball.y-ball.r*1.9;feverT=0;feverHit=false;trailAcc=0;
+  petX=ball.x;petY=ball.y-ball.r*1.9;feverT=0;feverHit=false;trailAcc=0;adUsedLv=false;
   bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;supAimDrag=null;bossCycN=0;bossSupN=0;supShieldT=0;supRapidT=0;supSlowT=0;supMudT=0;supStopT=0;supBombT=0;supSalvoN=0;
   try{supUi();}catch(e){}
   if(lv.boss&&!customLv){bossMaxHp=bossZone()===9?60:16+bossZone()*4;bossHp=bossMaxHp;bossHpShown=bossMaxHp;bossMode='idle';bossStT=1.2;} // 💪 פס חיים ארוך
@@ -4439,7 +4460,7 @@ function drawPet(T){
 const LB={x:0,z:9,vx:0,vz:0,rot:0,goals:0,glow:0};
 const SB={x:0,z:5.5,vx:0,vz:0,rot:0}; // ⚽ כדור הכדורגל — דוחפים אותו לשער
 let lbBg=null,firstGest=false;
-const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv','sndOv','giftAdmOv','chatOv'];
+const OVS=['menuOv','selectOv','pauseOv','doneOv','failOv','raceOv','raceResOv','skinOv','achOv','chestOv','questOv','boardOv','settingsOv','friendsOv','tablesOv','profileOv','summonOv','watchOv','scratchOv','passOv','sndOv','giftAdmOv','chatOv','shopOv'];
 /* ---- 🟢 נוכחות חיה בלובי ---- */
 let lws=null,lwsMyId=null,lwsRetryAt=0,lnetAcc=0;
 const lobbyOthers=new Map();
@@ -6412,10 +6433,88 @@ function failLevel(){
       showResult('🔒',tr('האתגר ננעל להיום','Locked for today'),tr('שלוש נפילות — האתגר היומי נעול עד מחר. מחר מחכה אתגר חדש!','Three falls — the daily challenge is locked until tomorrow. A new one awaits!'));
     }else{
       $('failText').textContent=tr('שלב ','Level ')+(levelIdx+1)+' · '+tr(THEMES[((levelIdx/10)|0)%10].name,'world')+' · '+Math.min(3,lvDeaths)+'/3 '+tr('נפילות','falls')+penTxt;
+      $('failAdRevive').style.display=adUsedLv?'none':''; // 📺 החייאה בפרסומת — פעם אחת בשלב
       $('failOv').classList.remove('hidden');
     }
   });
 }
+/* 📺 החייאה בפרסומת: צופים בפרסומת וחוזרים לשלב עם ❤️ אחד — פעם אחת בכל שלב (כולל בוסים).
+   כשמזינים מזהה AdSense אמיתי (ADSENSE_ID) יוצגו פרסומות אמיתיות של Google;
+   עד אז מוצג מסך פרסומת פנימי של המשחק. */
+const ADSENSE_ID=''; // ← המזהה מ-Google AdSense (ca-pub-XXXXXXXX) — להדביק כאן כשיהיה
+let adLibReady=false; // הספרייה של גוגל נטענה בפועל (חוסם מצב שבו חוסם-פרסומות בולע את הבקשה)
+if(/^ca-pub-/.test(ADSENSE_ID)){ // טוען את ספריית H5 Games Ads של גוגל רק כשהמזהה מוגדר
+  try{
+    window.adsbygoogle=window.adsbygoogle||[];
+    window.adBreak=window.adConfig=function(o){window.adsbygoogle.push(o);};
+    const s2=document.createElement('script');
+    s2.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+ADSENSE_ID;
+    s2.async=true;
+    s2.setAttribute('data-ad-frequency-hint','30s');
+    s2.onload=()=>{adLibReady=true;};
+    document.head.appendChild(s2);
+  }catch(e){}
+}
+let adUsedLv=false,adBusy=false;
+function playAd(cb){
+  if(adBusy)return;
+  adBusy=true;
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;z-index:80;background:#05070f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
+  const useReal=adLibReady&&typeof window.adBreak==='function'; // רק אם הספרייה באמת נטענה — אחרת פרסומת פנימית
+  if(useReal){ // 🎬 פרסומת אמיתית (Google H5 Games Ads) — אם המזהה הוגדר והספרייה נטענה
+    d.remove();
+    try{
+      window.adBreak({
+        type:'reward',
+        name:'revive',
+        beforeReward:showFn=>showFn(),
+        adViewed:()=>{adBusy=false;cb();},
+        adDismissed:()=>{adBusy=false;showToast(tr('צריך לצפות בפרסומת עד הסוף כדי לקבל ❤️','Watch the full ad to earn ❤️'));},
+        adBreakDone:()=>{adBusy=false;}
+      });
+      return;
+    }catch(e){adBusy=false;}
+  }
+  // 🎬 פרסומת פנימית — ספירה לאחור של 6 שניות, בלי אפשרות דילוג
+  let left=6;
+  d.innerHTML='<div style="font-size:11px;color:#5a6478;letter-spacing:2px">'+tr('פרסומת','AD')+'</div>'
+    +'<div style="font-size:64px;animation:popIn .5s">🌆</div>'
+    +'<div style="font-weight:900;font-size:24px;background:linear-gradient(90deg,#00f5d4,#f15bff);-webkit-background-clip:text;background-clip:text;color:transparent">Gravity Maze</div>'
+    +'<div style="color:#aeb8c8;font-size:14px;max-width:280px;text-align:center">'+tr('עונת הניאון כאן! פתחו תיבות, אספו חיות, ותפסו את דרקון הניאון 🐉','The Neon Season is here! Open chests, collect pets, catch the Neon Dragon 🐉')+'</div>'
+    +'<div id="adCnt" style="font-weight:900;font-size:18px;color:#ffd257">6</div>';
+  document.body.appendChild(d);
+  try{tone(440,.08,'sine',.2);}catch(e){}
+  const iv=setInterval(()=>{
+    left--;
+    const c=d.querySelector('#adCnt');
+    if(left>0){if(c)c.textContent=left;return;}
+    clearInterval(iv);
+    if(c){c.textContent='';}
+    const b=document.createElement('button');
+    b.className='btn';
+    b.textContent=tr('▶ המשך לשלב','▶ Continue');
+    b.onclick=()=>{d.remove();adBusy=false;cb();};
+    d.appendChild(b);
+  },1000);
+}
+$('failAdRevive').onclick=()=>{
+  if(adUsedLv)return;
+  playAd(()=>{
+    adUsedLv=true;
+    $('failOv').classList.add('hidden');
+    lvDeaths=2; // ❤️ נשאר לב אחד בדיוק
+    falling=0;fallPt=null;fallCounted=false;winPause=0;timeScale=1;
+    respawn();
+    running=true;paused=false;
+    try{const _b=L().boss&&!customLv;$('fireWrap').classList.toggle('hidden',!_b);$('supWrap').classList.toggle('hidden',!_b);bossAmmoUi();}catch(e){} // 👾 מחזירים את כפתורי הבוס אחרי החייאה
+    try{lastT=performance.now();}catch(e){}
+    try{updateHud();}catch(e){}
+    showToast(tr('❤️ חזרת לחיים עם לב אחד — בזהירות!','❤️ Back alive with one heart — careful!'));
+    try{emojiBurst({e:['❤️','✨'],n:14,m:'burst',d:1300});}catch(e){}
+    if(navigator.vibrate)navigator.vibrate([30,40,30]);
+  });
+};
 $('failRetry').onclick=()=>{$('failOv').classList.add('hidden');startRun(customLv||levelIdx);};
 $('failSelect').onclick=()=>{$('failOv').classList.add('hidden');customLv=null;buildGrid();$('selectOv').classList.remove('hidden');};
 $('failMenu').onclick=()=>{
@@ -7705,41 +7804,47 @@ function checkMessi(){
     }),500);
   }
 }
-/* 🔗 קישורי תיבת-מתנה: תיבה נדירה שנפתחה מייצרת קישור חד-פעמי — מי שמקבל אותו זוכה בתיבה כזו */
-let gcLink=null;
-function gcShareClear(){try{const e=document.getElementById('gcShare');if(e)e.remove();}catch(e){}gcLink=null;}
+/* 🎟 קודי תיבת-מתנה: תיבה נדירה שנפתחה מייצרת קוד חד-פעמי — מי שמזין אותו בחנות זוכה בתיבה כזו */
+let gcCode=null;
+function gcShareClear(){try{const e=document.getElementById('gcShare');if(e)e.remove();}catch(e){}gcCode=null;}
 async function gcMakeLink(t,silent){
   try{
     const r=await be('/api/gcmake',{u:curUser,t});
     if(!(r&&r.tok))return null;
-    gcLink='https://gravity-maze.gravity-maze.workers.dev/?gc='+r.tok;
+    gcCode=String(r.tok);
+    const link='https://gravity-maze.gravity-maze.workers.dev/?gc='+gcCode;
     let copied=false;
-    try{await navigator.clipboard.writeText(gcLink);copied=true;}catch(e){}
-    if(!silent&&copied)showToast(tr('🔗 קישור תיבת ','🔗 A ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en)+tr(' הועתק ללוח! שלח לחבר — הוא יקבל תיבה כזאת','+ chest link copied! Send it to a friend'));
-    if(!silent){ // כפתורי שיתוף במסך התיבות — נשארים עד הפתיחה הבאה
+    try{await navigator.clipboard.writeText(gcCode);copied=true;}catch(e){}
+    if(!silent&&copied)showToast(tr('🎟 קוד תיבת ','🎟 A ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en)+tr(' הועתק ללוח! מי שיזין אותו בחנות — יקבל תיבה כזאת','+ chest code copied! Redeem it in the Shop'));
+    if(!silent){ // הקוד + כפתורי שיתוף במסך התיבות — נשארים עד הפתיחה הבאה
       const row=document.createElement('div');
       row.id='gcShare';
-      row.style.cssText='display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;animation:popIn .4s cubic-bezier(.2,1.4,.4,1)';
+      row.style.cssText='display:flex;flex-direction:column;gap:7px;align-items:center;animation:popIn .4s cubic-bezier(.2,1.4,.4,1)';
+      row.innerHTML='<div style="font-size:12px;color:#aeb8c8">🎟 '+tr('קוד מתנה — תיבת ','Gift code — ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en)+tr(' (חד-פעמי, מימוש בחנות):',' (one-time, redeem in the Shop):')+'</div>'
+        +'<div style="font-weight:900;font-size:19px;letter-spacing:3px;color:#ffd257;background:rgba(255,210,87,.1);border:1.5px dashed rgba(255,210,87,.55);border-radius:12px;padding:7px 16px;direction:ltr">'+gcCode+'</div>';
+      const btns=document.createElement('div');
+      btns.style.cssText='display:flex;gap:8px;justify-content:center;flex-wrap:wrap';
       const b1=document.createElement('button');
       b1.className='btn sec';
       b1.style.cssText='border-color:rgba(255,210,87,.55)';
-      b1.textContent='🔗 '+tr('העתק קישור מתנה — תיבת ','Copy gift link — ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en);
+      b1.textContent='🎟 '+tr('העתק קוד','Copy code');
       b1.onclick=async()=>{
-        try{await navigator.clipboard.writeText(gcLink);showToast(tr('הועתק! שלח לחבר 🔗','Copied! Send it 🔗'));}
-        catch(e){try{prompt(tr('העתק ידנית:','Copy manually:'),gcLink);}catch(e2){}}
+        try{await navigator.clipboard.writeText(gcCode);showToast(tr('הקוד הועתק! שלח לחבר 🎟','Code copied! Send it 🎟'));}
+        catch(e){try{prompt(tr('העתק ידנית:','Copy manually:'),gcCode);}catch(e2){}}
       };
-      row.appendChild(b1);
+      btns.appendChild(b1);
       if(navigator.share){
         const b2=document.createElement('button');
         b2.className='btn sec';
         b2.textContent='📤 '+tr('שתף','Share');
-        b2.onclick=()=>{try{navigator.share({title:'Gravity Maze 🎁',text:tr('שלחתי לך תיבת ','A gift chest for you: ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en)+' 🎁',url:gcLink});}catch(e){}};
-        row.appendChild(b2);
+        b2.onclick=()=>{try{navigator.share({title:'Gravity Maze 🎁',text:tr('קוד תיבת ','Chest code: ')+tr((RAR[t]||RAR[5]).n,(RAR[t]||RAR[5]).en)+': '+gcCode+' — '+tr('מימוש בחנות שבמשחק, או בקישור:','redeem in the in-game Shop, or via:'),url:link});}catch(e){}};
+        btns.appendChild(b2);
       }
+      row.appendChild(btns);
       const anchor=$('dropRow');
       anchor.parentElement.insertBefore(row,anchor.nextSibling);
     }
-    return gcLink;
+    return gcCode;
   }catch(e){return null;}
 }
 try{ // קליטת קישור מתנה מה-URL — נשמר עד שמתחברים
@@ -7757,7 +7862,7 @@ async function tryClaimGc(){
   try{store().removeItem('mzGcTok');}catch(e){}
   if(r.ok){
     chests++;gcQueueAdd(r.t|0);save();refreshTro();
-    showAdmToast('🎁 '+String(r.f||'').slice(0,14)+tr(' שלח לך תיבת ',' sent you a ')+tr((RAR[r.t|0]||RAR[5]).n,(RAR[r.t|0]||RAR[5]).en)+tr('! פתח אותה במסך התיבות',' chest! Open it in the Chests screen'));
+    showToast('🎁 '+String(r.f||'').slice(0,14)+tr(' שלח לך תיבת ',' sent you a ')+tr((RAR[r.t|0]||RAR[5]).n,(RAR[r.t|0]||RAR[5]).en)+tr('! פתח אותה במסך התיבות',' chest! Open it in the Chests screen'));
     try{emojiBurst({e:['🎁','💝','✨'],n:20,m:'burst',d:1600});}catch(e){}
     try{tone(880,.1,'sine',.3);setTimeout(()=>tone(1174,.16,'sine',.3),130);}catch(e){}
   }else if(r.err==='gone')showToast(tr('😕 קישור המתנה כבר מומש או שפג תוקפו','😕 This gift link was already used or expired'));
@@ -8773,7 +8878,7 @@ function applyInbox(r){ // {gift,summon,ban,season,snv,chat} — מכל מקור
     save();refreshTro();
     // 📣 "קיבלת עדכון" רק כשיש באמת מתנה/פעולה — הודעת טקסט בלבד מציגה רק את עצמה
     const hasStuff=Object.keys(g).some(k2=>k2!=='bmsg');
-    if(hasStuff)showAdmToast(tr('🎁 קיבלת עדכון מהאדמין!','🎁 Admin update received!'));
+    if(hasStuff)showToast(tr('🎁 קיבלת עדכון מהאדמין!','🎁 Admin update received!'));
     tone(880,.1,'sine',.3);setTimeout(()=>tone(1318,.18,'sine',.3),110);
     if(navigator.vibrate)navigator.vibrate([50,60,50]); // 📳 התראה מורגשת גם למתנות
     if(hasStuff)try{emojiBurst({e:['🎁','✨'],n:10,m:'burst',d:1100});}catch(e){}
@@ -9433,23 +9538,27 @@ function applyGift(g,target){
     if(g.pet!==undefined)[].concat(g.pet).forEach(ix=>{ // 🐾 חיה מהאדמין
       ix|=0;if(!PETS[ix]||ix<=0||petOw.includes(ix))return;
       petOw.push(ix);petSel=ix;
-      setTimeout(()=>showAdmToast(tr('🐾 קיבלת חיה מהאדמין: ','🐾 The admin gave you a pet: ')+tr(PETS[ix].name,PETS[ix].en)+'!'),800);
+      setTimeout(()=>showToast(tr('🐾 קיבלת חיה מהאדמין: ','🐾 The admin gave you a pet: ')+tr(PETS[ix].name,PETS[ix].en)+'!'),800);
     });
+    if(g.gcx){ // 🧹 האדמין מחק את כל תיבות-המתנה — מנקים את התור המקומי (לפני gct, שמתנה חדשה באותה משיכה לא תימחק)
+      try{store().removeItem(gcQKey());}catch(e){}
+      try{store().removeItem('mzGcTok');}catch(e){}
+    }
     if(g.gct){ // 🎁 תיבות בנדירות כפויה — נכנסות לתור וייפתחו בנדירות הזו
       const q2=[].concat(g.gct).map(n2=>n2|0).filter(n2=>n2>=4&&n2<=7);
       if(q2.length){
         chests+=q2.length;
         q2.forEach(t2=>gcQueueAdd(t2));
-        setTimeout(()=>showAdmToast(tr('🎁 קיבלת תיבת ','🎁 You got a ')+tr((RAR[q2[0]]||RAR[5]).n,(RAR[q2[0]]||RAR[5]).en)+tr(' במתנה! פתח אותה במסך התיבות',' chest! Open it in the Chests screen')),800);
+        setTimeout(()=>showToast(tr('🎁 קיבלת תיבת ','🎁 You got a ')+tr((RAR[q2[0]]||RAR[5]).n,(RAR[q2[0]]||RAR[5]).en)+tr(' במתנה! פתח אותה במסך התיבות',' chest! Open it in the Chests screen')),800);
       }
     }
     if(g.gate){ // ⏭ שער הניאון + איפוס הדילוגים
       if(!skinOwned.includes(SEASKIN_IDX))skinOwned.push(SEASKIN_IDX);
       skpU=0;
-      setTimeout(()=>showAdmToast(tr('🌠 קיבלת את שער הניאון! 3 דילוגי שלב מחכים לך','🌠 You got the Neon Gate! 3 level-skips await')),800);
+      setTimeout(()=>showToast(tr('🌠 קיבלת את שער הניאון! 3 דילוגי שלב מחכים לך','🌠 You got the Neon Gate! 3 level-skips await')),800);
     }
     if(g.px){try{passAdd(g.px|0);}catch(e){}
-      setTimeout(()=>showAdmToast('🎫 +'+(g.px|0)+tr(' לפס העונה מהאדמין!',' season-pass XP from the admin!')),800);
+      setTimeout(()=>showToast('🎫 +'+(g.px|0)+tr(' לפס העונה מהאדמין!',' season-pass XP from the admin!')),800);
     }
     if(g.rlk!==undefined){ // 🔒 נעילת/שחרור יצירת חשבונות במכשיר הזה — מהאדמין, מרחוק
       try{g.rlk?localStorage.setItem('mzRegLock','1'):localStorage.removeItem('mzRegLock');}catch(e){}
@@ -9640,13 +9749,90 @@ $('setBtn').onclick=()=>{
 /* 🎁 מתנה לגליקי — שחקנים שולחים לאדמין מטבעות משלהם + ברכה */
 const GIFT_ADMIN='גליקי';
 let giftAmt=20;
-function syncGiftAdmBtn(){ // 💬 אריח הצ'אט — לכל מי שמחובר
+function syncGiftAdmBtn(){ // 🛒 אריח החנות — לכל מי שמחובר
   try{$('giftAdmBtn').style.display=curUser?'':'none';}catch(e){}
 }
-$('giftAdmBtn').onclick=()=>{ // 💬 קיצור דרך לצ'אט — נפתח מסך החברים
+$('giftAdmBtn').onclick=()=>{ // 🛒 החנות: חבילות בכסף אמיתי + מימוש קודים
   $('menuOv').classList.add('hidden');
-  buildFriends();
-  $('friendsOv').classList.remove('hidden');
+  buildShop();
+  $('shopOv').classList.remove('hidden');
+};
+/* 🛒 החנות: התשלום עובר לגליקי (ביט/מזומן) — לחיצה שולחת לו בקשת רכישה,
+   והוא מזכה את החשבון אחרי שהכסף התקבל. הקודים נמשכים מאותו מנגנון של קישורי התיבות */
+const SHOP_PACKS=[
+ {id:'coins',ic:'🪙',nm:'2,000 מטבעות',en:'2,000 Coins',prc:'10₪'},
+ {id:'gems',ic:'💎',nm:'80 יהלומים',en:'80 Gems',prc:'15₪'},
+ {id:'chests',ic:'🎁',nm:'5 תיבות + תיבה אגדית',en:'5 Chests + a Legendary chest',prc:'20₪'},
+ {id:'mega',ic:'👑',nm:'מגה: 5,000🪙 + 150💎 + קוסמית',en:'Mega: 5,000🪙 + 150💎 + Cosmic',prc:'40₪'}
+];
+let shopArm=null,shopBusy=false;
+function buildShop(){
+  $('shopMsg').textContent='';$('shopCodeMsg').textContent='';$('shopCode').value='';
+  shopArm=null;
+  const g=$('shopPacks');g.innerHTML='';
+  SHOP_PACKS.forEach(pk=>{
+    const b=document.createElement('button');
+    b.className='btn sec';
+    b.style.cssText='width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px';
+    b.innerHTML='<span>'+pk.ic+' '+tr(pk.nm,pk.en)+'</span><span style="color:#ffd257;font-weight:900">'+pk.prc+'</span>';
+    b.onclick=()=>shopBuy(pk,b);
+    g.appendChild(b);
+  });
+}
+async function shopBuy(pk,btn){
+  if(shopBusy)return;
+  if(!curUser)return $('shopMsg').textContent=tr('צריך להתחבר קודם','Log in first');
+  if(shopArm!==pk.id){ // אישור בלחיצה כפולה — confirm חסום ב-iframe
+    shopArm=pk.id;
+    $('shopMsg').textContent=tr('לאישור ההזמנה ('+pk.prc+') לחצו שוב 👆','Tap again to confirm ('+pk.prc+')');
+    setTimeout(()=>{if(shopArm===pk.id){shopArm=null;}},5000);
+    return;
+  }
+  shopArm=null;shopBusy=true;
+  $('shopMsg').textContent='…';
+  let ok=false;
+  try{
+    if(beOn()){
+      // 🛒 בקשת הרכישה נשלחת לגליקי כהודעה — נכנסת ליומן ההודעות באדמין (עם אפשרות מענה)
+      const txt='🛒 בקשת רכישה: '+pk.ic+' '+pk.nm+' — '+pk.prc;
+      const r=await be('/api/gift',{t:GIFT_ADMIN,g:{bmsg:[{f:curUser,t:txt,co:0}]}});
+      ok=!!(r&&r.ok);
+    }
+  }catch(e){}
+  shopBusy=false;
+  $('shopMsg').textContent=ok
+    ?tr('✅ הבקשה נשלחה לגליקי! שלמו לו ב-Bit/מזומן — והחבילה תזוכה לחשבון שלכם','✅ Request sent to Gliki! Pay him and the pack will be credited')
+    :tr('שגיאת רשת — נסו שוב','Network error — try again');
+  if(ok){
+    try{emojiBurst({e:['🛒','💸','✨'],n:12,m:'burst',d:1200});}catch(e){}
+    tone(880,.1,'sine',.3);
+  }
+}
+$('shopBack').onclick=()=>{$('shopOv').classList.add('hidden');$('menuOv').classList.remove('hidden');};
+$('shopRedeem').onclick=async()=>{
+  if(shopBusy)return;
+  if(!curUser)return $('shopCodeMsg').textContent=tr('צריך להתחבר קודם','Log in first');
+  const code=String($('shopCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(code.length<6)return $('shopCodeMsg').textContent=tr('קוד קצר מדי','Code too short');
+  if(!beOn())return $('shopCodeMsg').textContent=tr('אין חיבור לשרת','No server connection');
+  shopBusy=true;
+  $('shopCodeMsg').textContent='…';
+  const r=await be('/api/gcclaim',{u:curUser,tok:code});
+  shopBusy=false;
+  if(r&&r.ok){
+    chests++;gcQueueAdd(r.t|0);save();refreshTro();
+    $('shopCode').value='';
+    $('shopCodeMsg').style.color='#7ae08a';
+    $('shopCodeMsg').textContent='🎁 '+String(r.f||'').slice(0,14)+tr(' שלח לך תיבת ',' sent you a ')+tr((RAR[r.t|0]||RAR[5]).n,(RAR[r.t|0]||RAR[5]).en)+tr('! היא מחכה במסך התיבות','! It awaits in the Chests screen');
+    try{emojiBurst({e:['🎁','💝','✨'],n:20,m:'burst',d:1600});}catch(e){}
+    tone(880,.1,'sine',.3);setTimeout(()=>tone(1174,.16,'sine',.3),130);
+    if(navigator.vibrate)navigator.vibrate([40,60,40]);
+  }else{
+    $('shopCodeMsg').style.color='#ff9e9e';
+    $('shopCodeMsg').textContent=r&&r.err==='gone'?tr('😕 הקוד כבר מומש או שפג תוקפו','😕 Code already used or expired')
+      :r&&r.err==='self'?tr('אי אפשר לממש קוד של עצמך 😅','You can\'t redeem your own code 😅')
+      :tr('קוד לא תקין','Invalid code');
+  }
 };
 $('giftAdmBack').onclick=()=>{$('giftAdmOv').classList.add('hidden');$('menuOv').classList.remove('hidden');};
 $('giftAmtRow').querySelectorAll('.chip').forEach(ch=>{
@@ -11212,11 +11398,11 @@ $('admGiveGct').onclick=()=>{
 $('admGcLink').onclick=async()=>{
   const t2=$('admChTier').value|0;
   $('admMsg').textContent='…';
-  const link=await gcMakeLink(t2,true);
-  if(!link)return $('admMsg').textContent=tr('שגיאת רשת ביצירת הקישור','Network error creating the link');
+  const code=await gcMakeLink(t2,true);
+  if(!code)return $('admMsg').textContent=tr('שגיאת רשת ביצירת הקוד','Network error creating the code');
   let copied=false;
-  try{await navigator.clipboard.writeText(link);copied=true;}catch(e){}
-  $('admMsg').textContent=(copied?tr('🔗 הועתק ללוח! ','🔗 Copied! '):'🔗 ')+link;
+  try{await navigator.clipboard.writeText(code);copied=true;}catch(e){}
+  $('admMsg').textContent=(copied?tr('🎟 הקוד הועתק ללוח! ','🎟 Code copied! '):'🎟 ')+code+tr(' (מימוש בחנות · חד-פעמי)',' (redeem in Shop · one-time)');
 };
 $('admGate').onclick=()=>admGive({gate:1},tr('שער הניאון + 3 דילוגים','Neon Gate + 3 skips'));
 $('admGivePx').onclick=()=>admGive({px:Math.max(1,$('admPx').value|0)},tr('XP לפס העונה','Season-pass XP'));
@@ -11233,6 +11419,19 @@ $('admStats').onclick=async()=>{
   });
   const bans=Object.keys(d.bans||{}).length;
   $('admMsg').textContent='📊 '+us.length+tr(' שחקנים · 🏆 שיא: ',' players · 🏆 top: ')+topN+' ('+Math.max(0,topT)+') · 🎁 '+chSum+tr(' תיבות בעולם · 💎 ',' chests worldwide · 💎 ')+gmSum+(bans?tr(' · 🚫 באנים: ',' · 🚫 bans: ')+bans:'');
+};
+let admWipeArm=0;
+$('admGcWipe').onclick=async()=>{ // 🧹 מוחק את כל הקודים הפתוחים + תיבות-מתנה שבתור אצל כולם
+  if(Date.now()-admWipeArm>4000){
+    admWipeArm=Date.now();
+    $('admMsg').textContent=tr('⚠️ למחוק את כל קודי התיבות ותיבות-המתנה שבתור אצל כולם? לחצו שוב','⚠️ Wipe ALL gift codes and queued gift chests? Tap again');
+    return;
+  }
+  $('admMsg').textContent='…';
+  const r=await be('/api/gcwipe',{k:'glk-wipe'});
+  $('admMsg').textContent=r&&r.ok
+    ?tr('🧹 נמחקו ','🧹 Wiped ')+r.tokens+tr(' קודים · נוקו תורים אצל ',' codes · queues cleared for ')+r.users+tr(' שחקנים',' players')
+    :tr('שגיאת רשת','Network error');
 };
 $('admTakeTro').onclick=()=>admGive({dtro:Math.max(1,$('admTake').value|0)},'הורדת גביעים');
 $('admTakeCo').onclick=()=>admGive({dco:Math.max(1,$('admTake').value|0)},'הורדת מטבעות');

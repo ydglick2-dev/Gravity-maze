@@ -84,7 +84,7 @@ export class Registry {
     if (!this.doc) {
       this.doc = (await this.state.storage.get('doc')) ||
         { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
-      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push', 'gch'])
+      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push', 'gch', 'gcmk'])
         if (!this.doc[k]) this.doc[k] = {};
     }
     if (!this.snd) this.snd = (await this.state.storage.get('sndIdx')) || { v: 0, ks: [] };
@@ -356,32 +356,53 @@ export class Registry {
       return J({ ok: 1, sent: n });
     }
 
+    /* 🧹 מחיקת כל קודי התיבות + ניקוי תורי תיבות-מתנה אצל כל השחקנים */
+    if (p === '/api/gcwipe' && req.method === 'POST') {
+      if (b.k !== 'glk-wipe') return J({ err: 'bad' }, 400);
+      const nTok = Object.keys(d.gch).length;
+      d.gch = {};
+      let nU = 0;
+      for (const u in d.users) {
+        const q = d.gifts[u] || {};
+        delete q.gct; // תיבות כפויות שעוד לא נמשכו — נמחקות
+        q.gcx = 1;    // וניקוי התור המקומי אצל הלקוח
+        d.gifts[u] = q; nU++;
+      }
+      await this.saveDoc();
+      for (const u in d.users) this.notify(u, { t: 'inbox' });
+      return J({ ok: 1, tokens: nTok, users: nU });
+    }
+
     /* 🔗 קישור תיבת-מתנה: יצירת טוקן חד-פעמי לתיבה בנדירות שנפתחה */
     if (p === '/api/gcmake' && req.method === 'POST') {
       const u = cleanName(b.u), t = b.t | 0;
       if (!u || !d.users[u] || t < 4 || t > 7) return J({ err: 'bad' }, 400);
       const now = Date.now();
-      // ניקוי טוקנים בני יותר משבוע + מגבלת יצירה יומית (האדמין פטור)
+      // ניקוי טוקנים בני יותר משבוע
       for (const k in d.gch) if (now - (d.gch[k].at || 0) > 6048e5) delete d.gch[k];
-      if (u !== 'גליקי') {
-        let mine = 0;
-        for (const k in d.gch) if (d.gch[k].f === u && now - d.gch[k].at < 864e5) mine++;
-        if (mine >= 5) return J({ err: 'limit' }, 429);
-      }
-      const tok = [...crypto.getRandomValues(new Uint8Array(12))].map(x => x.toString(16).padStart(2, '0')).join('');
+      // מגבלת יצירה יומית — נספרת מיומן היצירה (לא מהטוקנים הפתוחים, שנמחקים במימוש); האדמין פטור
+      const log = (d.gcmk[u] || []).filter(ts => now - ts < 864e5);
+      if (u !== 'גליקי' && log.length >= 5) { d.gcmk[u] = log; await this.saveDoc(); return J({ err: 'limit' }, 429); }
+      // 🎟 קוד ידידותי: 10 תווים בלי אותיות מתבלבלות (בלי O/0/I/1/L)
+      const AB = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      let tok = '';
+      for (const x of crypto.getRandomValues(new Uint8Array(10))) tok += AB[x % AB.length];
       d.gch[tok] = { t, f: u, at: now };
+      log.push(now); d.gcmk[u] = log.slice(-20);
       await this.saveDoc();
       return J({ ok: 1, tok });
     }
 
     /* 🔗 מימוש קישור תיבת-מתנה — חד-פעמי, לא לעצמך */
     if (p === '/api/gcclaim' && req.method === 'POST') {
-      const u = cleanName(b.u), tok = String(b.tok || '').slice(0, 40);
+      const raw = String(b.tok || '').trim().slice(0, 40);
+      const u = cleanName(b.u), tok = raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 40);
       if (!u || !d.users[u] || !tok) return J({ err: 'bad' }, 400);
-      const rec = d.gch[tok];
+      const key = d.gch[tok] ? tok : (d.gch[raw] ? raw : tok); // תמיכה גם בקודים ישנים (hex קטן)
+      const rec = d.gch[key];
       if (!rec) return J({ err: 'gone' }, 404);
       if (rec.f === u) return J({ err: 'self' }, 400);
-      delete d.gch[tok];
+      delete d.gch[key];
       await this.saveDoc();
       return J({ ok: 1, t: rec.t, f: rec.f });
     }
@@ -409,7 +430,7 @@ export class Registry {
       if (Array.isArray(g.bmsg)) q.bmsg = [...(Array.isArray(q.bmsg) ? q.bmsg : []), ...g.bmsg.map(m => ({ f: cleanName(m && m.f).slice(0, 14), t: String((m && m.t) || '').slice(0, 90), co: (m && m.co) | 0 }))].slice(-20); // 💌 ברכות יומולדת
       if (g.dnl) q.dnl = g.dnl | 0;
       if (g.pet !== undefined) q.pet = [...new Set([...(Array.isArray(q.pet) ? q.pet : []), ...[].concat(g.pet).map(n => n | 0)])].slice(0, 10); // 🐾 חיות מהאדמין
-      if (g.gct) q.gct = [...(Array.isArray(q.gct) ? q.gct : []), ...[].concat(g.gct).map(n => n | 0).filter(n => n >= 4 && n <= 7)].slice(-10); // 🎁 תיבות בנדירות כפויה
+      if (g.gct) { q.gct = [...(Array.isArray(q.gct) ? q.gct : []), ...[].concat(g.gct).map(n => n | 0).filter(n => n >= 4 && n <= 7)].slice(-10); delete q.gcx; } // 🎁 תיבות בנדירות כפויה — מבטלות מחיקה ממתינה
       if (g.gate) q.gate = 1; // ⏭ שער הניאון + איפוס דילוגים
       if (g.px) q.px = (q.px | 0) + (g.px | 0); // 🎫 XP לפס העונה
       if (g.clv) q.clv = g.clv;
