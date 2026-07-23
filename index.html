@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v157</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v158</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -1445,6 +1445,7 @@ let board={x:0,y:0,w:0,h:0}, ball={x:0,y:0,vx:0,vy:0,r:10,rot:0,squash:0,sqa:0};
 let falling=0,fallPt=null,winPause=0,running=false,paused=false;
 let tiltX=0,tiltY=0,dTiltX=0,dTiltY=0;
 let rawB=28,rawG=0,neutB=28,neutG=0,SENS=1;
+let autoCalArm=0; // 🎯 חלון כיול-אוטומטי פעיל (חותם על ה-timestamp של תחילת השלב)
 let gotOrientation=false,touchMode=false,touchOrigin=null,touchLast=null;
 let lvTime=0,lvDeaths=0,starGot=[],keyGot=[],swState=[],portalCd=0,shake=0;
 let flashW=0,flashR=0,comboN=0,comboT=0;
@@ -2181,7 +2182,16 @@ function onOrient(e){
   if(o===90){const t=gx;gx=gy;gy=-t;}
   else if(o===-90||o===270){const t=gx;gx=-gy;gy=t;}
   rawG=gx;rawB=gy;
-  const MAX=26,dz=v=>Math.abs(v)<.035?0:v;
+  // 🎯 כיול אוטומטי בתחילת כל שלב: המצב שבו אתה מחזיק את הטלפון עכשיו = "ישר".
+  // מונע לגמרי סחיפה של "הכדור זז לבד" בלי שצריך ללחוץ על כפתור כיול.
+  // בחלון הכיול (250ms הראשונים) הנקודה עוקבת אחרי האחיזה והכדור קפוא — אז אין סחיפה מוקדמת.
+  if(autoCalArm){
+    neutG=gx;neutB=gy;
+    if(performance.now()-autoCalArm>=250){autoCalArm=0;try{save();}catch(_e){}}
+    tiltX=0;tiltY=0;ball.vx=0;ball.vy=0;
+    return;
+  }
+  const MAX=26,dz=v=>Math.abs(v)<.05?0:v;
   tiltX=dz(Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS)));
   tiltY=dz(Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS)));
 }
@@ -2210,7 +2220,7 @@ async function enableSensors(){
         $('hint').textContent=tr('🕹 אין חיישן הטיה כאן — גררו אצבע על המסך (ג\'ויסטיק)','🕹 No tilt sensor here — drag a finger (joystick)');
       }
     }else{
-      $('hint').textContent=tr('הטה את הטלפון בעדינות · ⏸ ← 🎯 כיול אם הכיוון עקום','Tilt gently · ⏸ → 🎯 calibrate if it drifts');
+      $('hint').textContent=tr('הטה את הטלפון בעדינות · 🎯 כויל אוטומטית למצב האחיזה שלך','Tilt gently · 🎯 auto-calibrated to how you hold it');
       setTimeout(()=>{$('hint').style.display='none';},4500);
     }
     updateHud();
@@ -5529,6 +5539,7 @@ function startRun(i){
   clearTimeout($('hint')._t);$('hint')._t=setTimeout(()=>{$('hint').style.display='none';},4000); // 💡 הטיפ מציץ ונעלם
   $('raceBar').style.display='none';
   loadLevel(i);
+  if(!touchMode)autoCalArm=performance.now(); // 🎯 מכיילים אוטומטית למצב האחיזה הנוכחי (רק בהטיה, לא בג'ויסטיק)
   running=true;paused=false;
   // 🌟 שלב זהב! הגרלה נדירה — כל המטבעות ×3 והמסך זוהר זהב (רק בשלבים חדשים — אין פרסים בשלב חוזר)
   goldLv=!customLv&&!duelLive&&levelIdx>2&&!(session[levelIdx]&&session[levelIdx].done)&&Math.random()<.07;
