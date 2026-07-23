@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v152</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v153</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -6137,6 +6137,10 @@ SKINS.push({name:'שער הניאון',en:'Neon Gate',price:0,rar:5,sea:1,shout:
   c.shadowBlur=0;
 }});
 const SEASKIN_IDX=SKINS.length-1;
+/* 🌆 כל סקיני עונת הניאון — מהכדור הניאון ועד שער הניאון, כולל דרקון הניאון (1%).
+   הנדירות העונתית מעניקה את כולם יחד. */
+const SEASON_SKINS=[];
+for(let i=GLIKI_IDX+1;i<=SEASKIN_IDX;i++)SEASON_SKINS.push(i);
 let skpU=0; // ⏭ כמה דילוגים כבר נוצלו (מתוך 3)
 /* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
    רים-לייט תלת-ממדי לכולם, טבעת נדירות מסתובבת (אדיר+), ניצוצות מקיפים
@@ -7544,6 +7548,23 @@ function grantTier(t){
   return {icon:c.it.icon,label:tr('ניצחון: ','Victory: ')+tr(c.it.name,c.it.en||c.it.name),rar:rr,
     rv:{kind:'fx',icon:c.it.icon,rar:rr,label:tr(c.it.name,c.it.en||c.it.name)}};
 }
+function grantExact(t){ // 🎯 פריט בנדירות מדויקת (לא ומטה) — null אם אין במאגר
+  const cands=[];
+  SKINS.forEach((it,i)=>{if((it.rar|0)===t&&!it.pow&&!it.wc&&!it.leg&&!it.sea&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
+  WFX.forEach((it,i)=>{if((it.rar|0)===t&&!it.fs&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
+  if(!cands.length)return null;
+  const c=cands[(Math.random()*cands.length)|0];
+  if(c.k==='skin'){
+    skinOwned.push(c.i);
+    const drop={icon:'🎨',label:tr(c.it.name,c.it.en||c.it.name),rar:t,
+      rv:{kind:'skin',idx:c.i,rar:t,label:tr(c.it.name,c.it.en||c.it.name),story:loreOf(c.i)}};
+    if(c.it.face){const gfx=grantGoalFx();if(gfx)drop._extra=gfx;}
+    return drop;
+  }
+  wOw.push(c.i);
+  return {icon:c.it.icon,label:tr('ניצחון: ','Victory: ')+tr(c.it.name,c.it.en||c.it.name),rar:t,
+    rv:{kind:'fx',icon:c.it.icon,rar:t,label:tr(c.it.name,c.it.en||c.it.name)}};
+}
 function rollChest(){
   const drops=[];
   // 👑 גליקי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
@@ -7559,19 +7580,30 @@ function rollChest(){
   let tier=1,acc=0;
   for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
   if(petPerk('luck')&&tier<6&&Math.random()<.01)tier=6; // 🐰 ארנב המזל: +1% לתיבה קוסמית
+  let fLeg=false;
   if(_cx2){tier=7;_cx2=false;_cx1=false;}
-  else if(_cx1){if(tier<5)tier=5;_cx1=false;}
-  if(tier===7&&skinOwned.includes(SEASKIN_IDX))tier=6; // העונתי כבר אצלך — משודרג לקוסמי
+  else if(_cx1){fLeg=true;if(tier<5)tier=5;_cx1=false;}
+  if(tier===7&&SEASON_SKINS.every(ix=>skinOwned.includes(ix)))tier=6; // כל סקיני העונה כבר אצלך — משודרג לקוסמי
+  // 🏷 תיבה נדירה מכריזה על עצמה — רואים מה יצא בהגרלת הנדירות
+  if(tier>=4)drops.push({icon:'🎁',label:tr('תיבה ','')+tr(RAR[tier].n,RAR[tier].en)+(tier>=6?'!!':'!'),rar:tier});
   // 🪙 בסיס מטבעות לפי נדירות התיבה
   const capMul=tier>=7?3:tier>=6?2.5:tier>=5?2:tier>=4?1.5:tier>=3?1.25:1;
   const n=Math.round((10+((Math.random()*13)|0))*capMul);
   addCoins(n);drops.push({icon:'🪙',label:'+'+n,rar:0});
   if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
-  if(tier===7){ // 🌠 עונתי (0.01%!) — שער הניאון: סקין שמדלג שלבים (3 שימושים)
-    skinOwned.push(SEASKIN_IDX);
-    drops.push({icon:'🌠',label:tr('שער הניאון!!','Neon Gate!!'),rar:7,
-      rv:{kind:'skin',idx:SEASKIN_IDX,rar:5,label:tr('שער הניאון','Neon Gate'),
-        story:tr('הנדירות העונתית!! 0.01% בלבד. לבשו אותו ובשלב יופיע כפתור ⏭ שמדלג על השלב ונספר בטבלאות — 3 שימושים בלבד!','The seasonal rarity!! Only 0.01%. Wear it and a ⏭ button appears in-level — skips the level and counts in the tables. 3 uses only!')}});
+  if(tier===7){ // 🌠 עונתי (0.01%!) — כל סקיני עונת הניאון יחד, כולל הדרקון (1%) ושער הניאון (מדלג שלבים)
+    SEASON_SKINS.forEach(ix=>{
+      if(skinOwned.includes(ix))return; // כבר יש (למשל הדרקון מהגרלת ה-1% למעלה) — לא כפול
+      skinOwned.push(ix);
+      const s=SKINS[ix];
+      drops.push({icon:ix===SEASKIN_IDX?'🌠':ix===DRAGON_IDX?'🐉':'🎨',
+        label:tr(s.name,s.en||s.name)+'!!',rar:ix===DRAGON_IDX?6:5,
+        rv:{kind:'skin',idx:ix,rar:5,label:tr(s.name,s.en||s.name),
+          story:ix===SEASKIN_IDX
+            ?tr('הנדירות העונתית!! 0.01% בלבד. לבשו אותו ובשלב יופיע כפתור ⏭ שמדלג על השלב ונספר בטבלאות — 3 שימושים בלבד!','The seasonal rarity!! Only 0.01%. Wear it and a ⏭ button appears in-level — skips the level and counts in the tables. 3 uses only!')
+            :loreOf(ix)}});
+      if(s.face){const gfx=grantGoalFx();if(gfx)drops.push(gfx);}
+    });
     gems+=20;drops.push({icon:'💎',label:'+20',rar:5});
   }else if(tier===6){ // 🌌 קוסמי — עד 20 פרסים! מטבעות מוגבלים ל-50 לפרס
     const N=10+((Math.random()*11)|0); // 10–20 פרסים
@@ -7582,8 +7614,9 @@ function rollChest(){
     }
     gems+=10;drops.push({icon:'💎',label:'+10',rar:4});
   }else{
-    // 🎁 כל תיבה רגילה נותנת פריט! (מנדירות התיבה ומטה)
-    const item=messi||grantTier(tier);
+    // 🎁 כל תיבה רגילה נותנת פריט! (מנדירות התיבה ומטה; אם המאגר בנדירות הזו רוקן —
+    // משדרגים למעלה כדי שתמיד יצא סקין, ורק כשהאוסף מלא לגמרי עוברים למטבעות)
+    const item=messi||(fLeg?(grantExact(5)||grantExact(4)):null)||grantTier(tier)||grantTier(5);
     if(item){
       drops.push(item);if(item._extra)drops.push(item._extra);
     }else{ // האוסף מלא — התיבה עדיין משלמת לפי הנדירות שלה
@@ -7592,8 +7625,8 @@ function rollChest(){
         const m=Math.min(coinCap,Math.round((5+((Math.random()*9)|0))*capMul));
         addCoins(m);drops.push({icon:'🪙',label:'+'+m,rar:0});
       }
-      const gm=tier>=5?8:tier>=4?5:tier>=3?3:tier>=2?2:1; // 💎 בונוס לפי נדירות התיבה
-      gems+=gm;drops.push({icon:'💎',label:'+'+gm,rar:Math.max(1,tier-1)});
+      const gm=(tier>=5?8:tier>=4?5:tier>=3?3:tier>=2?2:1)+(fLeg?12:0); // 💎 בונוס לפי נדירות התיבה
+      gems+=gm;drops.push({icon:'💎',label:'+'+gm,rar:fLeg?5:Math.max(1,tier-1)});
     }
   }
   if(messi&&tier>=6){drops.push(messi);if(messi._extra)drops.push(messi._extra);} // 🐉 הדרקון לא הולך לאיבוד בתיבות העל
