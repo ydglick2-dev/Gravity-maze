@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v161</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v162</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -7801,10 +7801,10 @@ function rollChest(){
   let fLeg=false,fSea=false;
   lastRollGifted=false;
   lastRollSecret=false;
-  const _gt=gcQueueTake(); // 🎁 תיבת-מתנה בתור? היא קובעת את הנדירות
-  if(_gt){tier=_gt;lastRollGifted=true;if(tier===7)fSea=true;}
-  else if(_cx2){tier=7;fSea=true;lastRollSecret=true;_cx2=false;_cx1=false;}
+  // 🔑 שיטה חמושה גוברת על הכל; תיבת-מתנה בתור נלקחת רק כשאין שיטה, ואחרת נשארת לתור הבא
+  if(_cx2){tier=7;fSea=true;lastRollSecret=true;_cx2=false;_cx1=false;}
   else if(_cx1){fLeg=true;lastRollSecret=true;if(tier<5)tier=5;_cx1=false;}
+  else{const _gt=gcQueueTake();if(_gt){tier=_gt;lastRollGifted=true;if(tier===7)fSea=true;}}
   // עונתי טבעי כשכל סקיני העונה כבר אצלך — משודרג לקוסמי; עונתי כפוי נשאר עונתי תמיד
   if(tier===7&&!fSea&&SEASON_SKINS.every(ix=>skinOwned.includes(ix)))tier=6;
   // 🏷 תיבה נדירה מכריזה על עצמה — רואים מה יצא בהגרלת הנדירות
