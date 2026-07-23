@@ -1,4 +1,4 @@
-const CACHE = 'maze-ultra-v156';
+const CACHE = 'maze-ultra-v157';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,8 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
+  // מתקינים מיד — כדי ששחקנים לא ייתקעו על גרסה מקושרת ישנה שנתקעה במטמון
+  self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
 });
 
