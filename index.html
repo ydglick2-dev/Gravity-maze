@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v163</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v164</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -726,7 +726,6 @@
     <select class="tin" id="admChTier" style="max-width:140px">
       <option value="4">🔴 מדהים</option>
       <option value="5" selected>🟡 אגדי</option>
-      <option value="6">🌌 קוסמי</option>
       <option value="7">🌠 עונתי</option>
     </select>
     <button class="btn sec" id="admGiveGct" data-en="🎁 Send rarity chest">🎁 שלח תיבת נדירות</button>
@@ -3915,7 +3914,7 @@ const PETS=[
  {name:'כלבלב',en:'Puppy',icon:'🐶',price:150,rar:1,pd:['חבר נאמן שרודף אחריך לכל מקום','A loyal friend chasing you everywhere']},
  {name:'חתול זהב',en:'Gold Cat',icon:'🐱',price:400,rar:2,perk:'coin',pd:['+10% מטבעות בסיום שלב','+10% coins on level finish']},
  {name:'ינשוף חכם',en:'Wise Owl',icon:'🦉',price:600,rar:2,perk:'xp',pd:['+15% נקודות לפס העונה','+15% season-pass XP']},
- {name:'ארנב מזל',en:'Lucky Bunny',icon:'🐰',price:900,rar:3,perk:'luck',pd:['+1% סיכוי לתיבה קוסמית 🌌','+1% Cosmic chest chance 🌌']},
+ {name:'ארנב מזל',en:'Lucky Bunny',icon:'🐰',price:900,rar:3,perk:'luck',pd:['+1% סיכוי לתיבה אגדית 🟡','+1% Legendary chest chance 🟡']},
  {name:'צ׳יטה',en:'Cheetah',icon:'🐆',price:1200,rar:3,perk:'speed',pd:['הכדור מאיץ 8% מהר יותר','Ball accelerates 8% faster']},
  {name:'דרקונון',en:'Baby Dragon',icon:'🐲',price:2500,rar:3,perk:'boss',pd:['+3💎 על כל ניצחון על בוס','+3💎 for every boss win']}
 ];
@@ -3941,7 +3940,7 @@ function gcQKey(u){return 'mzGiftT_'+(u||curUser||'');}
 function gcQueueAdd(t,u){
   try{
     const k=gcQKey(u),a=JSON.parse(store().getItem(k)||'[]');
-    a.push(t|0);
+    a.push((t|0)===6?5:t|0); // 🌌 קוסמי בוטל — קודים ישנים הופכים לאגדי
     store().setItem(k,JSON.stringify(a.slice(0,10)));
   }catch(e){}
 }
@@ -3949,7 +3948,8 @@ function gcQueueTake(){
   try{
     const k=gcQKey(),a=JSON.parse(store().getItem(k)||'[]');
     if(!Array.isArray(a)||!a.length)return 0;
-    const t=a.shift()|0;
+    let t=a.shift()|0;
+    if(t===6)t=5; // 🌌 קוסמי בוטל — תור ישן הופך לאגדי
     store().setItem(k,JSON.stringify(a));
     return(t>=4&&t<=7)?t:0;
   }catch(e){return 0;}
@@ -7744,7 +7744,7 @@ function pickUnowned(cat,ow){
 /* ⭐ סטאר דרופ: הסיכויים הרשמיים של סופרסל (עמוד Starr Drop Chances) —
    נדיר 50% · נדיר במיוחד 28% · אדיר 15% · מדהים 5% · אגדי 2%. כל תיבה
    מכילה פריט מובטח בנדירות שמוגרלת לפי הסיכויים האלה — בדיוק כמו בבראול. */
-const DROP_PCT=[[7,.01],[6,1.99],[5,7],[4,10],[3,20],[2,28],[1,33]]; // [נדירות, אחוז] — עונתי 0.01%, קוסמי ~2%, אגדי 7%
+const DROP_PCT=[[7,.01],[5,8.99],[4,10],[3,20],[2,28],[1,33]]; // [נדירות, אחוז] — עונתי 0.01%, אגדי ~9%
 let _cx1=false,_cx2=false; // מפתחות פנימיים — לא מתועדים
 let pity=0; // נשמר לתאימות שמירות ישנות — כבר לא בשימוש (פריט מובטח בכל תיבה)
 function grantTier(t){
@@ -7787,7 +7787,7 @@ function rollChest(){
   const drops=[];
   // 👑 גליקי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
   let messi=null;
-  if(!skinOwned.includes(DRAGON_IDX)&&Math.random()<.01){
+  if(troLife>=150&&!skinOwned.includes(DRAGON_IDX)&&Math.random()<.01){ // 🌱 הדרקון מחכה שתתקדמו קצת
     skinOwned.push(DRAGON_IDX);
     messi={icon:'🐉',label:tr('דרקון ניאון!!','Neon Dragon!!'),rar:5,
       rv:{kind:'skin',idx:DRAGON_IDX,rar:5,label:tr('דרקון ניאון','Neon Dragon'),story:loreOf(DRAGON_IDX)}};
@@ -7797,7 +7797,11 @@ function rollChest(){
   const r=Math.random()*100;
   let tier=1,acc=0;
   for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
-  if(petPerk('luck')&&tier<6&&Math.random()<.01)tier=6; // 🐰 ארנב המזל: +1% לתיבה קוסמית
+  if(petPerk('luck')&&tier<5&&Math.random()<.01)tier=5; // 🐰 ארנב המזל: +1% לתיבה אגדית
+  // 🌱 שחקנים חדשים לא מקבלים את כל המזל ביום הראשון — הנדירויות הגבוהות נפתחות עם ההתקדמות.
+  // שיטות, קודים ומתנות אדמין (למטה) עוקפים את הגג הזה במכוון
+  if(troLife<50){if(tier>3)tier=3;}
+  else if(troLife<150){if(tier>4)tier=4;}
   let fLeg=false,fSea=false;
   lastRollGifted=false;
   lastRollSecret=false;
@@ -7805,12 +7809,12 @@ function rollChest(){
   if(_cx2){tier=7;fSea=true;lastRollSecret=true;_cx2=false;_cx1=false;}
   else if(_cx1){fLeg=true;lastRollSecret=true;if(tier<5)tier=5;_cx1=false;}
   else{const _gt=gcQueueTake();if(_gt){tier=_gt;lastRollGifted=true;if(tier===7)fSea=true;}}
-  // עונתי טבעי כשכל סקיני העונה כבר אצלך — משודרג לקוסמי; עונתי כפוי נשאר עונתי תמיד
-  if(tier===7&&!fSea&&SEASON_SKINS.every(ix=>skinOwned.includes(ix)))tier=6;
+  // עונתי טבעי כשכל סקיני העונה כבר אצלך — הופך לאגדי; עונתי כפוי נשאר עונתי תמיד
+  if(tier===7&&!fSea&&SEASON_SKINS.every(ix=>skinOwned.includes(ix)))tier=5;
   // 🏷 תיבה נדירה מכריזה על עצמה — רואים מה יצא בהגרלת הנדירות
-  if(tier>=4)drops.push({icon:'🎁',label:tr('תיבה ','')+tr(RAR[tier].n,RAR[tier].en)+(tier>=6?'!!':'!'),rar:tier});
+  if(tier>=4)drops.push({icon:'🎁',label:tr('תיבה ','')+tr(RAR[tier].n,RAR[tier].en)+(tier>=7?'!!':'!'),rar:tier});
   // 🪙 בסיס מטבעות לפי נדירות התיבה
-  const capMul=tier>=7?3:tier>=6?2.5:tier>=5?2:tier>=4?1.5:tier>=3?1.25:1;
+  const capMul=tier>=7?3:tier>=5?2:tier>=4?1.5:tier>=3?1.25:1;
   const n=Math.round((10+((Math.random()*13)|0))*capMul);
   addCoins(n);drops.push({icon:'🪙',label:'+'+n,rar:0});
   if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
@@ -7822,7 +7826,7 @@ function rollChest(){
       skinOwned.push(ix);
       const s=SKINS[ix];
       drops.push({icon:ix===SEASKIN_IDX?'🌠':ix===DRAGON_IDX?'🐉':'🎨',
-        label:tr(s.name,s.en||s.name)+'!!',rar:ix===DRAGON_IDX?6:5,
+        label:tr(s.name,s.en||s.name)+'!!',rar:5,
         rv:{kind:'skin',idx:ix,rar:5,label:tr(s.name,s.en||s.name),
           story:ix===SEASKIN_IDX
             ?tr('הנדירות העונתית!! 0.01% בלבד. לבשו אותו ובשלב יופיע כפתור ⏭ שמדלג על השלב ונספר בטבלאות — 3 שימושים בלבד!','The seasonal rarity!! Only 0.01%. Wear it and a ⏭ button appears in-level — skips the level and counts in the tables. 3 uses only!')
@@ -7835,18 +7839,11 @@ function rollChest(){
       addCoins(200);drops.push({icon:'🪙',label:'+200',rar:0});
       gems+=30;drops.push({icon:'💎',label:'+30',rar:5});
     }
-  }else if(tier===6){ // 🌌 קוסמי — עד 20 פרסים! מטבעות מוגבלים ל-50 לפרס
-    const N=10+((Math.random()*11)|0); // 10–20 פרסים
-    for(let k=0;k<N;k++){
-      const it=grantTier(5);
-      if(it){drops.push(it);if(it._extra)drops.push(it._extra);}
-      else{const c2=20+((Math.random()*31)|0);addCoins(c2);drops.push({icon:'🪙',label:'+'+c2,rar:0});} // גג 50 לפרס
-    }
-    gems+=10;drops.push({icon:'💎',label:'+10',rar:4});
   }else{
-    // 🎁 כל תיבה רגילה נותנת פריט! (מנדירות התיבה ומטה; אם המאגר בנדירות הזו רוקן —
-    // משדרגים למעלה כדי שתמיד יצא סקין, ורק כשהאוסף מלא לגמרי עוברים למטבעות)
-    const item=messi||(fLeg?(grantExact(5)||grantExact(4)):null)||grantTier(tier)||grantTier(5);
+    // 🎨 רוב התיבות נותנות פריט — לא כולן: תיבות נדירות (4+), מתנות ושיטות תמיד;
+    // תיבות רגילות ב-70%. כשאין פריט (או שהאוסף מלא) — התיבה משלמת מטבעות ויהלומים
+    const luckySkin=fLeg||lastRollGifted||tier>=4||Math.random()<.7;
+    const item=messi||(luckySkin?((fLeg?(grantExact(5)||grantExact(4)):null)||grantTier(tier)||grantTier(5)):null);
     if(item){
       drops.push(item);if(item._extra)drops.push(item._extra);
     }else{ // האוסף מלא — התיבה עדיין משלמת לפי הנדירות שלה
@@ -7859,7 +7856,7 @@ function rollChest(){
       gems+=gm;drops.push({icon:'💎',label:'+'+gm,rar:fLeg?5:Math.max(1,tier-1)});
     }
   }
-  if(messi&&tier>=6){drops.push(messi);if(messi._extra)drops.push(messi._extra);} // 🐉 הדרקון לא הולך לאיבוד בתיבות העל
+  if(messi&&tier>=7){drops.push(messi);if(messi._extra)drops.push(messi._extra);} // 🐉 הדרקון לא הולך לאיבוד בתיבה העונתית
   lastRollTier=tier;
   return drops;
 }
@@ -8469,7 +8466,7 @@ $('chestBtn').onclick=()=>{
   $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
   $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
   $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
-  $('chestOdds').textContent=tr('🎁 פריט מובטח בכל תיבה (עד נדירות התיבה) · ','🎁 Guaranteed item in every chest · ')+'🟢33% · 🔵28% · 🟣20% · 🔴10% · 🟡7% · 🌌2% · 🌠0.01% · 🐉1%';
+  $('chestOdds').textContent=tr('🎁 סקין ברוב התיבות (עד נדירות התיבה) · ','🎁 A skin in most chests · ')+'🟢33% · 🔵28% · 🟣20% · 🔴10% · 🟡9% · 🌠0.01% · 🐉1%';
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
@@ -9862,7 +9859,7 @@ const SHOP_PACKS=[
  {id:'coins',ic:'🪙',nm:'2,000 מטבעות',en:'2,000 Coins',prc:'10₪'},
  {id:'gems',ic:'💎',nm:'80 יהלומים',en:'80 Gems',prc:'15₪'},
  {id:'chests',ic:'🎁',nm:'5 תיבות + תיבה אגדית',en:'5 Chests + a Legendary chest',prc:'20₪'},
- {id:'mega',ic:'👑',nm:'מגה: 5,000🪙 + 150💎 + קוסמית',en:'Mega: 5,000🪙 + 150💎 + Cosmic',prc:'40₪'}
+ {id:'mega',ic:'👑',nm:'מגה: 5,000🪙 + 150💎 + אגדית',en:'Mega: 5,000🪙 + 150💎 + Legendary',prc:'40₪'}
 ];
 let shopArm=null,shopBusy=false;
 function buildShop(){
