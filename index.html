@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v158</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v159</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -1446,6 +1446,7 @@ let falling=0,fallPt=null,winPause=0,running=false,paused=false;
 let tiltX=0,tiltY=0,dTiltX=0,dTiltY=0;
 let rawB=28,rawG=0,neutB=28,neutG=0,SENS=1;
 let autoCalArm=0; // 🎯 חלון כיול-אוטומטי פעיל (חותם על ה-timestamp של תחילת השלב)
+const autoCalBuf=[]; // דגימות אחרונות לחלון הכיול — נועלים רק כשהיד יציבה
 let gotOrientation=false,touchMode=false,touchOrigin=null,touchLast=null;
 let lvTime=0,lvDeaths=0,starGot=[],keyGot=[],swState=[],portalCd=0,shake=0;
 let flashW=0,flashR=0,comboN=0,comboT=0;
@@ -2174,27 +2175,97 @@ function updateHud(){
 }
 
 /* ============ INPUT ============ */
+let orientN=0,lastOrientT=0,calSoft=false; // מונה זרם החיישן · חותמת אירוע אחרון · דגל ריפוי-מהיר אחרי כיול-חירום
+const senProof=[]; // הוכחת-חיים לחיישן שמתעורר באיחור — דורש שונות אמיתית, לא זרם קפוא
 function onOrient(e){
   if(e.beta===null||e.gamma===null)return;
   gotOrientation=true;
+  orientN++;
   let gx=e.gamma,gy=e.beta;
   const o=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
   if(o===90){const t=gx;gx=gy;gy=-t;}
   else if(o===-90||o===270){const t=gx;gx=-gy;gy=t;}
+  else if(o===180){gx=-gx;gy=-gy;} // 📱 פורטרט הפוך (טאבלטים) — שני הצירים מתהפכים
   rawG=gx;rawB=gy;
-  // 🎯 כיול אוטומטי בתחילת כל שלב: המצב שבו אתה מחזיק את הטלפון עכשיו = "ישר".
-  // מונע לגמרי סחיפה של "הכדור זז לבד" בלי שצריך ללחוץ על כפתור כיול.
-  // בחלון הכיול (250ms הראשונים) הנקודה עוקבת אחרי האחיזה והכדור קפוא — אז אין סחיפה מוקדמת.
-  if(autoCalArm){
-    neutG=gx;neutB=gy;
-    if(performance.now()-autoCalArm>=250){autoCalArm=0;try{save();}catch(_e){}}
-    tiltX=0;tiltY=0;ball.vx=0;ball.vy=0;
-    return;
+  const nowT=performance.now();
+  const edt=lastOrientT?Math.min((nowT-lastOrientT)/1000,.1):1/60; // dt אמיתי בין אירועים — אחיד בכל קצב חיישן
+  lastOrientT=nowT;
+  // 🥊 חיישן מול ג'ויסטיק: רק כשמצב הג'ויסטיק פעיל האצבע חוסמת את החיישן.
+  // אגודל שנח על המסך במצב הטיה לא מקפיא כלום.
+  if(touchMode&&touchOrigin)return;
+  if(touchMode){
+    // השתלטות-הטיה רק עם זרם חי אמיתי: מספיק אירועים + שונות (חיישן חי תמיד מרעיד מעט)
+    senProof.push([gx,gy]);
+    if(senProof.length>8)senProof.shift();
+    let vr=0;
+    if(senProof.length>=6){
+      let mnG=1e9,mxG=-1e9,mnB=1e9,mxB=-1e9;
+      for(const[a,b2]of senProof){mnG=Math.min(mnG,a);mxG=Math.max(mxG,a);mnB=Math.min(mnB,b2);mxB=Math.max(mxB,b2);}
+      vr=Math.max(mxG-mnG,mxB-mnB);
+    }
+    if(orientN>=6&&vr>.4){
+      touchMode=false;senProof.length=0;
+      autoCalArm=nowT;autoCalBuf.length=0; // כיול-מחדש ברגע ההשתלטות — לא נקודת אפס ישנה
+      try{$('hint').style.display='none';}catch(_e){}
+    }else return;
   }
-  const MAX=26,dz=v=>Math.abs(v)<.05?0:v;
-  tiltX=dz(Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS)));
-  tiltY=dz(Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS)));
+  // 🎯 כיול אוטומטי בתחילת כל שלב: איך שמחזיקים עכשיו = "ישר". חלון יציבות מבוסס-זמן.
+  if(autoCalArm){
+    autoCalBuf.push([nowT,gx,gy]);
+    while(autoCalBuf.length&&nowT-autoCalBuf[0][0]>320)autoCalBuf.shift();
+    let stable=false,avgG=gx,avgB=gy;
+    if(autoCalBuf.length>=3&&nowT-autoCalBuf[0][0]>=200){
+      let mnG=1e9,mxG=-1e9,mnB=1e9,mxB=-1e9,sG=0,sB=0;
+      for(const[,a,b2]of autoCalBuf){mnG=Math.min(mnG,a);mxG=Math.max(mxG,a);mnB=Math.min(mnB,b2);mxB=Math.max(mxB,b2);sG+=a;sB+=b2;}
+      avgG=sG/autoCalBuf.length;avgB=sB/autoCalBuf.length;
+      stable=(mxG-mnG<3&&mxB-mnB<3);
+    }
+    if(stable&&nowT-autoCalArm>=250){ // נעילה יציבה — נשמרת גם לענן
+      neutG=avgG;neutB=avgB;calSoft=false;
+      autoCalArm=0;autoCalBuf.length=0;
+      try{save();}catch(_e){}
+    }else if(nowT-autoCalArm>=1000){ // timeout באמצע תנועה: ממוצע החלון + ריפוי-מהיר, בלי לזהם את הענן
+      neutG=avgG;neutB=avgB;calSoft=true;
+      autoCalArm=0;autoCalBuf.length=0;
+    }else{
+      neutG=gx;neutB=gy;
+      tiltX=0;tiltY=0;ball.vx=0;ball.vy=0;
+      return;
+    }
+  }
+  // 🧭 תיקון סחיפה מבוסס-זמן: נקודת האפס נוזלת לתנוחה רק כשאין קלט מכוון (הטיה ~אפס),
+  // לאט מאוד בטווח ההיגוי העדין (שלא תיבלע הטיה מכוונת), ומהר אחרי כיול-חירום.
+  const MAX=26;
+  const _tx=(gx-neutG)/MAX,_ty=(gy-neutB)/MAX;
+  const idle=Math.abs(_tx)<.1&&Math.abs(_ty)<.1;
+  if(calSoft||idle||(Math.abs(_tx)<.45&&Math.abs(_ty)<.45)){
+    const rate=calSoft?2.2:(idle?.16:.02); // לשנייה — אחיד בכל קצב אירועים
+    const k=1-Math.exp(-edt*rate);
+    neutG+=(gx-neutG)*k;
+    neutB+=(gy-neutB)*k;
+    if(calSoft&&idle)calSoft=false; // הריפוי הושלם — חוזרים לקצב רגיל
+  }
+  const dz=v=>Math.abs(v)<.05?0:v;
+  const curve=v=>Math.sign(v)*Math.pow(Math.abs(v),1.3); // 🎛 עדין ליד המרכז — שליטה מדויקת
+  tiltX=curve(dz(Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS))));
+  tiltY=curve(dz(Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS))));
 }
+/* 📱 סיבוב מסך באמצע משחק — הצירים מתחלפים, אז מכיילים מחדש (הכדור קופא לרגע במקום לברוח) */
+{
+  const reCalOnRotate=()=>{if(!touchMode){autoCalArm=performance.now();autoCalBuf.length=0;}};
+  try{
+    if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',reCalOnRotate);
+    else window.addEventListener('orientationchange',reCalOnRotate);
+  }catch(_e){}
+}
+/* 🐕‍🦺 חיישן שנרדם באמצע (השעיית רקע וכו') — חוזרים לג'ויסטיק אוטומטית, והחיישן
+   יצטרך להוכיח את עצמו מחדש (זרם+שונות) כדי להשתלט שוב */
+setInterval(()=>{
+  if(running&&!paused&&!touchMode&&gotOrientation&&lastOrientT&&performance.now()-lastOrientT>2500){
+    touchMode=true;orientN=0;senProof.length=0;
+    tiltX=0;tiltY=0;autoCalArm=0;autoCalBuf.length=0;
+  }
+},1000);
 let sensorBound=false,sensorHinted=false,sensorDenied=false;
 const iosMotionReq=(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function');
 async function enableSensors(){
@@ -2212,8 +2283,9 @@ async function enableSensors(){
   if(sensorHinted)return;
   sensorHinted=true;
   setTimeout(()=>{
-    if(!gotOrientation){
+    if(orientN<6){ // אירוע בודד/מזויף לא נחשב חיישן — הג'ויסטיק נכנס, וההטיה תשתלט אם תוכיח זרם אמיתי
       touchMode=true;
+      autoCalArm=0;autoCalBuf.length=0; // כיול ישן לא יינעל על דגימת ג'אנק
       if(iosMotionReq&&sensorDenied&&!localStorage.getItem('mzTiltOk')){ // 🍎 חסום בהגדרות המכשיר
         $('hint').innerHTML=tr('🎢 להטיה: הגדרות → Safari → "גישה לתנועה וכיוון" → הפעלה, ואז רעננו. בינתיים גררו אצבע 👆','🎢 For tilt: Settings → Safari → "Motion & Orientation Access" → ON, then reload. Meanwhile drag a finger 👆');
       }else{
@@ -2246,6 +2318,10 @@ function updKb(){
   for(const k in kbDown){kbX+=KEYX[k]||0;kbY+=KEYY[k]||0;}
   kbX=Math.max(-1,Math.min(1,kbX));kbY=Math.max(-1,Math.min(1,kbY));
 }
+window.addEventListener('blur',()=>{ // ⌨️ מעבר חלון/אפליקציה — אין מקש תקוע שממשיך לדחוף
+  for(const k in kbDown)delete kbDown[k];
+  updKb();
+});
 const effX=()=>Math.max(-1,Math.min(1,tiltX+kbX*.9));
 const effY=()=>Math.max(-1,Math.min(1,tiltY+kbY*.9));
 let touchId=null; // 🖐 מולטי-טאץ': רק האצבע שפתחה את הג'ויסטיק מנווטת
@@ -2267,7 +2343,8 @@ canvas.addEventListener('touchmove',e=>{
 canvas.addEventListener('touchend',e=>{
   const mine=Array.from(e.changedTouches).some(t=>t.identifier===touchId);
   if(!mine&&e.touches.length>0)return; // אצבע אחרת הורמה — מתעלמים (אלא אם לא נשארו אצבעות)
-  touchId=null;touchOrigin=null;touchLast=null;if(touchMode){tiltX=0;tiltY=0;}
+  touchId=null;touchOrigin=null;touchLast=null;
+  if(touchMode){tiltX=0;tiltY=0;} // בהטיה — אירוע החיישן הבא מעדכן ממילא
 },{passive:true});
 canvas.addEventListener('touchcancel',()=>{ // 📵 מגירת התראות/שיחה — הג'ויסטיק משתחרר, לא נתקע
   touchId=null;touchOrigin=null;touchLast=null;if(touchMode){tiltX=0;tiltY=0;}
@@ -5539,7 +5616,10 @@ function startRun(i){
   clearTimeout($('hint')._t);$('hint')._t=setTimeout(()=>{$('hint').style.display='none';},4000); // 💡 הטיפ מציץ ונעלם
   $('raceBar').style.display='none';
   loadLevel(i);
-  if(!touchMode)autoCalArm=performance.now(); // 🎯 מכיילים אוטומטית למצב האחיזה הנוכחי (רק בהטיה, לא בג'ויסטיק)
+  // 🧹 קלט נקי לכל שלב: שום וקטור תקוע לא נגרר פנימה
+  tiltX=0;tiltY=0;touchId=null;touchOrigin=null;touchLast=null;
+  for(const k in kbDown)delete kbDown[k];kbX=0;kbY=0;
+  if(!touchMode){autoCalArm=performance.now();autoCalBuf.length=0;} // 🎯 מכיילים אוטומטית למצב האחיזה הנוכחי
   running=true;paused=false;
   // 🌟 שלב זהב! הגרלה נדירה — כל המטבעות ×3 והמסך זוהר זהב (רק בשלבים חדשים — אין פרסים בשלב חוזר)
   goldLv=!customLv&&!duelLive&&levelIdx>2&&!(session[levelIdx]&&session[levelIdx].done)&&Math.random()<.07;
@@ -5675,7 +5755,7 @@ $('pauseMenuBtn').onclick=()=>{
   $('menuOv').classList.remove('hidden');
   if(typeof syncLobbyUI==='function')try{syncLobbyUI();}catch(e){}
 };
-$('calibBtn').onclick=()=>{neutB=rawB;neutG=rawG;save();showToast(tr('🎯 כויל!','🎯 Calibrated!'));};
+$('calibBtn').onclick=()=>{neutB=rawB;neutG=rawG;calSoft=false;autoCalArm=0;autoCalBuf.length=0;save();showToast(tr('🎯 כויל!','🎯 Calibrated!'));};
 $('sensSlider').oninput=e=>{SENS=e.target.value/100;save();};
 $('soundBtn').onclick=()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';save();};
 $('doneMenu').onclick=()=>{
