@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v146</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v147</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -7238,6 +7238,129 @@ function buildSkins(){
 $('tabSkin').onclick=()=>{shopTab='skin';buildSkins();};
 $('tabWin').onclick=()=>{shopTab='win';buildSkins();};
 $('tabPet').onclick=()=>{shopTab='pet';buildSkins();};
+/* 🥚 ביצת החיות — מחליקים עליה, היא נסדקת עוד ועוד, ובסוף מתפוצצת עם הפרס */
+let eggOv=null,eggCvs=null,eggRub=0,eggStage=0,eggRes=null,eggPrevPt=null,eggDone=false;
+const EGG_STAGES=4,EGG_RUB_PER=200; // כמה פיקסלים של החלקה לכל סדק
+const EGG_CRACKS=[ // קווי סדק קבועים — מצטברים שלב אחרי שלב (יחסית למרכז הביצה)
+ [[-8,-92,-20,-60,-4,-34,-16,-6]],
+ [[38,-64,20,-30,34,4,18,30],[-46,-30,-26,-10,-40,18]],
+ [[-2,-34,22,-14,8,16,28,44],[-16,-6,-38,30,-20,58],[6,-110,-4,-80]],
+ [[18,30,2,62,20,92],[-20,58,-2,86],[28,44,48,60],[-40,18,-58,40]]
+];
+function eggDraw(){
+  if(!eggCvs)return;
+  const g=eggCvs.getContext('2d'),W2=eggCvs.width,H2=eggCvs.height,cx=W2/2,cy=H2/2+8;
+  g.clearRect(0,0,W2,H2);
+  g.save();
+  // 🥚 גוף הביצה — זהובה כמו התיבה
+  g.translate(cx,cy);g.scale(1,1.24);
+  const eg=g.createRadialGradient(-24,-34,12,0,0,96);
+  eg.addColorStop(0,'#fffbe9');eg.addColorStop(.45,'#ffe9b0');eg.addColorStop(.8,'#f2c46a');eg.addColorStop(1,'#d99c3e');
+  g.fillStyle=eg;
+  g.beginPath();g.arc(0,0,88,0,TAU);g.fill();
+  g.restore();
+  // נקודות עדינות
+  g.fillStyle='rgba(190,140,60,.25)';
+  [[-30,-40],[24,-70],[42,-8],[-44,26],[10,58],[-8,-4]].forEach(p=>{
+    g.beginPath();g.arc(cx+p[0],cy+p[1],4.5,0,TAU);g.fill();
+  });
+  // ברק
+  g.fillStyle='rgba(255,255,255,.55)';
+  g.beginPath();g.ellipse(cx-30,cy-52,14,26,-.5,0,TAU);g.fill();
+  // 💥 הסדקים — נערמים לפי השלב
+  for(let s2=0;s2<Math.min(eggStage,EGG_CRACKS.length);s2++){
+    for(const ln of EGG_CRACKS[s2]){
+      g.beginPath();
+      g.moveTo(cx+ln[0],cy+ln[1]);
+      for(let k=2;k<ln.length;k+=2)g.lineTo(cx+ln[k],cy+ln[k+1]);
+      g.strokeStyle='rgba(120,75,20,.9)';g.lineWidth=3.2;g.lineJoin='round';g.stroke();
+      g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=1.1;g.stroke();
+    }
+  }
+  // אור בוקע מהסדקים לקראת הסוף
+  if(eggStage>=3){
+    g.save();g.globalCompositeOperation='lighter';
+    const lg=g.createRadialGradient(cx,cy,8,cx,cy,90);
+    lg.addColorStop(0,'rgba(255,240,170,'+(eggStage>=EGG_STAGES?.6:.3)+')');lg.addColorStop(1,'rgba(255,240,170,0)');
+    g.fillStyle=lg;g.fillRect(0,0,W2,H2);
+    g.restore();
+  }
+}
+function eggCrackUp(){
+  if(eggDone)return;
+  eggStage++;
+  eggDraw();
+  try{tone(260+eggStage*90,.09,'square',.3);}catch(e){}
+  if(navigator.vibrate)navigator.vibrate(20+eggStage*12);
+  try{ // רעד שמתחזק עם כל סדק
+    eggCvs.animate([{transform:'rotate(0deg)'},{transform:'rotate('+(2+eggStage)+'deg)'},{transform:'rotate(-'+(2+eggStage)+'deg)'},{transform:'rotate(0deg)'}],{duration:180,iterations:2});
+  }catch(e){}
+  try{
+    const rc=eggCvs.getBoundingClientRect();
+    emojiPop(rc.left+rc.width/2,rc.top+rc.height/2,['🥚','✨'],3+eggStage,90);
+  }catch(e){}
+  const hint=eggOv&&eggOv.querySelector('.eggHint');
+  if(hint)hint.textContent=eggStage>=EGG_STAGES-1?tr('עוד רגע... זה קורה!! 🤩','Almost... it\'s happening!! 🤩'):tr('יופי! תמשיך להחליק! ','Nice! Keep swiping! ')+'🥚'.repeat(Math.max(1,EGG_STAGES-eggStage));
+  if(eggStage>=EGG_STAGES)eggBurst();
+}
+function eggBurst(){
+  if(eggDone)return;
+  eggDone=true;
+  const res=eggRes;
+  try{ // 💥 פיצוץ: הבזק, רסיסי קליפה, קונפטי
+    const fl=document.createElement('div');
+    fl.style.cssText='position:fixed;inset:0;z-index:49;pointer-events:none;background:#fff;opacity:.85;transition:opacity .45s';
+    document.body.appendChild(fl);
+    requestAnimationFrame(()=>{fl.style.opacity='0';});
+    setTimeout(()=>fl.remove(),500);
+  }catch(e){}
+  try{emojiBurst({e:['🥚','💥','✨','⭐'],n:26,m:'burst',d:1600});}catch(e){}
+  try{confetti(110);}catch(e){}
+  try{tone(180,.18,'sawtooth',.4);setTimeout(()=>tone(660,.14,'sine',.32),140);setTimeout(()=>tone(1046,.2,'sine',.34),280);}catch(e){}
+  if(navigator.vibrate)navigator.vibrate([60,40,90]);
+  setTimeout(()=>{
+    try{eggOv&&eggOv.remove();}catch(e){}
+    eggOv=null;eggCvs=null;
+    buildSkins();
+    if(res&&res.pet!==undefined){
+      const p=PETS[res.pet];
+      showReveal({kind:'fx',icon:p.icon,rar:p.rar|0,label:tr('חיה חדשה: ','New pet: ')+tr(p.name,p.en),story:tr(p.pd[0],p.pd[1])});
+    }else if(res){
+      showToast(tr('הביצה הייתה ריקה... אבל בפנים היו ','The egg was empty... but inside were ')+res.co+'🪙!');
+      try{emojiPop(innerWidth/2,innerHeight/2,['🪙','✨'],12,130);}catch(e){}
+    }
+  },420);
+}
+function eggStart(res){
+  eggRes=res;eggRub=0;eggStage=0;eggDone=false;eggPrevPt=null;
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;z-index:48;background:rgba(3,5,12,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
+  d.innerHTML='<div style="font-weight:900;font-size:22px">🥚 '+tr('ביצה מסתורית!','Mystery Egg!')+'</div>'
+    +'<div class="eggHint" style="font-size:14px;color:#ffd257;font-weight:800">'+tr('החלק על הביצה שוב ושוב כדי לסדוק אותה!','Swipe the egg again and again to crack it!')+'</div>';
+  const cv=document.createElement('canvas');
+  cv.width=260;cv.height=300;
+  cv.style.cssText='width:230px;height:265px;touch-action:none;cursor:grab;filter:drop-shadow(0 10px 26px rgba(255,190,80,.35))';
+  d.appendChild(cv);
+  const sub=document.createElement('div');
+  sub.style.cssText='font-size:12px;color:#aeb8c8';
+  sub.textContent=tr('מה מסתתר בפנים? 🐾','What\'s hiding inside? 🐾');
+  d.appendChild(sub);
+  document.body.appendChild(d);
+  eggOv=d;eggCvs=cv;
+  eggDraw();
+  let down=false;
+  cv.addEventListener('pointerdown',e=>{down=true;eggPrevPt=[e.clientX,e.clientY];try{cv.setPointerCapture(e.pointerId);}catch(e2){}});
+  cv.addEventListener('pointerup',()=>{down=false;eggPrevPt=null;});
+  cv.addEventListener('pointercancel',()=>{down=false;eggPrevPt=null;});
+  cv.addEventListener('pointermove',e=>{
+    if(!down||eggDone)return;
+    if(eggPrevPt){
+      eggRub+=Math.hypot(e.clientX-eggPrevPt[0],e.clientY-eggPrevPt[1]);
+      while(eggRub>=EGG_RUB_PER*(eggStage+1)&&!eggDone)eggCrackUp();
+    }
+    eggPrevPt=[e.clientX,e.clientY];
+  });
+}
 /* 🎁🐾 פתיחת תיבת החיות */
 function openPetChest(card){
   const shakeNo=()=>{
@@ -7250,22 +7373,17 @@ function openPetChest(card){
   if(!confirm(tr('לפתוח תיבת חיות ב-'+PET_CHEST_COST+' מטבעות?','Open a Pet Chest for '+PET_CHEST_COST+' coins?'))){tone(300,.06,'sine',.15);return;}
   coins-=PET_CHEST_COST;
   const res=rollPetChest();
-  if(res.pet){
+  // הפרס נזקף מיד (בטוח גם אם יוצאים באמצע) — אבל מתגלה רק כשהביצה מתפוצצת 🥚
+  if(res.pet!==undefined){
     petOw.push(res.pet);petSel=res.pet;
-    const p=PETS[res.pet];
-    logEv('pt',tr(p.name,p.en));
-    checkAch();save();refreshTro();buildSkins();sfx.win();
-    try{emojiBurst({e:[p.icon,'🎉','✨','💖'],n:24,m:'burst',d:1700});}catch(e){}
-    if(navigator.vibrate)navigator.vibrate([40,60,40]);
-    showReveal({kind:'fx',icon:p.icon,rar:p.rar|0,label:tr('חיה חדשה: ','New pet: ')+tr(p.name,p.en),story:tr(p.pd[0],p.pd[1])});
+    logEv('pt',tr(PETS[res.pet].name,PETS[res.pet].en));
+    checkAch();
   }else{
     addCoins(res.co);
     logEv('pt',res.co+'🪙');
-    save();refreshTro();buildSkins();
-    showToast(tr('הפעם בלי חיה — קיבלת ','No pet this time — you got ')+res.co+tr('🪙 בחזרה. נסה שוב!','🪙 back. Try again!'));
-    try{emojiPop(innerWidth/2,innerHeight/2,['🪙','✨'],10,120);}catch(e){}
-    tone(500,.1,'sine',.25);
   }
+  save();refreshTro();buildSkins();
+  eggStart(res);
 }
 /* ---- 🎁 תיבות ---- */
 function pickUnowned(cat,ow){
