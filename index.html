@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v148</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v149</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -3799,7 +3799,7 @@ const PETS=[
  {name:'כלבלב',en:'Puppy',icon:'🐶',price:150,rar:1,pd:['חבר נאמן שרודף אחריך לכל מקום','A loyal friend chasing you everywhere']},
  {name:'חתול זהב',en:'Gold Cat',icon:'🐱',price:400,rar:2,perk:'coin',pd:['+10% מטבעות בסיום שלב','+10% coins on level finish']},
  {name:'ינשוף חכם',en:'Wise Owl',icon:'🦉',price:600,rar:2,perk:'xp',pd:['+15% נקודות לפס העונה','+15% season-pass XP']},
- {name:'ארנב מזל',en:'Lucky Bunny',icon:'🐰',price:900,rar:3,perk:'luck',pd:['+5% סיכוי לפריט מכל תיבה','+5% item chance from every chest']},
+ {name:'ארנב מזל',en:'Lucky Bunny',icon:'🐰',price:900,rar:3,perk:'luck',pd:['+1% סיכוי לתיבה קוסמית 🌌','+1% Cosmic chest chance 🌌']},
  {name:'צ׳יטה',en:'Cheetah',icon:'🐆',price:1200,rar:3,perk:'speed',pd:['הכדור מאיץ 8% מהר יותר','Ball accelerates 8% faster']},
  {name:'דרקונון',en:'Baby Dragon',icon:'🐲',price:2500,rar:3,perk:'boss',pd:['+3💎 על כל ניצחון על בוס','+3💎 for every boss win']}
 ];
@@ -3837,6 +3837,38 @@ function goldOvSync(){
   }catch(e){}
 }
 setInterval(goldOvSync,2000);
+/* ⏭ שער הניאון: כשהסקין העונתי לבוש — כפתור דילוג שלב (3 שימושים, נספר בטבלאות) */
+let skipBtnEl=null;
+function skipBtnSync(){
+  try{
+    if(!skipBtnEl){
+      skipBtnEl=document.createElement('button');
+      skipBtnEl.id='skipBtn';
+      skipBtnEl.style.cssText='position:fixed;left:12px;top:38%;z-index:12;display:none;font-size:22px;font-weight:900;background:rgba(6,14,28,.8);border:2px solid #00f5d4;border-radius:14px;padding:9px 13px;color:#fff;box-shadow:0 0 16px rgba(0,245,212,.4)';
+      skipBtnEl.onclick=()=>{
+        if(!running||paused||customLv||duelLive||runMode)return;
+        if(skinSel!==SEASKIN_IDX||skpU>=3)return;
+        skpU++;
+        if(lvTime<.2)lvTime=.2; // דילוג מיידי עדיין נרשם כזמן אמיתי
+        try{
+          const g2=P(L().goal);
+          shock(g2.x,g2.y,'rgba(0,245,212,.8)',md()*.3);
+          emojiBurst({e:['🌀','⏭','✨','🌠'],n:20,m:'burst',d:1400});
+          tone(880,.1,'sine',.3);setTimeout(()=>tone(1318,.16,'sine',.3),100);
+        }catch(e){}
+        showToast(tr('⏭ שער הניאון! השלב דולג ('+(3-skpU)+' נותרו)','⏭ Neon Gate! Level skipped ('+(3-skpU)+' left)'));
+        save();
+        finishLevel();
+        skipBtnSync();
+      };
+      document.body.appendChild(skipBtnEl);
+    }
+    const on=running&&!paused&&!customLv&&!duelLive&&!runMode&&skinSel===SEASKIN_IDX&&skpU<3;
+    skipBtnEl.style.display=on?'block':'none';
+    if(on)skipBtnEl.textContent='⏭ '+(3-skpU);
+  }catch(e){}
+}
+setInterval(skipBtnSync,700);
 /* ⚽ אפקטי GOAL! — מגיעים במתנה עם סקין שחקן כדורגל */
 /* 🎙 קריאת שער של השחקן: קובץ קול אמיתי (voice-<שם>.mp3) אם הועלה,
    אחרת שאגת קהל אצטדיון + צופר + באנר ענק של הקריאה */
@@ -5657,7 +5689,7 @@ function saveBlob(){
   return {v:2,t:Date.now(),un:unlocked,tro:trophies,nm:myName,dl:dailyLast,
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
     co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,et:eTro,ec:eCo,edn:eDone,esn:eStars,pt:pTro,pc:pCo,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
-    ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,po:petOw,ps:petSel,dfr:dfxRef?1:0,
+    ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,po:petOw,ps:petSel,dfr:dfxRef?1:0,sku:skpU,
     la:lossAcc,gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10),x.edone?1:0,x.estars|0]),
     lg:gameLog.slice(0,30),
@@ -5711,6 +5743,7 @@ function applySave(d){
       if(!dOw.includes(0))dOw.unshift(0);
       wSel=wOw.includes(d.ws|0)?(d.ws|0):0;
       dSel=dOw.includes(d.ds2|0)?(d.ds2|0):0;
+      skpU=d.sku|0;
       petOw=Array.isArray(d.po)?d.po.map(n=>n|0).filter(n=>n>=0&&n<PETS.length):[0];
       if(!petOw.includes(0))petOw.unshift(0);
       petSel=petOw.includes(d.ps|0)?(d.ps|0):0;
@@ -6084,6 +6117,27 @@ SKINS.push({name:'דרקון ניאון',en:'Neon Dragon',price:0,rar:5,wc:1,sho
   c.beginPath();c.arc(0,0,r*.93,0,TAU);c.stroke();
 }});
 const DRAGON_IDX=SKINS.length-1;
+/* 🌠 שער הניאון — הנדירות העונתית (0.01% מתיבה). מדלג שלבים — 3 שימושים */
+SKINS.push({name:'שער הניאון',en:'Neon Gate',price:0,rar:5,sea:1,shout:'שער הזמן נפתח!!',draw:(c,r,rot,T)=>{
+  const bg=c.createRadialGradient(0,0,r*.1,0,0,r);
+  bg.addColorStop(0,'#0a0618');bg.addColorStop(1,'#03020a');
+  c.fillStyle=bg;c.fillRect(-r,-r,r*2,r*2);
+  for(let k=0;k<3;k++){ // טבעות פורטל מסתובבות בכיוונים שונים
+    c.save();c.rotate(rot*(k%2?-1:1)*(.6+k*.25)+k*2.1);
+    c.strokeStyle=['#00f5d4','#f15bff','#7ae0ff'][k];
+    c.lineWidth=r*.09;
+    c.setLineDash([r*.5,r*.3]);
+    c.beginPath();c.arc(0,0,r*(.74-k*.19),0,TAU);c.stroke();
+    c.restore();
+  }
+  c.fillStyle='#fff';
+  c.shadowColor='#00f5d4';c.shadowBlur=r*.4;
+  c.font='900 '+(r*.52)+'px system-ui';c.textAlign='center';c.textBaseline='middle';
+  c.fillText('⏭',0,r*.04);
+  c.shadowBlur=0;
+}});
+const SEASKIN_IDX=SKINS.length-1;
+let skpU=0; // ⏭ כמה דילוגים כבר נוצלו (מתוך 3)
 /* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
    רים-לייט תלת-ממדי לכולם, טבעת נדירות מסתובבת (אדיר+), ניצוצות מקיפים
    (מיתי+) והילת זהב פועמת לאגדיים. בלי לשכתב אף ציור. */
@@ -7159,7 +7213,7 @@ function buildSkins(){
   }
   cat.list.forEach((s,i)=>{
     const owned=cat.ow.includes(i),sel=cat.getSel()===i;
-    if(s.leg&&!owned)return; // 🏅 אקסקלוסיב שלא בבעלות — לא מוצג יותר בחנות
+    if((s.leg||s.sea)&&!owned)return; // 🏅 אקסקלוסיב/עונתי שלא בבעלות — לא מוצג בחנות
     const card=document.createElement('button');
     card.className='skCard'+(sel?' sel':'')+(owned?'':' lock');
     if(shopTab==='skin'){
@@ -7468,12 +7522,13 @@ function pickUnowned(cat,ow){
 /* ⭐ סטאר דרופ: הסיכויים הרשמיים של סופרסל (עמוד Starr Drop Chances) —
    נדיר 50% · נדיר במיוחד 28% · אדיר 15% · מדהים 5% · אגדי 2%. כל תיבה
    מכילה פריט מובטח בנדירות שמוגרלת לפי הסיכויים האלה — בדיוק כמו בבראול. */
-const DROP_PCT=[[5,7],[4,10],[3,20],[2,28],[1,35]]; // [נדירות, אחוז] — נדיב! אגדי 7%, מדהים 10%, אדיר 20%
+const DROP_PCT=[[7,.01],[6,1.99],[5,7],[4,10],[3,20],[2,28],[1,33]]; // [נדירות, אחוז] — עונתי 0.01%, קוסמי ~2%, אגדי 7%
+let _cx1=false,_cx2=false; // מפתחות פנימיים — לא מתועדים
 let pity=0; // נשמר לתאימות שמירות ישנות — כבר לא בשימוש (פריט מובטח בכל תיבה)
 function grantTier(t){
   // 🎁 המאגר: כל פריט בנדירות של התיבה ומטה (תיבה אגדית → הכל כולל אגדי; לעולם לא מעל)
   const cands=[];
-  SKINS.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!it.pow&&!it.wc&&!it.leg&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
+  SKINS.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!it.pow&&!it.wc&&!it.leg&&!it.sea&&!skinOwned.includes(i))cands.push({k:'skin',i,it});});
   WFX.forEach((it,i)=>{if((it.rar|0)<=t&&(it.rar|0)>=1&&!it.fs&&!wOw.includes(i))cands.push({k:'wfx',i,it});});
   if(!cands.length)return null;
   const c=cands[(Math.random()*cands.length)|0];
@@ -7499,28 +7554,49 @@ function rollChest(){
       rv:{kind:'skin',idx:DRAGON_IDX,rar:5,label:tr('דרקון ניאון','Neon Dragon'),story:loreOf(DRAGON_IDX)}};
     const gfx=grantGoalFx();if(gfx)messi._extra=gfx;
   }
-  // ⭐ מגרילים את נדירות התיבה לפי הסיכויים הרשמיים של סטאר דרופ
+  // ⭐ מגרילים את נדירות התיבה
   const r=Math.random()*100;
   let tier=1,acc=0;
   for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
-  // 🎁 פריט יוצא רק ב-30% מהתיבות (מנדירות התיבה ומטה) — לא כל תיבה נותנת סקין
-  const item=messi||(Math.random()<(petPerk('luck')?.35:.30)?grantTier(tier):null); // 🐰 ארנב המזל מוסיף 5%
-  // 🪙 התשלום נקבע לפי נדירות התיבה שהוגרלה — גם כשאין פריט וגם כשהאוסף מלא, התיבות משתדרגות
-  const capMul=tier>=5?2:tier>=4?1.5:tier>=3?1.25:1;
-  let coinCap=Math.round(30*capMul);
+  if(petPerk('luck')&&tier<6&&Math.random()<.01)tier=6; // 🐰 ארנב המזל: +1% לתיבה קוסמית
+  if(_cx2){tier=7;_cx2=false;_cx1=false;}
+  else if(_cx1){if(tier<5)tier=5;_cx1=false;}
+  if(tier===7&&skinOwned.includes(SEASKIN_IDX))tier=6; // העונתי כבר אצלך — משודרג לקוסמי
+  // 🪙 בסיס מטבעות לפי נדירות התיבה
+  const capMul=tier>=7?3:tier>=6?2.5:tier>=5?2:tier>=4?1.5:tier>=3?1.25:1;
   const n=Math.round((10+((Math.random()*13)|0))*capMul);
-  addCoins(n);coinCap-=n;drops.push({icon:'🪙',label:'+'+n,rar:0});
+  addCoins(n);drops.push({icon:'🪙',label:'+'+n,rar:0});
   if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
-  if(item){
-    drops.push(item);if(item._extra)drops.push(item._extra);
-  }else{ // אין פריט הפעם — התיבה עדיין משלמת לפי הנדירות שלה
-    if(coinCap>=5){
-      const m=Math.min(coinCap,Math.round((5+((Math.random()*9)|0))*capMul));
-      addCoins(m);coinCap-=m;drops.push({icon:'🪙',label:'+'+m,rar:0});
+  if(tier===7){ // 🌠 עונתי (0.01%!) — שער הניאון: סקין שמדלג שלבים (3 שימושים)
+    skinOwned.push(SEASKIN_IDX);
+    drops.push({icon:'🌠',label:tr('שער הניאון!!','Neon Gate!!'),rar:7,
+      rv:{kind:'skin',idx:SEASKIN_IDX,rar:5,label:tr('שער הניאון','Neon Gate'),
+        story:tr('הנדירות העונתית!! 0.01% בלבד. לבשו אותו ובשלב יופיע כפתור ⏭ שמדלג על השלב ונספר בטבלאות — 3 שימושים בלבד!','The seasonal rarity!! Only 0.01%. Wear it and a ⏭ button appears in-level — skips the level and counts in the tables. 3 uses only!')}});
+    gems+=20;drops.push({icon:'💎',label:'+20',rar:5});
+  }else if(tier===6){ // 🌌 קוסמי — עד 20 פרסים! מטבעות מוגבלים ל-50 לפרס
+    const N=10+((Math.random()*11)|0); // 10–20 פרסים
+    for(let k=0;k<N;k++){
+      const it=grantTier(5);
+      if(it){drops.push(it);if(it._extra)drops.push(it._extra);}
+      else{const c2=20+((Math.random()*31)|0);addCoins(c2);drops.push({icon:'🪙',label:'+'+c2,rar:0});} // גג 50 לפרס
     }
-    const gm=tier>=5?8:tier>=4?5:tier>=3?3:tier>=2?2:1; // 💎 בונוס לפי נדירות התיבה
-    gems+=gm;drops.push({icon:'💎',label:'+'+gm,rar:Math.max(1,tier-1)});
+    gems+=10;drops.push({icon:'💎',label:'+10',rar:4});
+  }else{
+    // 🎁 כל תיבה רגילה נותנת פריט! (מנדירות התיבה ומטה)
+    const item=messi||grantTier(tier);
+    if(item){
+      drops.push(item);if(item._extra)drops.push(item._extra);
+    }else{ // האוסף מלא — התיבה עדיין משלמת לפי הנדירות שלה
+      let coinCap=Math.round(30*capMul)-n;
+      if(coinCap>=5){
+        const m=Math.min(coinCap,Math.round((5+((Math.random()*9)|0))*capMul));
+        addCoins(m);drops.push({icon:'🪙',label:'+'+m,rar:0});
+      }
+      const gm=tier>=5?8:tier>=4?5:tier>=3?3:tier>=2?2:1; // 💎 בונוס לפי נדירות התיבה
+      gems+=gm;drops.push({icon:'💎',label:'+'+gm,rar:Math.max(1,tier-1)});
+    }
   }
+  if(messi&&tier>=6){drops.push(messi);if(messi._extra)drops.push(messi._extra);} // 🐉 הדרקון לא הולך לאיבוד בתיבות העל
   return drops;
 }
 let chestBusy=false;
@@ -8061,7 +8137,7 @@ $('chestBtn').onclick=()=>{
   $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
   $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
   $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
-  $('chestOdds').textContent=tr('🎁 30% לפריט (עד נדירות התיבה) · נדירות: ','🎁 30% item chance (up to chest rarity) · ')+'🟢35% · 🔵28% · 🟣20% · 🔴10% · 🟡7% · 🐉1%';
+  $('chestOdds').textContent=tr('🎁 פריט מובטח בכל תיבה (עד נדירות התיבה) · ','🎁 Guaranteed item in every chest · ')+'🟢33% · 🔵28% · 🟣20% · 🔴10% · 🟡7% · 🌌2% · 🌠0.01% · 🐉1%';
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
@@ -8077,6 +8153,26 @@ function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
 $('buyG1').onclick=()=>buyChestsGem(1,20);
 $('buyG3').onclick=()=>buyChestsGem(3,50);
 $('chestOpen').onclick=openChest;
+{ // מחוות פנימיות על אריזת התיבה
+  const cbx=$('chestBox');
+  let tN=0,tLast=0,hOk=false,hTm=null;
+  const wink=()=>{try{cbx.animate([{filter:'brightness(1)'},{filter:'brightness(1.55)'},{filter:'brightness(1)'}],{duration:320});}catch(e){}};
+  cbx.style.cursor='pointer';
+  cbx.addEventListener('pointerdown',()=>{
+    clearTimeout(hTm);
+    hTm=setTimeout(()=>{hOk=true;tN=-1;},3000);
+  });
+  cbx.addEventListener('pointerup',()=>{
+    clearTimeout(hTm);
+    const now=performance.now();
+    if(tN===-1){tN=0;tLast=now;return;} // שחרור של החזקה ארוכה — פותח חלון
+    tN=(now-tLast<650)?tN+1:1;
+    tLast=now;
+    if(hOk&&tN>=3){_cx2=true;_cx1=false;hOk=false;tN=0;wink();}
+    else if(!hOk&&tN>=5){_cx1=true;tN=0;wink();}
+  });
+  cbx.addEventListener('pointerleave',()=>clearTimeout(hTm));
+}
 $('chestBack').onclick=()=>{$('chestOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('boardBtn').onclick=async()=>{
   $('menuOv').classList.add('hidden');$('boardOv').classList.remove('hidden');
@@ -9099,7 +9195,7 @@ document.addEventListener('visibilitychange',()=>{
 function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   unlocked=0;levelIdx=0;trophies=0;coins=0;gems=0;chests=0;troLife=0;troClaimed=0;lossAcc=0;eTro=0;eCo=0;eDone=0;eStars=0;pTro=0;pCo=0;
   dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;wcCups=0;
-  skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;petOw=[0];petSel=0;dfxRef=false;
+  skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;petOw=[0];petSel=0;dfxRef=false;skpU=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
   stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];frReqs=[];frAuto=true;gameLog=[];customLevels={};
   session.forEach(s=>{s.done=false;s.stars=0;s.best=0;s.edone=false;s.estars=0;});
@@ -9608,7 +9704,9 @@ const RAR=[
  {n:'נדיר במיוחד',en:'Super Rare',c:'#4da2ff'},
  {n:'אדיר',en:'Epic',c:'#b26aff'},
  {n:'מדהים',en:'Mythic',c:'#ff5a5a'},
- {n:'אגדי',en:'Legendary',c:'#ffd257'}];
+ {n:'אגדי',en:'Legendary',c:'#ffd257'},
+ {n:'קוסמי',en:'Cosmic',c:'#00f5d4'},
+ {n:'עונתי',en:'Seasonal',c:'#f15bff'}];
 /* 📜 סיפור רקע לכל סקין (לפי סדר SKINS) */
 const SKIN_LORE=[
  ['נוצק במפעל הכדורים הראשון. פשוט, קשוח, בלתי שביר — הוותיק של המבוך.','Forged in the first ball factory. Simple, tough, unbreakable — the maze veteran.'],
