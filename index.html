@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v149</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v150</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -8153,25 +8153,28 @@ function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
 $('buyG1').onclick=()=>buyChestsGem(1,20);
 $('buyG3').onclick=()=>buyChestsGem(3,50);
 $('chestOpen').onclick=openChest;
-{ // מחוות פנימיות על אריזת התיבה
+{ // מחוות פנימיות על אריזת התיבה — הרצף כולו חייב לקרות בלי לסגור את המסך
   const cbx=$('chestBox');
-  let tN=0,tLast=0,hOk=false,hTm=null;
+  let tN=0,hOk=false,held=false,hTm=null;
   const wink=()=>{try{cbx.animate([{filter:'brightness(1)'},{filter:'brightness(1.55)'},{filter:'brightness(1)'}],{duration:320});}catch(e){}};
+  const cxReset=()=>{tN=0;hOk=false;held=false;_cx1=false;_cx2=false;clearTimeout(hTm);};
   cbx.style.cursor='pointer';
   cbx.addEventListener('pointerdown',()=>{
+    held=false;
     clearTimeout(hTm);
-    hTm=setTimeout(()=>{hOk=true;tN=-1;},3000);
+    hTm=setTimeout(()=>{held=true;},3000);
   });
   cbx.addEventListener('pointerup',()=>{
     clearTimeout(hTm);
-    const now=performance.now();
-    if(tN===-1){tN=0;tLast=now;return;} // שחרור של החזקה ארוכה — פותח חלון
-    tN=(now-tLast<650)?tN+1:1;
-    tLast=now;
+    if(held){hOk=true;held=false;tN=0;return;} // החזקה של 3ש הושלמה — נפתח שלב הלחיצות
+    tN++;
     if(hOk&&tN>=3){_cx2=true;_cx1=false;hOk=false;tN=0;wink();}
     else if(!hOk&&tN>=5){_cx1=true;tN=0;wink();}
   });
-  cbx.addEventListener('pointerleave',()=>clearTimeout(hTm));
+  cbx.addEventListener('pointercancel',()=>{clearTimeout(hTm);held=false;});
+  // סגירת התפריט מאפסת הכל — גם התקדמות וגם מפתח טעון
+  $('chestBack').addEventListener('click',cxReset);
+  $('chestBtn').addEventListener('click',cxReset);
 }
 $('chestBack').onclick=()=>{$('chestOv').classList.add('hidden');refreshTro();$('menuOv').classList.remove('hidden');};
 $('boardBtn').onclick=async()=>{
