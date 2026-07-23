@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v154</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v155</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -7619,13 +7619,14 @@ function rollChest(){
   let tier=1,acc=0;
   for(const[t,pc] of DROP_PCT){acc+=pc;if(r<acc){tier=t;break;}}
   if(petPerk('luck')&&tier<6&&Math.random()<.01)tier=6; // 🐰 ארנב המזל: +1% לתיבה קוסמית
-  let fLeg=false;
+  let fLeg=false,fSea=false;
   lastRollGifted=false;
   const _gt=gcQueueTake(); // 🎁 תיבת-מתנה בתור? היא קובעת את הנדירות
-  if(_gt){tier=_gt;lastRollGifted=true;}
-  else if(_cx2){tier=7;_cx2=false;_cx1=false;}
+  if(_gt){tier=_gt;lastRollGifted=true;if(tier===7)fSea=true;}
+  else if(_cx2){tier=7;fSea=true;_cx2=false;_cx1=false;}
   else if(_cx1){fLeg=true;if(tier<5)tier=5;_cx1=false;}
-  if(tier===7&&SEASON_SKINS.every(ix=>skinOwned.includes(ix)))tier=6; // כל סקיני העונה כבר אצלך — משודרג לקוסמי
+  // עונתי טבעי כשכל סקיני העונה כבר אצלך — משודרג לקוסמי; עונתי כפוי נשאר עונתי תמיד
+  if(tier===7&&!fSea&&SEASON_SKINS.every(ix=>skinOwned.includes(ix)))tier=6;
   // 🏷 תיבה נדירה מכריזה על עצמה — רואים מה יצא בהגרלת הנדירות
   if(tier>=4)drops.push({icon:'🎁',label:tr('תיבה ','')+tr(RAR[tier].n,RAR[tier].en)+(tier>=6?'!!':'!'),rar:tier});
   // 🪙 בסיס מטבעות לפי נדירות התיבה
@@ -7634,8 +7635,10 @@ function rollChest(){
   addCoins(n);drops.push({icon:'🪙',label:'+'+n,rar:0});
   if(Math.random()<.09){gems+=3;drops.push({icon:'💎',label:'+3',rar:2});}
   if(tier===7){ // 🌠 עונתי (0.01%!) — כל סקיני עונת הניאון יחד, כולל הדרקון (1%) ושער הניאון (מדלג שלבים)
+    let _new=0;
     SEASON_SKINS.forEach(ix=>{
       if(skinOwned.includes(ix))return; // כבר יש (למשל הדרקון מהגרלת ה-1% למעלה) — לא כפול
+      _new++;
       skinOwned.push(ix);
       const s=SKINS[ix];
       drops.push({icon:ix===SEASKIN_IDX?'🌠':ix===DRAGON_IDX?'🐉':'🎨',
@@ -7646,7 +7649,12 @@ function rollChest(){
             :loreOf(ix)}});
       if(s.face){const gfx=grantGoalFx();if(gfx)drops.push(gfx);}
     });
-    gems+=20;drops.push({icon:'💎',label:'+20',rar:5});
+    if(_new){gems+=20;drops.push({icon:'💎',label:'+20',rar:5});}
+    else{ // כל סקיני העונה כבר אצלך — טעינה עונתית 🌠
+      if(skpU>0){skpU=0;drops.push({icon:'⏭',label:tr('שער הניאון נטען מחדש — 3 דילוגים!','Neon Gate recharged — 3 skips!'),rar:7});}
+      addCoins(200);drops.push({icon:'🪙',label:'+200',rar:0});
+      gems+=30;drops.push({icon:'💎',label:'+30',rar:5});
+    }
   }else if(tier===6){ // 🌌 קוסמי — עד 20 פרסים! מטבעות מוגבלים ל-50 לפרס
     const N=10+((Math.random()*11)|0); // 10–20 פרסים
     for(let k=0;k<N;k++){
