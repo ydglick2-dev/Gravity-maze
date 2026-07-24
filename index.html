@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v164</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v165</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -5496,7 +5496,12 @@ function finishLevel(){
   if(firstClear&&feverHit)txt+='\n🌈 '+tr('FEVER! בונוס +12🪙 על קומבו מלא','FEVER! +12🪙 full-combo bonus');
   if(last){
     const tot=session.reduce((a,x)=>a+x.stars,0);
-    txt+=tr(' — כבשת את כל 100 השלבים! ',' — you conquered all 100 levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
+    txt+=tr(' — כבשת את כל '+LEVELS.length+' השלבים! ',' — you conquered all '+LEVELS.length+' levels! ')+tot+tr('★ מתוך ','★ of ')+LEVELS.length*3+tr('.\n\n✨ המשך יבוא... ✨','.\n\n✨ To be continued... ✨');
+    if(firstClear){ // 👑 השלמת כל אוסף השלבים — בונוס חד-פעמי ענק
+      addCoins(1000);
+      txt+='\n👑 '+tr('השלמת את כל אוסף השלבים — בונוס +1,000🪙!','Level collection complete — +1,000🪙 bonus!');
+      try{emojiBurst({e:['👑','🪙','🎉'],n:26,m:'nova',d:1800});}catch(e){}
+    }
   }
   if(!last){const _nx=25-(troLife%25);txt+='\n'+tr('🎯 היעד הבא: עוד '+_nx+'🏆 ← 🎁 תיבה!','🎯 Next goal: '+_nx+'🏆 more → 🎁 chest!');} // מה עושים עכשיו ולמה
   $('doneText').textContent=txt;
@@ -5505,7 +5510,7 @@ function finishLevel(){
     let _ci=0;
     const chip=t2=>'<span style="display:inline-block;background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:'+(.95+(_ci++)*.15)+'s">'+t2+'</span>';
     $('winChips').innerHTML=firstClear
-      ?chip('+'+_cg+' 🪙')+(goldLv?chip('🌟 ×3'):'')+(feverHit?chip('🌈 FEVER'):'')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫')
+      ?chip('+'+_cg+' 🪙')+(last?chip('👑 +1,000 🪙'):'')+(goldLv?chip('🌟 ×3'):'')+(feverHit?chip('🌈 FEVER'):'')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫')
       :chip('🔁 '+tr('שלב חוזר','Replay'));
   }
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('המשך לשלב ','Continue to level ')+(levelIdx+2)+' ‹';
