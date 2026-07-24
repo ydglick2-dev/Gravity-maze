@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v170</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v171</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -819,6 +819,7 @@
   </div>
   <div class="row">
     <button class="btn sec" id="calibBtn" data-en="🎯 Calibrate (this is level)">🎯 כיול (זה "ישר")</button>
+    <button class="btn sec" id="motEngBtn">🧲</button>
     <button class="btn sec" id="toSelectBtn" data-en="Level Select">בחירת שלב</button>
   </div>
   <div class="row">
@@ -2180,7 +2181,7 @@ function updateHud(){
 let orientN=0,motionN=0,lastSenT=0,senSrc='';
 let lpG=0,lpB=0,lpOn=false; // 🪶 החלקת רעש קצרה על זוויות ההטיה
 let joyOn=false;            // 🕹 הג'ויסטיק מנווט בפועל ברגע זה
-function senFresh(){return !!lastSenT&&performance.now()-lastSenT<(senSrc==='m'?1200:4000);}
+function senFresh(){return !!lastSenT&&performance.now()-lastSenT<(senSrc==='m'?1200:6000);}
 function mapAxes(gx,gy){ // מיפוי כיוון-מסך משותף לשני המקורות
   const o=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
   if(o===90){const t=gx;gx=gy;gy=-t;}
@@ -2212,12 +2213,27 @@ function feedTilt(gx,gy,src){ // gx=גלגול (קצה ימני למטה +) · g
   tiltY=shape(Math.max(-1,Math.min(1,(lpB-neutB)/MAX*SENS)));
 }
 const R2D=57.29577951308232;
+/* 🧲 בחירת מנוע תנועה: new=וקטור כבידה · old=חיישן הכיוון הישן · joy=ג'ויסטיק בלבד */
+let motEng='new';try{const _me=localStorage.getItem('mzMotEng');if(_me==='old'||_me==='joy')motEng=_me;}catch(_e){}
+/* 🧭 קונבנציית הסימנים של מד-התאוצה שונה בין מכשירים (תגובה מול כבידה).
+   מתחילים מניחוש לפי פלטפורמה ומתקנים אוטומטית לפי ראיות: טלפון שמוחזק
+   מול שחקן חייב לתת y+z חיוביים בקונבנציית "תגובה". */
+let mFlip=(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function')?-1:1,mSign=0;
+let dbgAx=0,dbgAy=0,dbgAz=0; // לתצוגת האבחון
 function onMotion(e){
+  if(motEng!=='new')return;
   const a=e.accelerationIncludingGravity;
   if(!a||a.x==null||a.y==null||a.z==null)return;
-  motionN++;
   let ax=a.x,ay=a.y,az=a.z;
-  if(iosMotionReq){ax=-ax;ay=-ay;az=-az;} // 🍎 iOS מדווח את הכבידה בסימן הפוך
+  dbgAx=ax;dbgAy=ay;dbgAz=az;
+  const mag=Math.hypot(ax,ay,az);
+  if(mag<4||mag>20)return; // טלטול חד / נפילה / ג'אנק — לא מודדים זווית מרגע כזה
+  if(Math.abs(ay+az)>3){ // 🧭 הצבעת-קונבנציה: מספיק ראיות הפוכות — מתהפכים ומכיילים מחדש
+    mSign=Math.max(-40,Math.min(40,mSign+(((ay+az)*mFlip>0)?1:-1)));
+    if(mSign<=-25){mFlip=-mFlip;mSign=0;armCal();}
+  }
+  motionN++;
+  ax*=mFlip;ay*=mFlip;az*=mFlip;
   // זוויות מוקטור הכבידה — יציבות בכל אחיזה, כולל טלפון זקוף לגמרי
   const gy=Math.atan2(ay,Math.hypot(ax,az))*R2D;  // עלרוד
   const gx=Math.atan2(-ax,Math.hypot(ay,az))*R2D; // גלגול
@@ -2225,9 +2241,10 @@ function onMotion(e){
   feedTilt(m[0],m[1],'m');
 }
 function onOrient(e){
+  if(motEng==='joy')return;
   if(e.beta===null||e.gamma===null)return;
   orientN++;
-  if(motionN>3)return; // מד-התאוצה חי — הוא המקור היחיד
+  if(motEng==='new'&&motionN>3)return; // מד-התאוצה חי — הוא המקור היחיד
   const m=mapAxes(e.gamma,e.beta);
   feedTilt(m[0],m[1],'o');
 }
@@ -2240,7 +2257,7 @@ function armCal(){
 }
 /* ⏱ נסגר משעון אמיתי כל פריים — אירועים איטיים/חסרים לא מרעילים את הכיול */
 function calTick(){
-  if(touchMode&&senSrc==='m'&&motionN>12&&senFresh()){ // 🧲 חיישן הוכיח זרם חי — יוצאים ממצב ג'ויסטיק
+  if(motEng!=='joy'&&touchMode&&senSrc==='m'&&motionN>12&&senFresh()){ // 🧲 חיישן הוכיח זרם חי — יוצאים ממצב ג'ויסטיק
     touchMode=false;armCal();
     try{$('hint').style.display='none';}catch(_e){}
     try{updateHud();}catch(_e){}
@@ -5351,7 +5368,7 @@ function loop(ts){
     if(runMode){runFrame(dt,t);return;}
     // 🛑 זרם החיישן מת (מעבר אפליקציה/מסך כבוי)? ההטיה דועכת לאפס — הכדור לא בורח לבד
     if(!joyOn&&!senFresh()&&(tiltX||tiltY)){
-      const ex=Math.exp(-dt*8);
+      const ex=Math.exp(-dt*(senSrc==='m'?8:3)); // מקור ישן (רק-על-שינוי) — דעיכה סבלנית
       tiltX*=ex;tiltY*=ex;
       if(Math.abs(tiltX)<.01)tiltX=0;
       if(Math.abs(tiltY)<.01)tiltY=0;
@@ -5789,6 +5806,60 @@ $('pauseMenuBtn').onclick=()=>{
   if(typeof syncLobbyUI==='function')try{syncLobbyUI();}catch(e){}
 };
 $('calibBtn').onclick=()=>{armCal();save();showToast(tr('🎯 כויל! ככה זה "ישר" מעכשיו','🎯 Calibrated! This is "flat" now'));};
+/* 🧲 מתג מנוע תנועה: חדש (כבידה) ← ישן (כיוון) ← ג'ויסטיק — למקרה שמכשיר מסוים מתנהג מוזר */
+function motEngLabel(){
+  $('motEngBtn').textContent=motEng==='new'?tr('🧲 תנועה: חיישן חדש','🧲 Motion: new sensor')
+    :motEng==='old'?tr('🧭 תנועה: חיישן ישן','🧭 Motion: legacy sensor')
+    :tr('🕹 תנועה: ג\'ויסטיק','🕹 Motion: joystick');
+}
+motEngLabel();
+$('motEngBtn').onclick=()=>{
+  motEng=motEng==='new'?'old':motEng==='old'?'joy':'new';
+  try{localStorage.setItem('mzMotEng',motEng);}catch(e){}
+  motionN=0;orientN=0;lastSenT=0;senSrc='';lpOn=false;mSign=0;
+  tiltX=0;tiltY=0;
+  if(motEng==='joy'){touchMode=true;$('hint').style.display='';$('hint').textContent=tr('🕹 גררו אצבע על המסך כדי לנווט','🕹 Drag a finger to steer');}
+  else{touchMode=false;armCal();try{$('hint').style.display='none';}catch(e){}}
+  motEngLabel();updateHud();
+  showToast(motEng==='new'?tr('🧲 חיישן חדש (מומלץ)','🧲 New sensor (recommended)')
+    :motEng==='old'?tr('🧭 חיישן ישן — כמו לפני העדכון','🧭 Legacy sensor — like before the update')
+    :tr('🕹 ג\'ויסטיק בלבד','🕹 Joystick only'));
+};
+if(motEng==='joy')touchMode=true; // ⏮ העדפה שמורה נטענת כבר בהפעלה
+/* 🩺 מסך אבחון סודי: 5 הקשות מהירות על שורת ה-HUD — מציג מה החיישן באמת משדר */
+{
+  let _dn=0,_dt0=0,_dTimer=null;
+  const _hud=$('hudInfo');
+  if(_hud)_hud.addEventListener('click',()=>{
+    const now=performance.now();
+    if(now-_dt0>2000){_dn=0;_dt0=now;}
+    if(++_dn<5)return;
+    _dn=0;
+    let d=document.getElementById('senDbg');
+    if(d){d.remove();if(_dTimer){clearInterval(_dTimer);_dTimer=null;}return;}
+    d=document.createElement('div');
+    d.id='senDbg';
+    d.style.cssText='position:fixed;top:60px;inset-inline-start:8px;z-index:99;background:rgba(3,6,12,.92);color:#9fe8ff;font:11px/1.5 monospace;padding:8px 10px;border-radius:10px;border:1px solid #1d3a55;direction:ltr;text-align:left;max-width:78vw;pointer-events:auto';
+    const btn=document.createElement('button');
+    btn.textContent='📋';
+    btn.style.cssText='position:absolute;top:4px;right:4px;background:#12283d;color:#9fe8ff;border:0;border-radius:6px;padding:2px 8px';
+    const body=document.createElement('div');
+    d.appendChild(body);d.appendChild(btn);
+    document.body.appendChild(d);
+    const txt=()=>[
+      'eng='+motEng+' src='+(senSrc||'-')+' flip='+mFlip+' fresh='+(senFresh()?1:0),
+      'mN='+motionN+' oN='+orientN+' touchMode='+(touchMode?1:0)+' joy='+(joyOn?1:0),
+      'acc=('+dbgAx.toFixed(2)+','+dbgAy.toFixed(2)+','+dbgAz.toFixed(2)+')',
+      'raw=('+rawG.toFixed(1)+','+rawB.toFixed(1)+') lp=('+lpG.toFixed(1)+','+lpB.toFixed(1)+')',
+      'neut=('+neutG.toFixed(1)+','+neutB.toFixed(1)+') arm='+(autoCalArm?1:0),
+      'tilt=('+tiltX.toFixed(2)+','+tiltY.toFixed(2)+') SENS='+SENS.toFixed(2),
+      'orient='+(((screen.orientation&&screen.orientation.angle)||window.orientation||0))+' v171'
+    ].join('\n');
+    const paint=()=>{body.textContent=txt();};
+    paint();_dTimer=setInterval(paint,250);
+    btn.onclick=async()=>{try{await navigator.clipboard.writeText(txt());btn.textContent='✅';setTimeout(()=>btn.textContent='📋',900);}catch(e){}};
+  });
+}
 $('sensSlider').oninput=e=>{SENS=e.target.value/100;save();};
 $('soundBtn').onclick=()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';save();};
 $('doneMenu').onclick=()=>{
