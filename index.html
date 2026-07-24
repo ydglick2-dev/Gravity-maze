@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v166</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v167</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -1413,7 +1413,7 @@ function genLevel(i){
   }
   return fallback(i);
 }
-const N_LEVELS=1000;
+const N_LEVELS=2000; // 🚪 פרק 2: סיום 1,000 הראשונים פותח עוד 1,000
 const LEVELS=[];for(let i=0;i<100;i++)LEVELS.push(genLevel(i));
 LEVELS.length=N_LEVELS;
 function ensureLv(i){
@@ -1439,7 +1439,7 @@ function genDaily(ds){
 
 /* ============ STATE ============ */
 let screenSt='menu', levelIdx=0, unlocked=0;
-const session=Array.from({length:1000},()=>({stars:0,best:0,done:false}));
+const session=Array.from({length:N_LEVELS},()=>({stars:0,best:0,done:false}));
 let board={x:0,y:0,w:0,h:0}, ball={x:0,y:0,vx:0,vy:0,r:10,rot:0,squash:0,sqa:0};
 let falling=0,fallPt=null,winPause=0,running=false,paused=false;
 let tiltX=0,tiltY=0,dTiltX=0,dTiltY=0;
@@ -5487,8 +5487,9 @@ function finishLevel(){
   }
   const medal=medalFor(levelIdx,lvTime);
   const last=levelIdx+1>=LEVELS.length;
-  $('medalBig').textContent=last?'🏆':medal;
-  $('doneTitle').textContent=last?tr('סוף הפרק הראשון!','End of Chapter One!'):tr('שלב ','Level ')+(levelIdx+1)+tr(' הושלם!',' complete!');
+  const chap=!last&&(levelIdx+1)%1000===0; // 🚪 סוף פרק — נפתחים עוד 1,000 שלבים
+  $('medalBig').textContent=(last||chap)?'🏆':medal;
+  $('doneTitle').textContent=last?tr('כבשת את הכל!','You conquered everything!'):chap?tr('פרק הושלם!','Chapter complete!'):tr('שלב ','Level ')+(levelIdx+1)+tr(' הושלם!',' complete!');
   starsBigAnim(got,starGot.length);
   let txt=tr('זמן: ','Time: ')+fmt(lvTime)+' '+medal+(lvDeaths?tr(' · נפילות: ',' · falls: ')+lvDeaths:tr(' · בלי נפילות!',' · no falls!'))+(firstClear?' · +'+_cg+'🪙':'')+(troGain?' · +'+troGain+'🏆':'');
   if(!firstClear)txt+='\n🔁 '+tr('שלב חוזר — פרסים מקבלים רק על שלבים חדשים','Replay — rewards only on new levels');
@@ -5502,6 +5503,11 @@ function finishLevel(){
       txt+='\n👑 '+tr('השלמת את כל אוסף השלבים — בונוס +1,000🪙!','Level collection complete — +1,000🪙 bonus!');
       try{emojiBurst({e:['👑','🪙','🎉'],n:26,m:'nova',d:1800});}catch(e){}
     }
+  }else if(chap&&firstClear){ // 🚪 סוף פרק: בונוס + הפרק הבא נפתח
+    addCoins(1000);
+    txt+='\n👑 '+tr('השלמת 1,000 שלבים — בונוס +1,000🪙!','1,000 levels complete — +1,000🪙 bonus!')
+      +'\n🚪 '+tr('נפתח פרק חדש: עוד 1,000 שלבים מחכים לך!','A new chapter opens: 1,000 more levels await!');
+    try{emojiBurst({e:['👑','🚪','🎉'],n:26,m:'nova',d:1800});}catch(e){}
   }
   if(!last){const _nx=25-(troLife%25);txt+='\n'+tr('🎯 היעד הבא: עוד '+_nx+'🏆 ← 🎁 תיבה!','🎯 Next goal: '+_nx+'🏆 more → 🎁 chest!');} // מה עושים עכשיו ולמה
   $('doneText').textContent=txt;
@@ -5510,7 +5516,7 @@ function finishLevel(){
     let _ci=0;
     const chip=t2=>'<span style="display:inline-block;background:rgba(255,255,255,.08);border:1px solid #ffffff1f;border-radius:999px;padding:5px 14px;font-weight:900;font-size:14px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:'+(.95+(_ci++)*.15)+'s">'+t2+'</span>';
     $('winChips').innerHTML=firstClear
-      ?chip('+'+_cg+' 🪙')+(last?chip('👑 +1,000 🪙'):'')+(goldLv?chip('🌟 ×3'):'')+(feverHit?chip('🌈 FEVER'):'')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫')
+      ?chip('+'+_cg+' 🪙')+((last||chap)?chip('👑 +1,000 🪙'):'')+(goldLv?chip('🌟 ×3'):'')+(feverHit?chip('🌈 FEVER'):'')+(troGain?chip('+'+troGain+' 🏆'):'')+chip('+'+_pg+' 🎫')
       :chip('🔁 '+tr('שלב חוזר','Replay'));
   }
   $('nextBtn').textContent=last?tr('לבחירת שלב','Level Select'):tr('המשך לשלב ','Continue to level ')+(levelIdx+2)+' ‹';
