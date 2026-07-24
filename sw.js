@@ -1,4 +1,4 @@
-const CACHE = 'maze-ultra-v165';
+const CACHE = 'maze-ultra-v166';
 const ASSETS = [
   './',
   './index.html',
@@ -17,19 +17,37 @@ self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
-/* 🔔 Web Push — התראות גם כשהמשחק סגור. הדחיפה ריקה (בלי תוכן מוצפן),
-   ולכן מוצגת הודעה כללית; הפרטים מחכים בתוך המשחק */
+/* 🔔 Web Push — התראות גם כשהמשחק סגור. הדחיפה עצמה ריקה (בלי תוכן מוצפן),
+   אז שואלים את השרת "מה חדש?" ומציגים את תוכן ההתראה האמיתי; אם אין
+   חיבור (או שהחדשות כבר נאספו) — נופלים להודעה הכללית */
+const PUSH_BE = 'https://gravity-maze-backend.gravity-maze.workers.dev';
 self.addEventListener('push', e => {
-  e.waitUntil(self.registration.showNotification('Gravity Maze 🎮', {
-    body: 'יש משהו חדש! 💬🎁 הודעה, מתנה או ברכה מחכה לך במשחק',
-    icon: 'icon-192.png',
-    badge: 'icon-192.png',
-    tag: 'mzk-inbox',
-    renotify: true,
-    dir: 'rtl',
-    lang: 'he',
-    vibrate: [60, 40, 60]
-  }));
+  e.waitUntil((async () => {
+    let title = 'Gravity Maze 🎮';
+    let body = 'יש משהו חדש! 💬🎁 הודעה, מתנה או ברכה מחכה לך במשחק';
+    try {
+      const sub = await self.registration.pushManager.getSubscription();
+      if (sub) {
+        const r = await fetch(PUSH_BE + '/api/pushpeek', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ep: sub.endpoint })
+        });
+        const j = await r.json();
+        if (j && j.body) { body = j.body; if (j.title) title = j.title; }
+      }
+    } catch (err) {}
+    return self.registration.showNotification(title, {
+      body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      tag: 'mzk-inbox',
+      renotify: true,
+      dir: 'rtl',
+      lang: 'he',
+      vibrate: [60, 40, 60]
+    });
+  })());
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();

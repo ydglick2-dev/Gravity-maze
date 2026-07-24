@@ -285,6 +285,37 @@ export class Registry {
       return J({ ok: 1 });
     }
 
+    /* 🔔 "מה חדש?" — ה-SW שואל עם כתובת המנוי שלו ומקבל את תוכן ההתראות עצמו,
+       כדי שההתראה בטלפון תראה מה באמת מחכה ולא רק "יש משהו חדש" */
+    if (p === '/api/pushpeek' && req.method === 'POST') {
+      const ep = String(b.ep || '');
+      if (!/^https:\/\//.test(ep)) return J({ err: 'bad' }, 400);
+      let u = '';
+      for (const k in d.push) if ((d.push[k] || []).some(s2 => s2.endpoint === ep)) { u = k; break; }
+      if (!u) return J({ ok: 1 });
+      const L = [], q = d.gifts[u] || {};
+      (Array.isArray(q.bmsg) ? q.bmsg.slice(-2) : []).forEach(m => L.push('💬 ' + (m.f || 'גליקי') + ': ' + String(m.t || '').slice(0, 60)));
+      const now = Date.now();
+      for (const k in d.chat) { // צ'אט טרי (3 דקות) מהצד השני — השם והטקסט עצמם
+        if (!k.split('|').includes(u)) continue;
+        (Array.isArray(d.chat[k]) ? d.chat[k] : []).filter(m => m.f !== u && now - (m.at || 0) < 180000).slice(-1)
+          .forEach(m => L.push('💬 ' + m.f + ': ' + String(m.t || '').slice(0, 60)));
+      }
+      const bits = [];
+      if (q.ch) bits.push('🎁 תיבות +' + (q.ch | 0));
+      if (Array.isArray(q.gct) && q.gct.length) bits.push('🎁 תיבת נדירות מיוחדת');
+      if (q.co) bits.push('🪙 +' + (q.co | 0));
+      if (q.gm) bits.push('💎 +' + (q.gm | 0));
+      if (q.pet) bits.push('🐾 חיה חדשה');
+      if (q.px) bits.push('🎫 XP לפס העונה');
+      if (q.gate) bits.push('🌠 שער הניאון');
+      if (bits.length) L.push('🎁 מתנה: ' + bits.join(' · '));
+      (Array.isArray(q.fradd) ? q.fradd.slice(-2) : []).forEach(n => L.push('👥 ' + n + ' ואתם עכשיו חברים'));
+      (Array.isArray(q.frreq) ? q.frreq.slice(-2) : []).forEach(n => L.push('👥 בקשת חברות מ-' + n));
+      if (!L.length) return J({ ok: 1 });
+      return J({ ok: 1, title: 'Gravity Maze 🎮', body: L.slice(0, 4).join('\n').slice(0, 240) });
+    }
+
     /* 👥 חברות דו-צדדית: לפי הגדרת האישור של היעד — הוספה מיידית או בקשה */
     if (p === '/api/fradd' && req.method === 'POST') {
       const u = cleanName(b.u), t = cleanName(b.t);
