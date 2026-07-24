@@ -264,12 +264,23 @@ export class Registry {
     }
 
     // שמירה: השרת מכריע — הגרסה עם יותר התקדמות מנצחת (force עוקף, לאיפוסים)
+    // 👥 חברים לעולם לא נמחקים במלחמת גרסאות: איחוד שתי הרשימות, ומצבות (frd) מנצחות
     if (p === '/api/save' && req.method === 'POST') {
       const u = cleanName(b.u);
       if (!d.users[u]) return J({ err: 'nouser' }, 404);
       const cur = d.users[u].sv;
-      if (!b.force && cur && this.score(cur) > this.score(b.sv))
+      const _arr = v => Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
+      const mergeFr = (w, l) => { // w=שמירה זוכה, l=מפסידה
+        if (!w || !l) return;
+        w.frd = [...new Set([..._arr(w.frd), ..._arr(l.frd)])].slice(0, 50);
+        w.fr = [...new Set([..._arr(w.fr), ..._arr(l.fr)])].filter(x => !w.frd.includes(x)).slice(0, 50);
+      };
+      if (!b.force && cur && this.score(cur) > this.score(b.sv)) {
+        mergeFr(cur, b.sv);
+        await this.saveDoc();
         return J({ ok: 1, kept: 'server', sv: cur });
+      }
+      if (!b.force) mergeFr(b.sv, cur);
       d.users[u].sv = b.sv;
       await this.saveDoc();
       return J({ ok: 1, kept: 'client' });

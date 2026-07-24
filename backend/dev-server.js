@@ -125,7 +125,14 @@ const server = http.createServer((req, res) => {
       const u = cleanName(b.u);
       if (!doc.users[u]) return J({ err: 'nouser' }, 404);
       const cur = doc.users[u].sv;
-      if (!b.force && cur && score(cur) > score(b.sv)) return J({ ok: 1, kept: 'server', sv: cur });
+      const _arr = v => Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
+      const mergeFr = (w, l) => { // 👥 מראה של worker.js — חברים מתאחדים, מצבות מנצחות
+        if (!w || !l) return;
+        w.frd = [...new Set([..._arr(w.frd), ..._arr(l.frd)])].slice(0, 50);
+        w.fr = [...new Set([..._arr(w.fr), ..._arr(l.fr)])].filter(x => !w.frd.includes(x)).slice(0, 50);
+      };
+      if (!b.force && cur && score(cur) > score(b.sv)) { mergeFr(cur, b.sv); persist(); return J({ ok: 1, kept: 'server', sv: cur }); }
+      if (!b.force) mergeFr(b.sv, cur);
       doc.users[u].sv = b.sv;
       persist(); return J({ ok: 1, kept: 'client' });
     }
