@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v167</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v168</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2204,49 +2204,40 @@ function onOrient(e){
     }
     if(orientN>=6&&vr>.4){
       touchMode=false;senProof.length=0;
-      autoCalArm=nowT;autoCalBuf.length=0; // כיול-מחדש ברגע ההשתלטות — לא נקודת אפס ישנה
+      autoCalArm=nowT;autoCalBuf.length=0;neutG=gx;neutB=gy; // כיול-מחדש מיידי ברגע ההשתלטות
       try{$('hint').style.display='none';}catch(_e){}
     }else return;
   }
-  // 🎯 כיול אוטומטי פסיבי: המשחק לא נעצר ולא קופא. אם בשנייה הראשונה של השלב
-  // מופיע חלון קריאות יציב (היד נחה) — נקודת ה"ישר" מאומצת ממנו בשקט. אם לא —
-  // נשארים עם הכיול הקיים, ותיקון-הסחיפה הרציף משלים את השאר.
-  // ⚠️ באנדרואיד החיישן שולח אירועים רק כשהערכים משתנים — לכן אסור לתלות את
-  // המשחק בהגעת אירועים, ואסור לנעול כיול מתוך תנועת היגוי.
+  // 🎯 כיול "צלם ושכח": בתחילת שלב (או כיול ידני/סיבוב מסך) מצלמים חלון קצר
+  // של ~400ms, מאמצים את הממוצע כ"ישר" — וזהו. נקודת האפס קבועה לאורך כל השלב:
+  // בלי נדידה, בלי תיקון-סחיפה שאוכל את ההיגוי, בלי הפתעות באמצע משחק.
+  // ⚠️ באנדרואיד החיישן שולח אירועים רק כשהערכים משתנים — לכן הדגימה הראשונה
+  // מאומצת מיד כעוגן (שלא יהיה רגע עם אפס ישן), והממוצע מחליף אותה כשמצטבר.
   if(autoCalArm){
-    if(nowT-autoCalArm>1200){autoCalArm=0;autoCalBuf.length=0;} // חלון הצילום נסגר — בלי נעילת חירום
-    else{
-      autoCalBuf.push([nowT,gx,gy]);
-      while(autoCalBuf.length&&nowT-autoCalBuf[0][0]>320)autoCalBuf.shift();
-      if(autoCalBuf.length>=3&&nowT-autoCalBuf[0][0]>=180){
-        let mnG=1e9,mxG=-1e9,mnB=1e9,mxB=-1e9,sG=0,sB=0;
-        for(const[,a,b2]of autoCalBuf){mnG=Math.min(mnG,a);mxG=Math.max(mxG,a);mnB=Math.min(mnB,b2);mxB=Math.max(mxB,b2);sG+=a;sB+=b2;}
-        if(mxG-mnG<3&&mxB-mnB<3){ // היד יציבה — מאמצים את הממוצע כ"ישר"
-          neutG=sG/autoCalBuf.length;neutB=sB/autoCalBuf.length;
-          autoCalArm=0;autoCalBuf.length=0;
-          try{save();}catch(_e){}
-        }
-      }
+    if(!autoCalBuf.length){neutG=gx;neutB=gy;} // עוגן מיידי מהדגימה הראשונה
+    autoCalBuf.push([nowT,gx,gy]);
+    if(nowT-autoCalBuf[0][0]>=400||autoCalBuf.length>=24){
+      let sG=0,sB=0;
+      for(const[,a,b2]of autoCalBuf){sG+=a;sB+=b2;}
+      neutG=sG/autoCalBuf.length;neutB=sB/autoCalBuf.length;
+      autoCalArm=0;autoCalBuf.length=0;
+      try{save();}catch(_e){}
     }
   }
-  // 🧭 תיקון סחיפה מבוסס-זמן: נקודת האפס נוזלת לתנוחה רק כשאין קלט מכוון (הטיה ~אפס),
-  // ולאט מאוד בטווח ההיגוי העדין — שהטיה מכוונת לא תיבלע.
   const MAX=26;
-  const _tx=(gx-neutG)/MAX,_ty=(gy-neutB)/MAX;
-  const idle=Math.abs(_tx)<.1&&Math.abs(_ty)<.1;
-  if(idle||(Math.abs(_tx)<.45&&Math.abs(_ty)<.45)){
-    const k=1-Math.exp(-edt*(idle?.16:.02)); // לשנייה — אחיד בכל קצב אירועים
-    neutG+=(gx-neutG)*k;
-    neutB+=(gy-neutB)*k;
-  }
   const dz=v=>Math.abs(v)<.05?0:v;
   const curve=v=>Math.sign(v)*Math.pow(Math.abs(v),1.15); // 🎛 מעט עדין ליד המרכז, בלי לאבד כוח
   tiltX=curve(dz(Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS))));
   tiltY=curve(dz(Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS))));
 }
-/* 📱 סיבוב מסך באמצע משחק — הצירים מתחלפים, פותחים חלון-אימוץ פסיבי חדש */
+/* 🎯 חימוש צילום-כיול: עוגן מיידי מהקריאה האחרונה + חלון ממוצע קצר שמחליף אותו */
+function armCal(){
+  autoCalArm=performance.now();autoCalBuf.length=0;
+  if(gotOrientation){neutG=rawG;neutB=rawB;}
+}
+/* 📱 סיבוב מסך באמצע משחק — הצירים מתחלפים, מצלמים "ישר" חדש */
 {
-  const reCalOnRotate=()=>{if(!touchMode){autoCalArm=performance.now();autoCalBuf.length=0;}};
+  const reCalOnRotate=()=>{if(!touchMode)armCal();};
   try{
     if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',reCalOnRotate);
     else window.addEventListener('orientationchange',reCalOnRotate);
@@ -5617,7 +5608,7 @@ function startRun(i){
   // 🧹 קלט נקי לכל שלב: שום וקטור תקוע לא נגרר פנימה
   tiltX=0;tiltY=0;touchId=null;touchOrigin=null;touchLast=null;
   for(const k in kbDown)delete kbDown[k];kbX=0;kbY=0;
-  if(!touchMode){autoCalArm=performance.now();autoCalBuf.length=0;} // 🎯 מכיילים אוטומטית למצב האחיזה הנוכחי
+  if(!touchMode)armCal(); // 🎯 מצלמים "ישר" חדש מהאחיזה הנוכחית — קבוע לכל השלב
   running=true;paused=false;
   // 🌟 שלב זהב! הגרלה נדירה — כל המטבעות ×3 והמסך זוהר זהב (רק בשלבים חדשים — אין פרסים בשלב חוזר)
   goldLv=!customLv&&!duelLive&&levelIdx>2&&!(session[levelIdx]&&session[levelIdx].done)&&Math.random()<.07;
@@ -5753,7 +5744,7 @@ $('pauseMenuBtn').onclick=()=>{
   $('menuOv').classList.remove('hidden');
   if(typeof syncLobbyUI==='function')try{syncLobbyUI();}catch(e){}
 };
-$('calibBtn').onclick=()=>{neutB=rawB;neutG=rawG;autoCalArm=0;autoCalBuf.length=0;save();showToast(tr('🎯 כויל!','🎯 Calibrated!'));};
+$('calibBtn').onclick=()=>{armCal();save();showToast(tr('🎯 כויל! ככה זה "ישר" מעכשיו','🎯 Calibrated! This is "flat" now'));};
 $('sensSlider').oninput=e=>{SENS=e.target.value/100;save();};
 $('soundBtn').onclick=()=>{muted=!muted;$('soundBtn').textContent=muted?'🔇':'🔊';save();};
 $('doneMenu').onclick=()=>{
