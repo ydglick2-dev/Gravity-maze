@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v174</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v175</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -424,6 +424,7 @@
   <button class="btn sec" id="setPush" data-en="🔔 Notifications when the game is closed">🔔 התראות כשהמשחק סגור</button>
   <button class="btn sec" id="setFrAuto"></button>
   <button class="btn sec" id="setTut" data-en="🎓 Replay tutorials">🎓 הצג הדרכה מחדש</button>
+  <button class="btn sec" id="setUpd" data-en="🔄 Check for update">🔄 בדיקת עדכון / כפיית עדכון</button>
   <button class="btn" id="setBack" data-en="✕ Close">✕ סגירה</button>
 </div>
 <div id="hint" style="display:none"></div>
@@ -482,6 +483,7 @@
     <div style="text-align:center;margin-top:10px">
       <div id="mnuStars" style="display:var(--stars,none);color:#f6b40e;font-size:13px;letter-spacing:8px">★ ★ ★</div>
       <div style="font-size:34px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--t1,#8fd0ff),var(--t2,#ffffff) 50%,var(--t3,#75aadb));-webkit-background-clip:text;background-clip:text;color:transparent">GRAVITY MAZE</div>
+      <div id="mnuVer" style="font-size:11px;color:#8a94a8;font-weight:700;margin-top:2px;cursor:pointer" title="הקשה = בדיקת עדכון"></div>
     </div>
     <div style="padding:14px 20px 0"><button id="playBtn" style="width:100%;border:none;cursor:pointer;background:linear-gradient(180deg,var(--g1,#ffd65c),var(--g2,#f6b40e));color:#12253f;border-radius:20px;padding:18px;font-size:21px;font-weight:900;box-shadow:0 10px 26px rgba(246,180,14,.4)">שחק</button></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:20px 20px 0">
@@ -9314,20 +9316,41 @@ function tryAutoUpdate(){
 setInterval(tryAutoUpdate,15000); // אם היינו באמצע שלב — ננסה שוב כשנחזור ללובי
 /* בדיקת גרסה יזומה — גם כשהאפליקציה נשארת פתוחה ימים (אייפון במסך הבית):
    כל חזרה לאפליקציה + כל 4 דקות בודקים אם יש גרסה חדשה בשרת */
-async function checkAppUpdate(){
+const myVer=()=>((($('lbTitle')||{}).textContent||'').match(/v(\d+)/)||[])[1]|0;
+/* 🔄 עדכון כפוי: מנקה מטמונים, מוריד רישום SW תקוע וטוען מחדש מהרשת.
+   בלי זה מכשיר עם Service Worker תקוע נשאר על גרסה ישנה לנצח */
+async function hardUpdate(){
+  showToast(tr('🔄 מוריד את הגרסה החדשה…','🔄 Downloading the new version…'));
+  try{if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));}}catch(e){}
+  try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));}catch(e){}
+  setTimeout(()=>{
+    try{const u=new URL(location.href);u.searchParams.set('u',Date.now());location.replace(u.toString());}
+    catch(e){location.reload();}
+  },500);
+}
+async function checkAppUpdate(manual){
   try{const rg=await navigator.serviceWorker.getRegistration();if(rg)rg.update();}catch(e){}
-  try{ // גיבוי לסביבות בלי Service Worker: השוואת גרסה ורענון
-    if('serviceWorker' in navigator&&navigator.serviceWorker.controller)return; // ה-SW מטפל
-    const mine=((($('lbTitle')||{}).textContent||'').match(/v(\d+)/)||[])[1]|0;
-    if(!mine)return;
+  try{ // 🔍 השוואת גרסה מול השרת — תמיד, גם כשיש SW פעיל (SW תקוע היה משאיר גרסה ישנה לנצח)
+    const mine=myVer();
     const r=await fetch('sw.js?u='+Date.now(),{cache:'no-store'});
-    if(!r.ok)return;
+    if(!r.ok){if(manual)showToast(tr('אין חיבור לשרת','No server connection'));return;}
     const srv=(((await r.text()).match(/maze-ultra-v(\d+)/))||[])[1]|0;
-    if(srv>mine&&updSafe()){
-      showToast(tr('🔄 גרסה חדשה — מתעדכן…','🔄 New version — updating…'));
-      setTimeout(()=>{if(updSafe())location.reload();},900); // בדיקה חוזרת ברגע הירי
+    if(srv&&mine&&srv>mine){
+      if(!manual&&!updSafe())return; // באמצע שלב/מרוץ — ננסה בפעם הבאה
+      showToast(tr('🔄 גרסה חדשה v'+srv+' — מתעדכן…','🔄 New version v'+srv+' — updating…'));
+      setTimeout(hardUpdate,700);
+    }else if(manual){
+      if(!srv)showToast(tr('לא הצלחתי לבדוק — נסו שוב','Check failed — try again'));
+      else showToast(tr('✅ אתם על הגרסה העדכנית (v'+mine+')','✅ You are up to date (v'+mine+')'));
     }
-  }catch(e){}
+  }catch(e){if(manual)showToast(tr('הבדיקה נכשלה','Check failed'));}
+}
+{ // 🏷 שבב הגרסה בתפריט — רואים מיד על מה אתם, והקשה בודקת עדכון
+  const el=$('mnuVer');
+  if(el){
+    el.textContent='v'+myVer();
+    el.onclick=()=>checkAppUpdate(true);
+  }
 }
 setInterval(checkAppUpdate,240000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkAppUpdate,1500);});
@@ -10223,6 +10246,7 @@ $('setTut').onclick=()=>{ // 🎓 איפוס דגלי ההדרכה — יופי�
   try{localStorage.removeItem('mzTut1');localStorage.removeItem('mzTutBoss');}catch(e){}
   showToast(tr('🎓 ההדרכה תופיע שוב בשלב 1 ובבוס הראשון','🎓 Tutorials will show again on level 1 and the first boss'));
 };
+$('setUpd').onclick=()=>checkAppUpdate(true); // 🔄 בדיקה/כפיית עדכון ידנית
 $('setLang').onclick=()=>{
   uiLang=uiLang==='en'?'he':'en';
   try{localStorage.setItem('mazeLang',uiLang);}catch(e){}
