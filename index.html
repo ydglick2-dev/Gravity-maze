@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v171</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v172</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -2213,8 +2213,8 @@ function feedTilt(gx,gy,src){ // gx=גלגול (קצה ימני למטה +) · g
   tiltY=shape(Math.max(-1,Math.min(1,(lpB-neutB)/MAX*SENS)));
 }
 const R2D=57.29577951308232;
-/* 🧲 בחירת מנוע תנועה: new=וקטור כבידה · old=חיישן הכיוון הישן · joy=ג'ויסטיק בלבד */
-let motEng='new';try{const _me=localStorage.getItem('mzMotEng');if(_me==='old'||_me==='joy')motEng=_me;}catch(_e){}
+/* 🧲 בחירת מנוע תנועה: classic=החיישן המקורי מהגרסה הראשונה (ברירת מחדל) · new=וקטור כבידה · joy=ג'ויסטיק */
+let motEng='classic';try{const _me=localStorage.getItem('mzMotEng');if(_me==='new'||_me==='joy')motEng=_me;}catch(_e){}
 /* 🧭 קונבנציית הסימנים של מד-התאוצה שונה בין מכשירים (תגובה מול כבידה).
    מתחילים מניחוש לפי פלטפורמה ומתקנים אוטומטית לפי ראיות: טלפון שמוחזק
    מול שחקן חייב לתת y+z חיוביים בקונבנציית "תגובה". */
@@ -2244,7 +2244,23 @@ function onOrient(e){
   if(motEng==='joy')return;
   if(e.beta===null||e.gamma===null)return;
   orientN++;
-  if(motEng==='new'&&motionN>3)return; // מד-התאוצה חי — הוא המקור היחיד
+  if(motEng==='classic'){
+    /* 🎮 המנוע המקורי מהגרסה הראשונה (v27), אחד-לאחד: מיפוי ליניארי ישיר,
+       ניטרל קבוע (28° כברירת מחדל) שמשתנה רק בכפתור הכיול. בלי עיבוד נוסף. */
+    gotOrientation=true;
+    let gx=e.gamma,gy=e.beta;
+    const o=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
+    if(o===90){const t=gx;gx=gy;gy=-t;}
+    else if(o===-90||o===270){const t=gx;gx=-gy;gy=t;}
+    rawG=gx;rawB=gy;
+    lastSenT=performance.now();senSrc='o';
+    if(joyOn)return;
+    const MAX=26;
+    tiltX=Math.max(-1,Math.min(1,(gx-neutG)/MAX*SENS));
+    tiltY=Math.max(-1,Math.min(1,(gy-neutB)/MAX*SENS));
+    return;
+  }
+  if(motionN>3)return; // מד-התאוצה חי — הוא המקור היחיד במנוע החדש
   const m=mapAxes(e.gamma,e.beta);
   feedTilt(m[0],m[1],'o');
 }
@@ -2275,7 +2291,7 @@ function calTick(){
 }
 /* 📱 סיבוב מסך באמצע משחק — הצירים מתחלפים, מצלמים "ישר" חדש */
 {
-  const reCalOnRotate=()=>{armCal();};
+  const reCalOnRotate=()=>{if(motEng==='new')armCal();};
   try{
     if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',reCalOnRotate);
     else window.addEventListener('orientationchange',reCalOnRotate);
@@ -2303,7 +2319,7 @@ async function enableSensors(){
   if(sensorHinted)return;
   sensorHinted=true;
   setTimeout(()=>{
-    if(motionN+orientN<4){ // אין זרם חיישן — הג'ויסטיק נכנס; calTick יחזיר הטיה אם החיישן יתעורר
+    if(motEng==='new'?(motionN+orientN<4):!gotOrientation){ // אין חיישן — הג'ויסטיק נכנס
       touchMode=true;
       autoCalArm=0;autoCalBuf.length=0; // כיול ישן לא יינעל על דגימת ג'אנק
       if(iosMotionReq&&sensorDenied&&!localStorage.getItem('mzTiltOk')){ // 🍎 חסום בהגדרות המכשיר
@@ -2567,13 +2583,9 @@ function physics(dt,t){
       ball.vx+=dx/d*pull*dt;ball.vy+=dy/d*pull*dt;
     }
   }
-  // 🛞 חיכוך אמיתי: הכדור נעצר כשמרפים — לא שייט אינסופי; קרח נשאר חלקלק באמת
-  const fr=inIce()?.997:.988;
+  // 🛞 חיכוך כמו בגרסה הראשונה — התחושה המקורית
+  const fr=inIce()?.9992:.994;
   ball.vx*=Math.pow(fr,dt*60);ball.vy*=Math.pow(fr,dt*60);
-  if(!inIce()&&Math.abs(effX())<.02&&Math.abs(effY())<.02){ // עזבת את ההגה — בלם עדין
-    const b=Math.pow(.9,dt*60);
-    ball.vx*=b;ball.vy*=b;
-  }
   const MAXSP=1900*scale,spd=Math.hypot(ball.vx,ball.vy);
   if(spd>MAXSP){ball.vx*=MAXSP/spd;ball.vy*=MAXSP/spd;}
 
@@ -5367,7 +5379,7 @@ function loop(ts){
     if(cineMode&&cine3Frame(dtRaw,t))return;
     if(runMode){runFrame(dt,t);return;}
     // 🛑 זרם החיישן מת (מעבר אפליקציה/מסך כבוי)? ההטיה דועכת לאפס — הכדור לא בורח לבד
-    if(!joyOn&&!senFresh()&&(tiltX||tiltY)){
+    if(motEng==='new'&&!joyOn&&!senFresh()&&(tiltX||tiltY)){
       const ex=Math.exp(-dt*(senSrc==='m'?8:3)); // מקור ישן (רק-על-שינוי) — דעיכה סבלנית
       tiltX*=ex;tiltY*=ex;
       if(Math.abs(tiltX)<.01)tiltX=0;
@@ -5666,7 +5678,7 @@ function startRun(i){
   // 🧹 קלט נקי לכל שלב: שום וקטור תקוע לא נגרר פנימה
   tiltX=0;tiltY=0;touchId=null;touchOrigin=null;touchLast=null;joyOn=false;
   for(const k in kbDown)delete kbDown[k];kbX=0;kbY=0;
-  armCal(); // 🎯 מצלמים "ישר" חדש מהאחיזה הנוכחית בכל תחילת שלב
+  if(motEng==='new')armCal(); // 🎯 המנוע החדש מצלם "ישר" בכל תחילת שלב; הקלאסי — ניטרל קבוע כמו במקור
   running=true;paused=false;
   // 🌟 שלב זהב! הגרלה נדירה — כל המטבעות ×3 והמסך זוהר זהב (רק בשלבים חדשים — אין פרסים בשלב חוזר)
   goldLv=!customLv&&!duelLive&&levelIdx>2&&!(session[levelIdx]&&session[levelIdx].done)&&Math.random()<.07;
@@ -5780,7 +5792,7 @@ $('resumeBtn').onclick=()=>{ // ⏱ 3-2-1 לפני שהכדור חוזר לחי�
     if(my!==resumeSeq||!paused||!running)return; // בוטל בינתיים
     if(c3>0){showToast(c3+'…');tone(460+c3*90,.09,'sine',.25);c3--;setTimeout(tk,420);}
     else{
-      tiltX=0;tiltY=0;armCal(); // 🎯 חזרה מהשהיה = אחיזה חדשה — מכיילים מחדש, בלי וקטור ישן
+      tiltX=0;tiltY=0;if(motEng==='new')armCal(); // 🎯 בלי וקטור ישן; המנוע החדש גם מכייל מחדש
       paused=false;lastT=performance.now();showToast(tr('צא לדרך! 🚀','Go! 🚀'));
     }
   };
@@ -5805,24 +5817,28 @@ $('pauseMenuBtn').onclick=()=>{
   $('menuOv').classList.remove('hidden');
   if(typeof syncLobbyUI==='function')try{syncLobbyUI();}catch(e){}
 };
-$('calibBtn').onclick=()=>{armCal();save();showToast(tr('🎯 כויל! ככה זה "ישר" מעכשיו','🎯 Calibrated! This is "flat" now'));};
+$('calibBtn').onclick=()=>{
+  if(motEng==='new')armCal();
+  else{neutB=rawB;neutG=rawG;} // 🎮 קלאסי: דגימה ישירה, כמו בגרסה הראשונה
+  save();showToast(tr('🎯 כויל! ככה זה "ישר" מעכשיו','🎯 Calibrated! This is "flat" now'));
+};
 /* 🧲 מתג מנוע תנועה: חדש (כבידה) ← ישן (כיוון) ← ג'ויסטיק — למקרה שמכשיר מסוים מתנהג מוזר */
 function motEngLabel(){
-  $('motEngBtn').textContent=motEng==='new'?tr('🧲 תנועה: חיישן חדש','🧲 Motion: new sensor')
-    :motEng==='old'?tr('🧭 תנועה: חיישן ישן','🧭 Motion: legacy sensor')
+  $('motEngBtn').textContent=motEng==='classic'?tr('🎮 תנועה: קלאסי (מקורי)','🎮 Motion: classic (original)')
+    :motEng==='new'?tr('🧲 תנועה: חיישן חדש','🧲 Motion: new sensor')
     :tr('🕹 תנועה: ג\'ויסטיק','🕹 Motion: joystick');
 }
 motEngLabel();
 $('motEngBtn').onclick=()=>{
-  motEng=motEng==='new'?'old':motEng==='old'?'joy':'new';
+  motEng=motEng==='classic'?'new':motEng==='new'?'joy':'classic';
   try{localStorage.setItem('mzMotEng',motEng);}catch(e){}
   motionN=0;orientN=0;lastSenT=0;senSrc='';lpOn=false;mSign=0;
   tiltX=0;tiltY=0;
   if(motEng==='joy'){touchMode=true;$('hint').style.display='';$('hint').textContent=tr('🕹 גררו אצבע על המסך כדי לנווט','🕹 Drag a finger to steer');}
-  else{touchMode=false;armCal();try{$('hint').style.display='none';}catch(e){}}
+  else{touchMode=false;if(motEng==='new')armCal();try{$('hint').style.display='none';}catch(e){}}
   motEngLabel();updateHud();
-  showToast(motEng==='new'?tr('🧲 חיישן חדש (מומלץ)','🧲 New sensor (recommended)')
-    :motEng==='old'?tr('🧭 חיישן ישן — כמו לפני העדכון','🧭 Legacy sensor — like before the update')
+  showToast(motEng==='classic'?tr('🎮 קלאסי — החיישן המקורי מהגרסה הראשונה','🎮 Classic — the original sensor')
+    :motEng==='new'?tr('🧲 חיישן חדש','🧲 New sensor')
     :tr('🕹 ג\'ויסטיק בלבד','🕹 Joystick only'));
 };
 if(motEng==='joy')touchMode=true; // ⏮ העדפה שמורה נטענת כבר בהפעלה
@@ -6713,7 +6729,7 @@ $('failAdRevive').onclick=()=>{
     lvDeaths=2; // ❤️ נשאר לב אחד בדיוק
     falling=0;fallPt=null;fallCounted=false;winPause=0;timeScale=1;
     respawn();
-    tiltX=0;tiltY=0;armCal(); // 🎯 אחרי הפרסומת מחזיקים אחרת — מכיילים מחדש
+    tiltX=0;tiltY=0;if(motEng==='new')armCal(); // 🎯 בלי וקטור ישן; המנוע החדש גם מכייל מחדש
     running=true;paused=false;
     try{const _b=L().boss&&!customLv;$('fireWrap').classList.toggle('hidden',!_b);$('supWrap').classList.toggle('hidden',!_b);bossAmmoUi();}catch(e){} // 👾 מחזירים את כפתורי הבוס אחרי החייאה
     try{lastT=performance.now();}catch(e){}
