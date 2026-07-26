@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v172</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v173</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -1508,7 +1508,7 @@ function drawCine(){
     ctx.fillStyle='#ffe08a';
     ctx.shadowColor='rgba(255,200,90,1)';ctx.shadowBlur=22;
     const z=(levelIdx/10)|0;
-    ctx.fillText('🏆 '+tr('עולם ','World ')+zoneName(Math.min(9,z))+tr(' הושלם!',' complete!'),0,0);
+    ctx.fillText('🏆 '+tr('עולם ','World ')+zoneName(z)+tr(' הושלם!',' complete!'),0,0);
     ctx.shadowBlur=0;ctx.restore();
   }
 }
@@ -2122,7 +2122,10 @@ function loadLevel(i){
   petX=ball.x;petY=ball.y-ball.r*1.9;feverT=0;feverHit=false;trailAcc=0;adUsedLv=false;
   bossShots.length=0;bossRemn.length=0;bossPShots.length=0;bossAmmo=0;bossInvT=0;bossPh=0;bossRage=0;bossHurtT=0;bossDieT=0;bossAimDrag=null;supAimDrag=null;bossCycN=0;bossSupN=0;supShieldT=0;supRapidT=0;supSlowT=0;supMudT=0;supStopT=0;supBombT=0;supSalvoN=0;
   try{supUi();}catch(e){}
-  if(lv.boss&&!customLv){bossMaxHp=bossZone()===9?60:16+bossZone()*4;bossHp=bossMaxHp;bossHpShown=bossMaxHp;bossMode='idle';bossStT=1.2;} // 💪 פס חיים ארוך
+  if(lv.boss&&!customLv){
+    bossMaxHp=Math.round((bossZone()===9?60:16+bossZone()*4)*(1+bossChap()*.6)); // 💪 פס חיים ארוך · +60% לכל פרק
+    bossHp=bossMaxHp;bossHpShown=bossMaxHp;bossMode='idle';bossStT=1.2;
+  }
   else{bossMaxHp=0;bossHp=0;}
   try{$('fireWrap').classList.toggle('hidden',!(lv.boss&&!customLv));$('supWrap').classList.toggle('hidden',!(lv.boss&&!customLv));bossAmmoUi();}catch(e){}
   particles.length=0;trail.length=0;shake=0;flashW=0;flashR=0;
@@ -2790,7 +2793,8 @@ const SUPERS=[
  {e:'🔥',n:'טבעת אש',en:'Fire Ring',d:['12 יריות לכל הכיוונים!','12 shots in all directions!']}];    // 34 האלנד
 const superIdxOf=si=>((si|0)%SUPERS.length+SUPERS.length)%SUPERS.length; // 1:1 — לכל סקין הסופר שלו
 const bossOn=()=>!!(L().boss&&bossMaxHp>0&&!customLv);
-const bossZone=()=>Math.min(9,(levelIdx/100)|0); // בוס מס' 1-10 לפי מאה השלבים
+const bossZone=()=>(((levelIdx/100)|0)%10+10)%10; // בוס מס' 1-10 לפי מאה השלבים · מחזורי בפרקים הבאים
+const bossChap=()=>Math.max(0,(levelIdx/1000)|0);   // 🚪 פרק: כל 1,000 שלבים הבוסים חוזרים חזקים יותר
 function bossGeo(){
   const idx=bossZone(),S=BOSS_SW[idx]*board.w;
   const cx=board.x+bossX*board.w,cy=board.y+board.h*.15;
