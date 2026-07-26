@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v173</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v174</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -1404,6 +1404,8 @@ function fallback(i){
 function genLevel(i){
   if((i+1)%100===0){ // 👾 בוס — כל 100 שלבים; בפרק 2 הבוסים חוזרים במחזוריות (1100→בוס 1 וכו׳)
     const lv=bossLevel(((i/100)|0)%10,CURVE(i));
+    const _ch=(i/1000)|0; // 🔮 צורה אפלה לכל פרק נוסף
+    if(_ch>0&&lv.name)lv.name='☠️ '+lv.name+tr(' · צורה אפלה '+(_ch+1),' · Dark Form '+(_ch+1));
     const r=mulberry(555+i);
     if(validateFix(lv,r))return lv;
     return fallback(i);
@@ -3196,6 +3198,35 @@ function drawBossShots(t){
   ctx.restore();
 }
 /* 🎨 גוף המפלצת + לבבות HP — מעל ה-clip (חופפת את קצה הלוח), בתוך ה-shake */
+/* 🔮 מוטציית פרק: מפרק 2 והלאה כל בוס חוזר בצורה אפלה משודרגת — כתר קוצים,
+   רסיסי שריון מקיפים והילה בצבע הפרק. נבנה מעל הבוס הבסיסי, בלי לגעת בעשרת הציורים */
+const CHAP_COL=['#f15bff','#00f5d4','#ff8a3d','#7cff5c'];
+function drawChapForm(g,S,chap,st,t){
+  if(chap<=0)return;
+  const C=CHAP_COL[(chap-1)%CHAP_COL.length];
+  const n=3+Math.min(5,chap);
+  for(let i=0;i<n;i++){ // רסיסי שריון מקיפים
+    const an=t*.75+i*TAU/n,rr=S*(st.mode==='windup'?.5:.68);
+    g.save();g.translate(Math.cos(an)*rr,Math.sin(an)*rr*.6);g.rotate(an+t*1.4);
+    g.globalAlpha=.85;g.fillStyle=C;
+    g.beginPath();g.moveTo(0,-S*.055);g.lineTo(S*.038,0);g.lineTo(0,S*.055);g.lineTo(-S*.038,0);g.closePath();g.fill();
+    g.globalAlpha=.35;g.strokeStyle='#0b0f1a';g.lineWidth=Math.max(1,S*.008);g.stroke();
+    g.restore();
+  }
+  g.save(); // כתר קוצים
+  g.globalAlpha=.95;g.fillStyle=C;g.strokeStyle='#0b0f1a';g.lineWidth=Math.max(1,S*.01);
+  for(let i=-2;i<=2;i++){
+    const x=i*S*.14,h=S*(.09+.035*(2-Math.abs(i)))*(st.mode==='windup'?1.3:1);
+    g.beginPath();g.moveTo(x-S*.05,-S*.42);g.lineTo(x,-S*.42-h);g.lineTo(x+S*.05,-S*.42);g.closePath();
+    g.fill();g.stroke();
+  }
+  g.restore();
+  g.save(); // הילת הפרק
+  g.globalAlpha=.3+.12*Math.sin(t*2.4);
+  g.strokeStyle=C;g.lineWidth=Math.max(2,S*.02);
+  g.beginPath();g.ellipse(0,S*.02,S*.58,S*.46,0,0,TAU);g.stroke();
+  g.restore();
+}
 function drawBossBody(t){
   const G=bossGeo(),st={mode:bossMode,aim:bossAim,hpFrac:bossMaxHp?bossHp/bossMaxHp:0,
     ph:bossMode==='windup'?1-Math.max(0,bossStT)/.6:bossMode==='dying'?Math.min(1,bossDieT/1.2):Math.min(1,Math.max(0,1-bossStT/.35))};
@@ -3208,6 +3239,7 @@ function drawBossBody(t){
   if(st.mode==='shoot'){ty-=.07*G.S*(1-st.ph);scy=.9+.1*st.ph;}
   if(bossHurtT>0){tx+=(Math.random()-.5)*.05*G.S;ty+=(Math.random()-.5)*.05*G.S;}
   if(st.mode==='rest'&&bossStT<.4)tx+=Math.sin(t*50)*.012*G.S; // מתנער רגע לפני שמתעורר
+  sc*=1+.07*bossChap(); // 👾 כל פרק — הבוס גדול ומאיים יותר
   if(st.mode==='dying'){alpha=1-st.ph*st.ph;rot=Math.sin(st.ph*26)*.25*(1-st.ph);sc*=1+.15*Math.sin(st.ph*40)*(1-st.ph);
     if(bossZone()===9){ // 🌌 סופרנובה לבוס הסופי
       if(st.ph<.5)sc*=1+.6*st.ph;else sc*=Math.max(.02,1.3-2.56*(st.ph-.5));
@@ -3221,6 +3253,7 @@ function drawBossBody(t){
     ctx.beginPath();ctx.arc(0,0,.62*G.S*(1-st.ph)+.2*G.S,0,TAU);ctx.stroke();
   }
   drawBossMonster(ctx,G.S,G.idx,st,t);
+  if(!PERF||bossChap()>0)drawChapForm(ctx,G.S,bossChap(),st,t);
   if(st.mode==='rest'){ // 💤 ישן — חלון הזהב לאסוף ולירות!
     ctx.textAlign='center';ctx.textBaseline='middle';
     const zb=Math.sin(t*2.2);
