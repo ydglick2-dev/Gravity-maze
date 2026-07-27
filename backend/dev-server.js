@@ -32,6 +32,7 @@ try { doc = Object.assign(doc, JSON.parse(fs.readFileSync(FILE, 'utf8'))); } cat
 if (!doc.chat) doc.chat = {};
 if (!doc.push) doc.push = {};
 if (!doc.snd) doc.snd = { v: 0, m: {} }; // 🔊 סאונדים לסקינים
+if (!doc.bak) doc.bak = {}; // ♻️ גיבויי איפוס
 const persist = () => { try { fs.writeFileSync(FILE, JSON.stringify(doc)); } catch (e) { } };
 
 const socks = new Map(); // user -> Set<ws>
@@ -57,6 +58,7 @@ const applyReducing = (sv, g) => {
   if (g.dtro) { const n = g.dtro | 0, p = sv.pt | 0, u = Math.min(p, n); sv.pt = p - u; const e = sv.et === undefined ? (sv.tl | 0) : (sv.et | 0); sv.tro = Math.max(0, (sv.tro | 0) - n); sv.et = Math.max(0, e - (n - u)); }
   if (g.dco) { const n = g.dco | 0, p = sv.pc | 0, u = Math.min(p, n); sv.pc = p - u; const e = sv.ec === undefined ? (sv.co | 0) : (sv.ec | 0); sv.co = Math.max(0, (sv.co | 0) - n); sv.ec = Math.max(0, e - (n - u)); }
   if (g.dgm) sv.gm = Math.max(0, (sv.gm | 0) - (g.dgm | 0));
+  if (g.dch) sv.ch = Math.max(0, (sv.ch | 0) - (g.dch | 0)); // 🎁➖ מחיקת תיבות
   if (Array.isArray(g.skx)) {
     sv.ow = Array.isArray(sv.ow) ? sv.ow : [0];
     g.skx.forEach(ix => { ix |= 0; if (ix <= 0) return; const k = sv.ow.indexOf(ix); if (k >= 0) sv.ow.splice(k, 1); });
@@ -89,7 +91,7 @@ const server = http.createServer((req, res) => {
       if (!b || !b.users) return J({ err: 'bad' }, 400);
       const snd0 = doc.snd;
       doc = b;
-      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push', 'gch', 'gcmk']) if (!doc[k]) doc[k] = {};
+      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push', 'gch', 'gcmk', 'bak']) if (!doc[k]) doc[k] = {};
       if (!doc.snd) doc.snd = snd0 || { v: 0, m: {} };
       persist(); return J({ ok: 1 });
     }
@@ -124,6 +126,8 @@ const server = http.createServer((req, res) => {
     if (p === '/api/save' && req.method === 'POST') {
       const u = cleanName(b.u);
       if (!doc.users[u]) return J({ err: 'nouser' }, 404);
+      const ra = Number(doc.users[u].ra) || 0;
+      if (ra && (Number(b.ra) || 0) < ra) return J({ ok: 1, kept: 'server', sv: doc.users[u].sv || null, ra });
       const cur = doc.users[u].sv;
       const _arr = v => Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
       const mergeFr = (w, l) => { // 👥 מראה של worker.js — חברים מתאחדים, מצבות מנצחות
@@ -135,6 +139,23 @@ const server = http.createServer((req, res) => {
       if (!b.force) mergeFr(b.sv, cur);
       doc.users[u].sv = b.sv;
       persist(); return J({ ok: 1, kept: 'client' });
+    }
+    /* ♻️ שחזור אחרי איפוס + שליפת שמירה/דור (מראה של worker.js) */
+    if (p === '/api/restore' && req.method === 'POST') {
+      const t = cleanName(b.t);
+      if (!t || !doc.users[t]) return J({ err: 'nouser' }, 404);
+      const bk = doc.bak[t];
+      if (!bk || !bk.sv) return J({ err: 'nobak' }, 404);
+      doc.users[t].sv = bk.sv;
+      doc.users[t].ra = Date.now();
+      delete doc.bak[t];
+      const q0 = doc.gifts[t] || {}; delete q0.rst; doc.gifts[t] = q0;
+      persist(); return J({ ok: 1, at: bk.at || 0 });
+    }
+    if (p === '/api/mysave' && req.method === 'POST') {
+      const u = cleanName(b.u);
+      if (!doc.users[u]) return J({ err: 'nouser' }, 404);
+      return J({ ok: 1, sv: doc.users[u].sv || null, ra: Number(doc.users[u].ra) || 0, bak: !!doc.bak[u] });
     }
     if (p === '/api/pushsub' && req.method === 'POST') {
       const u = cleanName(b.u);
@@ -296,14 +317,21 @@ const server = http.createServer((req, res) => {
       if (g.px) q.px = (q.px | 0) + (g.px | 0);
       if (g.clv) q.clv = g.clv;
       if ('clr' in g) q.clr = g.clr | 0;
+      if (g.dch) q.dch = (q.dch | 0) + (g.dch | 0); // 🎁➖ מחיקת תיבות
+      if (g.rbx) q.rbx = 1; // 🧹 ביטול השלל מ-100 התיבות האחרונות
       if (g.rst) q.rst = 1;
+      if (g.rst) { // 🗑 גיבוי + דור חדש (מראה של worker.js)
+        const old = doc.users[t].sv;
+        if (old && Object.keys(old).length) doc.bak[t] = { sv: old, at: Date.now() };
+        doc.users[t].ra = Date.now();
+      }
       doc.gifts[t] = q;
       doc.users[t].sv = applyReducing(doc.users[t].sv, g);
       persist(); notify(t); return J({ ok: 1 });
     }
     if (p === '/api/claim' && req.method === 'POST') {
       const u = cleanName(b.u);
-      const out = { gift: doc.gifts[u] || null, summon: doc.summon[u] || null, ban: doc.bans[u] || null, season: doc.season || null, snv: doc.snd.v || 0 };
+      const out = { gift: doc.gifts[u] || null, summon: doc.summon[u] || null, ban: doc.bans[u] || null, season: doc.season || null, snv: doc.snd.v || 0, ra: Number(doc.users[u] && doc.users[u].ra) || 0 };
       { const cs = {};
         for (const key in doc.chat) {
           const pr = key.split('|');

@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v175</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v176</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -704,6 +704,12 @@
     <button class="btn sec" id="admResetPw" data-en="🔑 Reset password">🔑 אפס סיסמה</button>
   </div>
   <button class="btn sec" id="admResetUser" data-en="🗑 Reset player (everything)">🗑 איפוס שחקן (הכל)</button>
+  <button class="btn sec" id="admRestoreUser" data-en="♻️ Restore player (undo reset)">♻️ שחזור שחקן (ביטול איפוס)</button>
+  <div class="row">
+    <input class="tin" id="admDelCh" type="number" min="1" value="1" style="max-width:90px">
+    <button class="btn sec" id="admTakeChests" data-en="🎁➖ Remove chests">🎁➖ מחיקת תיבות</button>
+  </div>
+  <button class="btn sec" id="admWipeDrops" data-en="🧹 Remove items from last 100 chests">🧹 מחיקת פריטים מ-100 התיבות האחרונות</button>
   <button class="btn sec" id="admDelUser" style="border-color:rgba(255,90,90,.5);color:#ff9a9a" data-en="❌ Delete user from the system">❌ מחק משתמש מהמערכת</button>
   <button class="btn sec" id="admEditor" data-en="🧩 Custom level designer">🧩 עורך שלבים מותאמים</button>
   <button class="btn sec" id="admSounds" data-en="🔊 Skin sounds">🔊 סאונדים לסקינים</button>
@@ -5998,7 +6004,7 @@ function saveBlob(){
   while(last>0&&!session[last].done&&!session[last].stars&&!session[last].best)last--;
   return {v:2,t:Date.now(),un:unlocked,tro:trophies,nm:myName,dl:dailyLast,
     sk:skinSel,ow:skinOwned,rb:Math.floor(runBest),
-    co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,et:eTro,ec:eCo,edn:eDone,esn:eStars,pt:pTro,pc:pCo,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
+    dl:dropLog.slice(-100),co:coins,gm:gems,tl:troLife,ch:chests,tc:troClaimed,et:eTro,ec:eCo,edn:eDone,esn:eStars,pt:pTro,pc:pCo,df:dailyFail,qc:qCyc,qd:qDate,qq:qProg,qz:qDone.map(x=>x?1:0),
     ws:wSel,ds2:dSel,wo:wOw,do2:dOw,dwd:dwD,dwn:dwN,po:petOw,ps:petSel,dfr:dfxRef?1:0,sku:skpU,
     la:lossAcc,gh:ghostOn?1:0,mu2:musicOn?1:0,fd:stFalls,tm:Math.floor(stTime),dd:stDailies,rw:stRaceWins,bc:stBossClean?1:0,ac:achEarned,fr:friends,
     s:session.slice(0,last+1).map(x=>[x.done?1:0,x.stars,Math.round((x.best||0)*10),x.edone?1:0,x.estars|0]),
@@ -6039,6 +6045,7 @@ function applySave(d,merge){
       eTro=troLife;eCo=coins; // ותיקים לא מוצגים כ-🏆0 בפרופיל/טבלאות
       pTro=0;pCo=0;
     }else{
+      dropLog=Array.isArray(d.dl)?d.dl.slice(-100):[];
       coins=d.co|0;gems=d.gm|0;troLife=d.tl|0;chests=d.ch|0;troClaimed=d.tc|0;
       eTro=d.et===undefined?(d.tl|0):(d.et|0); // שמירות ישנות: קירוב לפי גביעי-חיים
       eCo=d.ec===undefined?(d.co|0):(d.ec|0);
@@ -7966,6 +7973,22 @@ function grantExact(t){ // 🎯 פריט בנדירות מדויקת (לא ומ�
   return {icon:c.it.icon,label:tr('ניצחון: ','Victory: ')+tr(c.it.name,c.it.en||c.it.name),rar:t,
     rv:{kind:'fx',icon:c.it.icon,rar:t,label:tr(c.it.name,c.it.en||c.it.name)}};
 }
+/* 📜 יומן שלל — מה יצא מ-100 התיבות האחרונות (לביטול מדויק ע"י האדמין) */
+let dropLog=[];
+function logDrops(list){
+  try{
+    const e={t:Date.now(),sk:[],wf:[],pet:[],co:0,gm:0};
+    (list||[]).forEach(d=>{
+      const rv=d&&d.rv;
+      if(rv&&rv.kind==='skin'&&rv.idx>0)e.sk.push(rv.idx|0);
+      else if(rv&&rv.kind==='fx'&&rv.i!==undefined)e.wf.push(rv.i|0);
+      if(d&&d.icon==='🪙')e.co+=parseInt(String(d.label).replace(/[^0-9]/g,''),10)||0;
+      if(d&&d.icon==='💎')e.gm+=parseInt(String(d.label).replace(/[^0-9]/g,''),10)||0;
+    });
+    dropLog.push(e);
+    if(dropLog.length>100)dropLog=dropLog.slice(-100);
+  }catch(e2){}
+}
 function rollChest(){
   const drops=[];
   // 👑 גליקי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
@@ -8041,6 +8064,7 @@ function rollChest(){
   }
   if(messi&&tier>=7){drops.push(messi);if(messi._extra)drops.push(messi._extra);} // 🐉 הדרקון לא הולך לאיבוד בתיבה העונתית
   lastRollTier=tier;
+  logDrops(drops); // 📜 נרשם לביטול אפשרי
   return drops;
 }
 let lastRollTier=0,lastRollGifted=false,lastRollSecret=false;
@@ -9189,7 +9213,8 @@ async function pollInbox(){
   try{
     if(beOn()){ // 🚀 משיכה אטומית מהשרת
       const r=await be('/api/claim',{u:curUser});
-      if(r)applyInbox(r);
+      if(r&&'ra' in r&&(Number(r.ra)||0)>myRA()){await checkAdopt(Number(r.ra)||0);}
+      else if(r)applyInbox(r);
     }else{
       const d=await regFetch();
       if(d){regCache=d;regCacheAt=Date.now();await processInbox(d);}
@@ -9716,6 +9741,12 @@ async function checkGifts(){
     for(const k in local)if(!d.users[k]){d.users[k]=local[k];dirty=true;}
   /* ☁️ סנכרון התקדמות: השמירה עם יותר התקדמות מנצחת (שוויון → החדשה בזמן) */
   const rec=d.users[curUser],cl=rec&&rec.sv;
+  if(rec&&(Number(rec.ra)||0)>myRA()){ // ♻️ אופס/שוחזר בשרת — מאמצים כמו שהוא
+    adoptServerState(cl,Number(rec.ra)||0);
+    if(dirty)await regPut(d);
+    await processInbox(d);
+    return;
+  }
   let loc=null;
   try{loc=JSON.parse(store().getItem(KEY)||'null');}catch(e){}
   const cs=saveScore(cl),ls=saveScore(loc);
@@ -9727,6 +9758,29 @@ async function checkGifts(){
   }
   if(dirty)await regPut(d);
   await processInbox(d);
+}
+/* ♻️ דור-אימוץ (ra): איפוס/שחזור מהאדמין מרימים חותמת בשרת. מכשיר שעוד לא
+   אימץ אותה חייב לאמץ את מצב השרת כמו שהוא — ואסור לו לדחוף שמירה ישנה. */
+function raKey(u){return 'mzRA_'+(u||curUser||'');}
+function myRA(){try{return parseInt(store().getItem(raKey())||'0',10)||0;}catch(e){return 0;}}
+function setRA(v){try{store().setItem(raKey(),String(Number(v)||0));}catch(e){}}
+function adoptServerState(sv,ra){ // אימוץ מלא — לא מיזוג, לא השוואת ניקוד
+  const empty=!sv||!Object.keys(sv).length;
+  if(empty){resetState();cloudForce=false;}
+  else applySave(sv,false);
+  setRA(ra);
+  claimTroRoad();save();refreshTro();
+  cloudDirty=false;
+  try{if(running){running=false;paused=false;$('menuOv').classList.remove('hidden');}}catch(e){}
+  showToast(empty?tr('🗑 החשבון אופס על ידי האדמין','🗑 Your account was reset by the admin')
+                 :tr('♻️ ההתקדמות שלך שוחזרה!','♻️ Your progress was restored!'));
+}
+async function checkAdopt(ra){ // ra מהשרת גדול משלנו? מושכים ומאמצים
+  if(!curUser||!beOn()||(Number(ra)||0)<=myRA())return false;
+  const r=await be('/api/mysave',{u:curUser});
+  if(!r||!r.ok)return false;
+  adoptServerState(r.sv,Number(r.ra)||0);
+  return true;
 }
 /* ☁️ ניקוד התקדמות — רק מדדים שאף פעם לא יורדים, כדי ששמירה מתקדמת תמיד תנצח */
 function saveScore(d){
@@ -9744,8 +9798,12 @@ async function cloudPush(){
   cloudBusy=true;
   try{
     if(beOn()){ // 🚀 השרת מכריע בעצמו מי מתקדם יותר
-      const r=await be('/api/save',{u:curUser,sv:saveBlob(),force:cloudForce});
+      const r=await be('/api/save',{u:curUser,sv:saveBlob(),force:cloudForce,ra:myRA()});
       if(r&&r.ok){
+        if(r.kept==='server'&&(Number(r.ra)||0)>myRA()){ // 🛑 דור ישן — מאמצים את מצב השרת
+          adoptServerState(r.sv,Number(r.ra)||0);
+          cloudBusy=false;return;
+        }
         if(r.kept==='server'&&r.sv){
           applySave(r.sv,true);claimTroRoad();save();refreshTro();
           showToast(tr('☁️ נטענה התקדמות חדשה מהשרת','☁️ Newer progress loaded from server'));
@@ -9777,7 +9835,7 @@ function resetState(){ // 🗑 איפוס מלא של השחקן הנוכחי
   dailyLast='';dailyFail='';runBest=0;wheelD='';pity=0;passN=0;passP=0;passC=0;wcCups=0;
   skinOwned=[0];skinSel=0;wOw=[0];dOw=[0];wSel=0;dSel=0;petOw=[0];petSel=0;dfxRef=false;skpU=0;
   qCyc=0;qDate='';qProg=Array(20).fill(0);qDone=Array(20).fill(false);dwD='';dwN=0;
-  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];frReqs=[];frDel=[];frAuto=true;gameLog=[];customLevels={};
+  stFalls=0;stTime=0;stDailies=0;stRaceWins=0;stBossClean=false;achEarned=[];friends=[];frReqs=[];frDel=[];frAuto=true;gameLog=[];customLevels={};dropLog=[];
   session.forEach(s=>{s.done=false;s.stars=0;s.best=0;s.edone=false;s.estars=0;});
   cloudForce=true; // שהאיפוס ינצח את שומר-הדריסה של הענן
   refreshTro();
@@ -9792,6 +9850,21 @@ function applyGift(g,target){
     if(g.co)addCoins(g.co|0);
     if(g.gm)gems+=g.gm|0;
     if(g.ch)chests+=g.ch|0;
+    if(g.dch)chests=Math.max(0,chests-(g.dch|0)); // 🎁➖ מחיקת תיבות
+    if(g.rbx){ // 🧹 ביטול כל מה שיצא מ-100 התיבות האחרונות
+      let nS=0,nW=0,nC=0,nG=0;
+      dropLog.forEach(e=>{
+        (e.sk||[]).forEach(ix=>{ix|=0;if(ix<=0)return;const k=skinOwned.indexOf(ix);if(k>=0){skinOwned.splice(k,1);nS++;}if(skinSel===ix)skinSel=0;});
+        (e.wf||[]).forEach(ix=>{ix|=0;if(ix<=0)return;const k=wOw.indexOf(ix);if(k>=0){wOw.splice(k,1);nW++;}if(wSel===ix)wSel=0;});
+        nC+=e.co|0;nG+=e.gm|0;
+      });
+      coins=Math.max(0,coins-nC);gems=Math.max(0,gems-nG);
+      if(!skinOwned.includes(0))skinOwned.unshift(0);
+      if(!wOw.includes(0))wOw.unshift(0);
+      dropLog=[];
+      try{supUi();}catch(e2){}
+      setTimeout(()=>showAdmToast(tr('🧹 האדמין ביטל את השלל מ-100 התיבות האחרונות (','🧹 Admin removed the loot from your last 100 chests (')+nS+tr(' סקינים, ',' skins, ')+nW+tr(' אפקטים)',' effects)')),700);
+    }
     // הורדה: קודם מהמתנות הממתינות (שעוד לא נספרו), ורק השאר מהאמיתי
     if(g.dtro){const n2=g.dtro|0,u=Math.min(pTro,n2);pTro-=u;trophies=Math.max(0,trophies-n2);eTro=Math.max(0,eTro-(n2-u));}
     if(g.dco){const n2=g.dco|0,u=Math.min(pCo,n2);pCo-=u;coins=Math.max(0,coins-n2);eCo=Math.max(0,eCo-(n2-u));}
@@ -11753,6 +11826,43 @@ $('admResetUser').onclick=()=>{
   }
   admRstArm=0;
   admGive({rst:1},tr('איפוס מלא','Full reset'));
+};
+let admResArm=0; // ♻️ שחזור — אישור כפול
+$('admRestoreUser').onclick=async()=>{
+  const t=cleanName($('admTarget').value)||curUser;
+  if(!t)return $('admMsg').textContent=tr('אין יעד','No target');
+  if(Date.now()-admResArm>4000){
+    admResArm=Date.now();
+    $('admMsg').textContent=tr('♻️ לשחזר את "','♻️ Restore "')+t+tr('" למצב שלפני האיפוס? לחצו שוב לאישור','" to the state before the reset? Tap again to confirm');
+    return;
+  }
+  admResArm=0;
+  $('admMsg').textContent='…';
+  if(!beOn())return $('admMsg').textContent=tr('שחזור דורש חיבור לשרת המשחק','Restore needs the game server');
+  const r=await be('/api/restore',{t});
+  if(r&&r.ok){
+    const when=r.at?new Date(r.at).toLocaleString('he-IL'):'';
+    $('admMsg').textContent='♻️ "'+t+'" '+tr('שוחזר','restored')+(when?tr(' (גיבוי מ-',' (backup from ')+when+')':'');
+    if(t===curUser)await checkAdopt(Date.now());
+  }
+  else if(r&&r.err==='nobak')$('admMsg').textContent=tr('אין גיבוי לשחקן הזה — שחזור אפשרי רק אחרי איפוס','No backup — restore works only after a reset');
+  else if(r&&r.err==='nouser')$('admMsg').textContent='"'+t+'" '+tr('לא רשום בעולם','is not registered');
+  else $('admMsg').textContent=tr('שגיאת רשת — נסו שוב','Network error — try again');
+};
+$('admTakeChests').onclick=()=>{ // 🎁➖ מחיקת תיבות
+  const n=Math.max(1,$('admDelCh').value|0);
+  admGive({dch:n},tr('מחיקת ','Removed ')+n+tr(' תיבות',' chests'));
+};
+let admWdArm=0; // 🧹 מחיקת פריטים מ-100 התיבות האחרונות — אישור כפול
+$('admWipeDrops').onclick=()=>{
+  const t=cleanName($('admTarget').value)||curUser;
+  if(Date.now()-admWdArm>4000){
+    admWdArm=Date.now();
+    $('admMsg').textContent=tr('🧹 למחוק מ-"','🧹 Remove from "')+t+tr('" את כל הפריטים מ-100 התיבות האחרונות? לחצו שוב','" all items from the last 100 chests? Tap again');
+    return;
+  }
+  admWdArm=0;
+  admGive({rbx:1},tr('מחיקת פריטים מ-100 התיבות האחרונות','Removed items from the last 100 chests'));
 };
 let admDelArm=0; // ❌ מחיקה מלאה — אישור בלחיצה כפולה (confirm חסום ב-iframe)
 $('admDelUser').onclick=async()=>{

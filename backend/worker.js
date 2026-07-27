@@ -84,7 +84,7 @@ export class Registry {
     if (!this.doc) {
       this.doc = (await this.state.storage.get('doc')) ||
         { users: {}, gifts: {}, summon: {}, bans: {}, live: {}, mm: null };
-      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push', 'gch', 'gcmk'])
+      for (const k of ['users', 'gifts', 'summon', 'bans', 'live', 'chat', 'push', 'gch', 'gcmk', 'bak'])
         if (!this.doc[k]) this.doc[k] = {};
     }
     if (!this.snd) this.snd = (await this.state.storage.get('sndIdx')) || { v: 0, ks: [] };
@@ -159,6 +159,7 @@ export class Registry {
     if (g.dtro) { const n = g.dtro | 0, p = sv.pt | 0, u = Math.min(p, n); sv.pt = p - u; const e = sv.et === undefined ? (sv.tl | 0) : (sv.et | 0); sv.tro = Math.max(0, (sv.tro | 0) - n); sv.et = Math.max(0, e - (n - u)); }
     if (g.dco) { const n = g.dco | 0, p = sv.pc | 0, u = Math.min(p, n); sv.pc = p - u; const e = sv.ec === undefined ? (sv.co | 0) : (sv.ec | 0); sv.co = Math.max(0, (sv.co | 0) - n); sv.ec = Math.max(0, e - (n - u)); }
     if (g.dgm) sv.gm = Math.max(0, (sv.gm | 0) - (g.dgm | 0));
+    if (g.dch) sv.ch = Math.max(0, (sv.ch | 0) - (g.dch | 0)); // 🎁➖ מחיקת תיבות
     if (Array.isArray(g.skx)) { // 🗑 הסרת סקין ספציפי — מיד גם בשמירה שבשרת
       sv.ow = Array.isArray(sv.ow) ? sv.ow : [0];
       g.skx.forEach(ix => { ix |= 0; if (ix <= 0) return; const k = sv.ow.indexOf(ix); if (k >= 0) sv.ow.splice(k, 1); });
@@ -268,6 +269,9 @@ export class Registry {
     if (p === '/api/save' && req.method === 'POST') {
       const u = cleanName(b.u);
       if (!d.users[u]) return J({ err: 'nouser' }, 404);
+      const ra = Number(d.users[u].ra) || 0; // ⚠️ בלי |0 — חותמת זמן גדולה מ-32 ביט
+      if (ra && (Number(b.ra) || 0) < ra) // 🛑 המכשיר עוד לא אימץ את האיפוס/שחזור — אסור לו לדרוס
+        return J({ ok: 1, kept: 'server', sv: d.users[u].sv || null, ra });
       const cur = d.users[u].sv;
       const _arr = v => Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
       const mergeFr = (w, l) => { // w=שמירה זוכה, l=מפסידה
@@ -284,6 +288,29 @@ export class Registry {
       d.users[u].sv = b.sv;
       await this.saveDoc();
       return J({ ok: 1, kept: 'client' });
+    }
+
+    /* ♻️ שחזור שחקן אחרי איפוס — מהגיבוי שנשמר ברגע האיפוס */
+    if (p === '/api/restore' && req.method === 'POST') {
+      const t = cleanName(b.t);
+      if (!t || !d.users[t]) return J({ err: 'nouser' }, 404);
+      const bk = d.bak[t];
+      if (!bk || !bk.sv) return J({ err: 'nobak' }, 404);
+      d.users[t].sv = bk.sv;
+      d.users[t].ra = Date.now(); // דור חדש — כל מכשיר יאמץ את השמירה המשוחזרת
+      delete d.bak[t];
+      const q = d.gifts[t] || {}; delete q.rst; d.gifts[t] = q; // איפוס שממתין בתור מתבטל
+      await this.saveDoc();
+      this.notify(t, { t: 'inbox' });
+      await this.sendPush(t);
+      return J({ ok: 1, at: bk.at || 0 });
+    }
+
+    /* 📥 שמירה + דור נוכחיים (קל משקל — לאימוץ אחרי איפוס/שחזור) */
+    if (p === '/api/mysave' && req.method === 'POST') {
+      const u = cleanName(b.u);
+      if (!d.users[u]) return J({ err: 'nouser' }, 404);
+      return J({ ok: 1, sv: d.users[u].sv || null, ra: Number(d.users[u].ra) || 0, bak: !!d.bak[u] });
     }
 
     /* 🔔 רישום מנוי Push של מכשיר (עד 3 מכשירים לשחקן) */
@@ -477,8 +504,15 @@ export class Registry {
       if (g.px) q.px = (q.px | 0) + (g.px | 0); // 🎫 XP לפס העונה
       if (g.clv) q.clv = g.clv;
       if ('clr' in g) q.clr = g.clr | 0;
+      if (g.dch) q.dch = (q.dch | 0) + (g.dch | 0); // 🎁➖ מחיקת תיבות
+      if (g.rbx) q.rbx = 1; // 🧹 ביטול השלל מ-100 התיבות האחרונות
       if (g.rst) q.rst = 1;
       d.gifts[t] = q;
+      if (g.rst) { // 🗑 איפוס: גיבוי מלא + דור חדש — מכשירים ישנים לא יחזירו את המצב
+        const old = d.users[t].sv;
+        if (old && Object.keys(old).length) d.bak[t] = { sv: old, at: Date.now() };
+        d.users[t].ra = Date.now();
+      }
       d.users[t].sv = this.applyReducing(d.users[t].sv, g);
       await this.saveDoc();
       this.notify(t, { t: 'inbox' });
@@ -490,7 +524,7 @@ export class Registry {
     if (p === '/api/claim' && req.method === 'POST') {
       await this.tdbSync();
       const u = cleanName(b.u);
-      const out = { gift: d.gifts[u] || null, summon: d.summon[u] || null, ban: d.bans[u] || null, season: d.season || null, snv: this.snd.v || 0 };
+      const out = { gift: d.gifts[u] || null, summon: d.summon[u] || null, ban: d.bans[u] || null, season: d.season || null, snv: this.snd.v || 0, ra: Number(d.users[u] && d.users[u].ra) || 0 };
       { // 💬 סיכום צ'אט: ההודעה האחרונה מול כל שותף — לבאדג' ולהתראות
         const cs = {};
         for (const key in d.chat) {
