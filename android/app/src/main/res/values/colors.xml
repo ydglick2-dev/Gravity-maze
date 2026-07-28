@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches background_color / theme_color from manifest.webmanifest so there is no
+         flash of a different colour while the WebView boots. -->
+    <color name="game_background">#05070C</color>
+    <color name="toolbar_background">#0B0F16</color>
+    <color name="toolbar_text">#E6EDF7</color>
+    <color name="muted_text">#8B98AD</color>
+    <color name="club_chip_background">#1A2534</color>
+    <color name="club_chip_text">#C7D3E4</color>
+</resources>

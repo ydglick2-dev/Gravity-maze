@@ -1,0 +1,90 @@
+plugins {
+    id "com.android.application"
+}
+
+// The web game is the single source of truth and lives at the repository root.
+// It is either checked in as loose files (index.html next to the zip) or only as
+// maze-v*.zip. Either way it gets staged into the APK's assets/www at build time,
+// so there is no second copy of the game to keep in sync.
+def repoRoot = rootProject.file("..")
+def stagedAssets = layout.buildDirectory.dir("generated/gameAssets")
+def gameFiles = [
+        "index.html",
+        "sw.js",
+        "manifest.webmanifest",
+        "privacy.html",
+        "peerjs.min.js",
+        "three.min.js",
+        "chest-open.mp4",
+        "icon-192.png",
+        "icon-512.png",
+]
+
+tasks.register("stageGameAssets", Sync) {
+    description = "Stages the web game from the repository root into the APK assets."
+    into stagedAssets.map { it.dir("www") }
+
+    def looseIndex = new File(repoRoot, "index.html")
+    if (looseIndex.exists()) {
+        from(repoRoot) { include gameFiles }
+    } else {
+        def zips = repoRoot.listFiles()?.findAll { it.name ==~ /maze-v\d+.*\.zip/ }?.sort { it.name } ?: []
+        if (zips.isEmpty()) {
+            throw new GradleException(
+                    "No game sources found in ${repoRoot}: expected index.html or a maze-v*.zip archive.")
+        }
+        from(zipTree(zips.last())) { include gameFiles }
+    }
+}
+
+android {
+    namespace "com.gravitymaze.app"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.gravitymaze.app"
+        minSdk 24
+        targetSdk 35
+        versionCode 27
+        versionName "27.0"
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += stagedAssets
+        }
+    }
+
+    androidResources {
+        // Keep the chest video uncompressed so the WebView can stream it straight
+        // out of the APK instead of inflating it into memory first.
+        noCompress += ["mp4"]
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            // Signed with the debug key so `assembleRelease` produces an APK that
+            // installs directly. Swap in a real keystore before any store upload.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn "stageGameAssets"
+}
+
+dependencies {
+    // AndroidX drags in both kotlin-stdlib and the legacy kotlin-stdlib-jdk7/jdk8 splits at
+    // mismatched versions; the BOM aligns them so dexing does not trip over duplicate classes.
+    implementation platform("org.jetbrains.kotlin:kotlin-bom:1.9.24")
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "androidx.webkit:webkit:1.12.1"
+}
