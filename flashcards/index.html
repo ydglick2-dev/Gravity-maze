@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>כרטיסיות</title>
+<meta name="theme-color" content="#1d4ed8">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="כרטיסיות">
+<style>
+  :root {
+    --blue: #1d4ed8;
+    --line: #d4d4d8;
+    --muted: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    background: #fff;
+    color: #111;
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    max-width: 480px;
+    margin-inline: auto;
+    min-height: 100vh;
+  }
+  h1 { font-size: 22px; margin: 4px 0 12px; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--muted); font-size: 15px; }
+  .hidden { display: none !important; }
+
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font: inherit;
+    font-size: 16px; /* מתחת ל-16 אייפון מזמזם זום */
+    resize: vertical;
+  }
+
+  button {
+    width: 100%;
+    min-height: 56px;
+    margin-top: 10px;
+    padding: 12px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--blue);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.secondary { background: #fff; color: var(--blue); border: 1px solid var(--line); }
+  button.link { background: none; color: var(--muted); border: 0; min-height: 44px; font-weight: 400; text-decoration: underline; }
+  button:active { opacity: .75; }
+
+  #msg { margin-top: 12px; padding: 12px; border-radius: 12px; font-size: 15px; }
+  #msg.err { background: #fef2f2; color: #991b1b; }
+  #msg.ok  { background: #f0fdf4; color: #166534; }
+
+  .status { display: flex; justify-content: space-between; color: var(--muted); font-size: 15px; margin-bottom: 10px; }
+
+  #card {
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    font-size: 22px;
+    line-height: 1.4;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #card.answer { background: #eff6ff; border-color: var(--blue); }
+  .hint { text-align: center; margin-top: 10px; }
+  #done { text-align: center; padding-top: 32px; }
+  #done .big { font-size: 48px; }
+</style>
+</head>
+<body>
+
+<!-- ========== מסך פתיחה ========== -->
+<section id="setup">
+  <h1>כרטיסיות</h1>
+  <p class="muted">
+    1. הדבק סיכום שיעור ולחץ "העתק פרומפט".<br>
+    2. הדבק בצ'אט, העתק את התשובה לכאן, ולחץ "טען כרטיסיות".
+  </p>
+
+  <textarea id="input" placeholder="הדבק כאן סיכום שיעור, או את ה-JSON שקיבלת מהצ'אט"></textarea>
+
+  <button id="btnPrompt">העתק פרומפט</button>
+  <button id="btnLoad">טען כרטיסיות</button>
+  <button id="btnDemo" class="secondary">טען דוגמה</button>
+
+  <div id="msg" class="hidden"></div>
+</section>
+
+<!-- ========== מסך תרגול ========== -->
+<section id="practice" class="hidden">
+  <div class="status">
+    <span id="progress"></span>
+    <span id="roundLabel"></span>
+  </div>
+
+  <div id="card"></div>
+  <p class="hint muted" id="hint">לחץ על הכרטיסייה כדי לראות את התשובה</p>
+
+  <div id="answerBtns" class="hidden">
+    <button id="btnKnew">ידעתי</button>
+    <button id="btnMissed" class="secondary">לא ידעתי</button>
+  </div>
+
+  <button class="link" id="btnQuit">סט חדש</button>
+</section>
+
+<!-- ========== מסך סיום ========== -->
+<section id="done" class="hidden">
+  <div class="big">✅</div>
+  <h1>סיימת!</h1>
+  <p class="muted" id="doneSummary"></p>
+  <button id="btnAgain">תרגל שוב</button>
+  <button id="btnNew" class="secondary">סט חדש</button>
+</section>
+
+<script>
+// ====== הפרומפט שנשלח למודל ======
+const PROMPT = [
+  'אתה מחולל כרטיסיות לימוד. הקלט הוא סיכום שיעור בעברית. הפלט הוא JSON בלבד.',
+  '',
+  '1. החזר אך ורק אובייקט JSON תקין. בלי טקסט לפני, בלי טקסט אחרי, בלי סימני ```.',
+  '2. מבנה מדויק: {"cards":[{"q":"...","a":"..."}]}',
+  '3. שמות השדות באנגלית. התוכן בעברית.',
+  '4. q היא שאלה פתוחה אחת. a היא תשובה של עד 12 מילים.',
+  '5. כרטיסייה אחת לכל מושג, הגדרה, תאריך או עובדה שמופיעים בטקסט. בין 8 ל-15 כרטיסיות.',
+  '6. אל תמציא מידע שלא כתוב בטקסט.',
+  '7. בלי שאלות רב-ברירה, בלי נכון/לא נכון, בלי שאלות שהתשובה להן "כן".',
+  '8. אל תשאל את אותה שאלה פעמיים בניסוח שונה.',
+  '9. בלי מרכאות כפולות ובלי ירידות שורה בתוך הערכים.',
+  '10. אם הטקסט קצר מדי או אינו חומר לימוד, החזר בדיוק: {"cards":[]}',
+  '',
+  'הטקסט:',
+  '---',
+  '[הסיכום מודבק כאן]',
+  '---'
+].join('\n');
+
+const ERR = 'לא הצלחתי לקרוא את התשובה. חזור לצ\'אט וכתוב: "החזר שוב, רק JSON, בלי שום טקסט אחר".';
+
+// ====== סט הדוגמה ======
+const DEMO = [
+  { q: 'מהו האברון שבו מתרחשת הנשימה התאית?', a: 'המיטוכונדריון' },
+  { q: 'מה תפקידו של קרום התא?', a: 'לווסת את מעבר החומרים לתוך התא ומחוצה לו' },
+  { q: 'אילו אברונים קיימים בתא צמח ואינם קיימים בתא בעל חיים?', a: 'דופן התא, הכלורופלסט והוואקואולה הגדולה' },
+  { q: 'היכן נמצא ה-DNA בתא אאוקריוטי?', a: 'בגרעין התא' },
+  { q: 'מה תפקידם של הריבוזומים?', a: 'ייצור חלבונים' },
+  { q: 'מה ההבדל העיקרי בין תא פרוקריוטי לאאוקריוטי?', a: 'בפרוקריוטי אין גרעין תחום בקרום' },
+  { q: 'איזה תהליך מתרחש בכלורופלסט?', a: 'פוטוסינתזה, המרת אנרגיית אור לסוכר' },
+  { q: 'מה תפקידה של הוואקואולה בתא הצמח?', a: 'אחסון מים וחומרים ושמירה על עמידות התא' }
+];
+
+// ====== מצב ======
+let all = [];      // כל הכרטיסיות שנטענו
+let queue = [];    // הסבב הנוכחי
+let failed = [];   // מה שנכשל בסבב הנוכחי
+let i = 0;
+let round = 1;
+
+const $ = id => document.getElementById(id);
+
+// ====== פרסור התשובה: ניקוי, parse, מבנה, סינון ======
+function parseCards(raw) {
+  let t = (raw || '').trim();
+
+  // 1. ניקוי לפני פרסור
+  if (t.startsWith('```')) {
+    t = t.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
+  }
+  const first = t.search(/[\[{]/);
+  const last = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
+  if (first !== -1 && last > first) t = t.slice(first, last + 1);
+
+  // 2. פרסור
+  let data;
+  try { data = JSON.parse(t); } catch (e) { return null; }
+
+  // 3. מבנה
+  const arr = Array.isArray(data) ? data : (data && data.cards);
+  if (!Array.isArray(arr)) return null;
+
+  // 4. סינון פריטים פגומים
+  const ok = arr
+    .filter(c => c && typeof c.q === 'string' && c.q.trim() && typeof c.a === 'string' && c.a.trim())
+    .map(c => ({ q: c.q.trim(), a: c.a.trim() }));
+
+  return ok.length ? ok : null;
+}
+
+function showMsg(text, kind) {
+  const el = $('msg');
+  el.textContent = text;
+  el.className = kind;
+}
+
+function screen(name) {
+  ['setup', 'practice', 'done'].forEach(s => $(s).classList.toggle('hidden', s !== name));
+}
+
+// ====== תרגול ======
+function start(cards) {
+  all = cards;
+  queue = cards.slice();
+  failed = [];
+  i = 0;
+  round = 1;
+  screen('practice');
+  render();
+}
+
+function render() {
+  const c = queue[i];
+  $('card').textContent = c.q;
+  $('card').classList.remove('answer');
+  $('hint').classList.remove('hidden');
+  $('answerBtns').classList.add('hidden');
+  $('progress').textContent = (i + 1) + ' / ' + queue.length;
+  $('roundLabel').textContent = round === 1 ? '' : 'סבב ' + round;
+}
+
+function flip() {
+  const c = $('card');
+  const showingAnswer = c.classList.toggle('answer');
+  c.textContent = showingAnswer ? queue[i].a : queue[i].q;
+  if (showingAnswer) {
+    $('hint').classList.add('hidden');
+    $('answerBtns').classList.remove('hidden');
+  }
+}
+
+function answer(knew) {
+  if (!knew) failed.push(queue[i]);
+  i++;
+  if (i < queue.length) { render(); return; }
+
+  // סוף סבב — הנכשלות חוזרות
+  if (failed.length) {
+    queue = failed;
+    failed = [];
+    i = 0;
+    round++;
+    render();
+  } else {
+    $('doneSummary').textContent =
+      all.length + ' כרטיסיות · ' + round + (round === 1 ? ' סבב' : ' סבבים');
+    screen('done');
+  }
+}
+
+// ====== העתקה ללוח ======
+async function copy(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    // גיבוי לדפדפנים ישנים או להרצה לא מאובטחת
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+
+// ====== חיווט ======
+$('btnPrompt').onclick = async () => {
+  const text = $('input').value.trim();
+  const out = text ? PROMPT.replace('[הסיכום מודבק כאן]', text) : PROMPT;
+  const ok = await copy(out);
+  if (!ok) { showMsg('ההעתקה נכשלה. סמן את הטקסט ידנית והעתק.', 'err'); return; }
+  showMsg(text
+    ? 'הפרומפט הועתק. הדבק אותו בצ\'אט, ואת התשובה החזר לכאן.'
+    : 'הפרומפט הועתק. הדבק אותו בצ\'אט, והחלף את [הסיכום מודבק כאן] בסיכום שלך.', 'ok');
+};
+
+$('btnLoad').onclick = () => {
+  const cards = parseCards($('input').value);
+  if (!cards) { showMsg(ERR, 'err'); return; }   // הסט הקודם נשאר טעון
+  showMsg('', 'hidden');
+  start(cards);
+};
+
+$('btnDemo').onclick = () => { $('msg').className = 'hidden'; start(DEMO.slice()); };
+
+$('card').onclick = flip;
+$('btnKnew').onclick = () => answer(true);
+$('btnMissed').onclick = () => answer(false);
+$('btnQuit').onclick = () => screen('setup');
+$('btnAgain').onclick = () => start(all);
+$('btnNew').onclick = () => { $('input').value = ''; screen('setup'); };
+</script>
+</body>
+</html>
