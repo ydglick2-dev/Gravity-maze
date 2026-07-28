@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gravity Maze</string>
+
+    <string name="club_chip">מועדון</string>
+    <string name="shortcut_club_short">מועדון</string>
+    <string name="shortcut_club_long">פתיחת המועדון</string>
+</resources>

@@ -1,21 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Gravity Maze</string>
-
-    <string name="club_chip">מועדון</string>
-    <string name="club_title">המועדון שלי</string>
     <string name="club_home">בית</string>
     <string name="club_reload">רענון</string>
     <string name="club_external">דפדפן</string>
     <string name="club_settings">כתובת</string>
     <string name="club_save">שמירה ופתיחה</string>
     <string name="club_setup_title">חיבור המועדון</string>
-    <string name="club_setup_body">הדביקו את כתובת אתר המועדון שלכם. הכניסה מתבצעת עם המנוי שלכם, והחיבור נשמר כך שבפעם הבאה המועדון ייפתח ישירות מתוך המשחק.</string>
+    <string name="club_setup_body">הדביקו את כתובת אתר המועדון שלכם. הכניסה מתבצעת עם המנוי שלכם, והחיבור נשמר כך שבפעם הבאה המועדון ייפתח ישירות.</string>
     <string name="club_url_hint">https://example.com</string>
     <string name="club_url_empty">צריך להזין כתובת</string>
     <string name="club_url_invalid">הכתובת אינה תקינה</string>
     <string name="club_no_app">אין אפליקציה שיודעת לפתוח את הקישור</string>
-
-    <string name="shortcut_club_short">מועדון</string>
-    <string name="shortcut_club_long">פתיחת המועדון</string>
 </resources>

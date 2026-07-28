@@ -1,4 +1,4 @@
-package com.gravitymaze.app;
+package com.ydglick.apps;
 
 import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
@@ -24,6 +24,9 @@ import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 /**
  * An in-app browser tab for the user's own online club / course account.
@@ -56,6 +59,12 @@ public class ClubActivity extends AppCompatActivity {
         setupPanel = findViewById(R.id.club_setup);
         urlInput = findViewById(R.id.club_url_input);
         fullscreenContainer = findViewById(R.id.club_fullscreen);
+
+        // targetSdk 35 draws edge-to-edge by default, so the toolbar and the setup form
+        // have to keep themselves clear of the status and navigation bars. The fullscreen
+        // video container is deliberately left un-inset.
+        applySystemBarInsets(findViewById(R.id.club_content));
+        applySystemBarInsets(setupPanel);
 
         findViewById(R.id.club_save).setOnClickListener(v -> saveUrlFromInput());
         findViewById(R.id.club_home).setOnClickListener(v -> loadHome());
@@ -158,6 +167,20 @@ public class ClubActivity extends AppCompatActivity {
         } else {
             showSetup();
         }
+    }
+
+    private static void applySystemBarInsets(View view) {
+        final int left = view.getPaddingLeft();
+        final int top = view.getPaddingTop();
+        final int right = view.getPaddingRight();
+        final int bottom = view.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(view, (v, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(left + bars.left, top + bars.top, right + bars.right,
+                    bottom + bars.bottom);
+            return windowInsets;
+        });
     }
 
     private SharedPreferences prefs() {

@@ -6,8 +6,8 @@
         android:shortcutLongLabel="@string/shortcut_club_long"
         android:shortcutShortLabel="@string/shortcut_club_short">
         <intent
-            android:action="com.gravitymaze.app.OPEN_CLUB"
-            android:targetClass="com.gravitymaze.app.ClubActivity"
+            android:action="com.ydglick.apps.OPEN_CLUB"
+            android:targetClass="com.ydglick.apps.ClubActivity"
             android:targetPackage="com.gravitymaze.app" />
         <categories android:name="android.shortcut.conversation" />
     </shortcut>

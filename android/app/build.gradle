@@ -38,19 +38,35 @@ tasks.register("stageGameAssets", Sync) {
 }
 
 android {
-    namespace "com.gravitymaze.app"
+    namespace "com.ydglick.apps"
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.gravitymaze.app"
         minSdk 24
         targetSdk 35
-        versionCode 27
-        versionName "27.0"
+    }
+
+    // Two apps out of one codebase. They install side by side and share nothing at
+    // runtime: separate applicationIds means separate storage, cookies and settings.
+    flavorDimensions += "product"
+    productFlavors {
+        game {
+            dimension "product"
+            applicationId "com.gravitymaze.app"
+            versionCode 27
+            versionName "27.0"
+        }
+        club {
+            dimension "product"
+            applicationId "com.ydglick.club"
+            versionCode 1
+            versionName "1.0"
+        }
     }
 
     sourceSets {
-        main {
+        // Only the game flavour ships the bundled web game.
+        game {
             assets.srcDirs += stagedAssets
         }
     }
@@ -77,6 +93,8 @@ android {
     }
 }
 
+// Hang the staging off preBuild, which every variant task chain sits behind. Only the game
+// source set actually consumes the staged directory, so the club APK stays free of it.
 tasks.named("preBuild") {
     dependsOn "stageGameAssets"
 }
