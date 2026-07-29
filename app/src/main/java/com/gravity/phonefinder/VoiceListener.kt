@@ -22,6 +22,8 @@ import android.util.Log
 class VoiceListener(
     private val context: Context,
     private val onPhrase: (String) -> Unit,
+    /** Human-readable status (heard text / errors) for on-screen testing feedback. */
+    private val onDiagnostic: (String) -> Unit = {},
 ) {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -111,9 +113,11 @@ class VoiceListener(
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
-            // Use the on-device model when its Hebrew pack is installed; the system
-            // falls back to the network model when it is not.
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            // Deliberately NOT forcing EXTRA_PREFER_OFFLINE: on devices without the
+            // Hebrew offline pack that flag makes many recognizers return nothing
+            // instead of falling back to the network model. Letting the system choose
+            // uses the online model when there is internet (more accurate) and the
+            // offline model when the pack is present.
         }
 
     private fun scheduleRestart(delayMs: Long) {
@@ -167,6 +171,9 @@ class VoiceListener(
         }
 
         override fun onResults(results: Bundle?) {
+            val best = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                ?.firstOrNull { !it.isNullOrBlank() }
+            if (best != null) onDiagnostic("שמעתי: $best")
             deliver(results)
             sessionActive = false
             networkBackoffMs = INITIAL_BACKOFF_MS
@@ -193,13 +200,29 @@ class VoiceListener(
 
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
                     Log.e(TAG, "microphone permission missing — stopping")
+                    onDiagnostic("אין הרשאת מיקרופון")
                     stop()
+                }
+
+                SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
+                SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
+                -> {
+                    // The Hebrew model is missing and cannot be reached. Retry on the
+                    // network model rather than dying silently.
+                    Log.w(TAG, "Hebrew model unavailable (error $error)")
+                    onDiagnostic("חבילת עברית חסרה — נסה עם אינטרנט או התקן זיהוי עברית")
+                    scheduleRestart(networkBackoff())
                 }
 
                 else -> {
                     // Network or server trouble: back off so a broken state does not
                     // spin the CPU and drain the battery overnight.
                     Log.w(TAG, "recognizer error $error")
+                    if (error == SpeechRecognizer.ERROR_NETWORK ||
+                        error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT
+                    ) {
+                        onDiagnostic("שגיאת רשת בזיהוי — צריך אינטרנט או חבילת עברית אופליין")
+                    }
                     scheduleRestart(networkBackoff())
                 }
             }

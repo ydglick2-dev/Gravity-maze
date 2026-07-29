@@ -74,7 +74,10 @@ object TriggerMatcher {
         if (text.isEmpty()) return false
         // "מצאתי" is a stop word, not a find word — don't let it satisfy "מצא".
         if (containsAny(text, STOP_PHRASES)) return false
-        val wake = containsAny(text, WAKE_WORDS)
+        // Wake words also match across a split, since a recognizer may transcribe one
+        // spoken word as two ("גלי דה" -> "גלידה").
+        val compact = text.replace(" ", "")
+        val wake = containsAny(text, WAKE_WORDS) || WAKE_WORDS.any { compact.contains(it) }
         val hebrew = containsAny(text, FIND_WORDS) && containsAny(text, DEVICE_WORDS)
         val english = containsAny(text, FIND_WORDS_EN) && containsAny(text, DEVICE_WORDS_EN)
         return wake || hebrew || english

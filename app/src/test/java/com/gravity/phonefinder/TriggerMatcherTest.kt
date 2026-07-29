@@ -14,6 +14,11 @@ class TriggerMatcherTest {
     }
 
     @Test
+    fun `the wake word fires even if the recogniser splits it`() {
+        assertTrue(TriggerMatcher.isFindCommand("גלי דה"))
+    }
+
+    @Test
     fun `the exact phrase fires`() {
         assertTrue(TriggerMatcher.isFindCommand("מצא טלפון"))
     }

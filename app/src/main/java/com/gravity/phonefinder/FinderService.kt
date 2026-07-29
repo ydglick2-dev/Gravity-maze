@@ -34,7 +34,11 @@ class FinderService : Service() {
     override fun onCreate() {
         super.onCreate()
         Notifications.createChannels(this)
-        voice = VoiceListener(this) { phrase -> onPhrase(phrase) }
+        voice = VoiceListener(
+            this,
+            onPhrase = { phrase -> onPhrase(phrase) },
+            onDiagnostic = { status -> showDiagnostic(status) },
+        )
         registerScreenReceiver()
         screenOff = !isScreenOn()
     }
@@ -147,6 +151,13 @@ class FinderService : Service() {
                 Toast.makeText(this, R.string.toast_heard, Toast.LENGTH_SHORT).show()
             }
             AlarmService.start(this)
+        }
+    }
+
+    /** Surface recognizer status while the app is open, so testing is not blind. */
+    private fun showDiagnostic(status: String) {
+        if (appInForeground) {
+            Toast.makeText(this, status, Toast.LENGTH_SHORT).show()
         }
     }
 
