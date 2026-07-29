@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    No policies are requested: the app does not want to control the lock screen,
+    passwords or wipe the device. Being an active admin at all is what blocks
+    uninstall, and that is the only thing this feature is for.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>

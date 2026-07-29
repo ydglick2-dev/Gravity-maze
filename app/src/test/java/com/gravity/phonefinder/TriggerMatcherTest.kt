@@ -8,6 +8,12 @@ import org.junit.Test
 class TriggerMatcherTest {
 
     @Test
+    fun `the wake word fires on its own`() {
+        assertTrue(TriggerMatcher.isFindCommand("גלידה"))
+        assertTrue(TriggerMatcher.isFindCommand("אמא כתבה גלידה"))
+    }
+
+    @Test
     fun `the exact phrase fires`() {
         assertTrue(TriggerMatcher.isFindCommand("מצא טלפון"))
     }

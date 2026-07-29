@@ -3,11 +3,11 @@
     <string name="app_name">מצא טלפון</string>
 
     <string name="headline">מצא טלפון</string>
-    <string name="subhead">כשהמסך כבוי, האפליקציה מאזינה. תגיד \"מצא טלפון\" — והטלפון יצפור.</string>
+    <string name="subhead">כשהמסך כבוי, האפליקציה מאזינה. תגיד \"גלידה\" — והטלפון יצפור.</string>
 
     <string name="status_on">פעיל · מאזין כשהמסך כבוי</string>
     <string name="status_off">כבוי · הטלפון לא מאזין</string>
-    <string name="status_listening">מאזין — אמור \"מצא טלפון\"</string>
+    <string name="status_listening">מאזין — אמור \"גלידה\"</string>
     <string name="status_standby">ממתין · יאזין כשהמסך ייכבה</string>
 
     <string name="action_start_app">הפעל האזנה</string>
@@ -28,6 +28,11 @@
     <string name="check_fullscreen_detail">מדליקה את המסך מעל מסך הנעילה כשהצפירה מתחילה.</string>
     <string name="check_speech">מנוע זיהוי דיבור</string>
     <string name="check_speech_detail">מגיע עם אפליקציית Google. להאזנה ללא אינטרנט התקן את חבילת העברית: הגדרות ← Google ← קלט קולי ← זיהוי דיבור לא מקוון.</string>
+    <string name="check_admin">הגנה מפני הסרה</string>
+    <string name="check_admin_detail">רשות \"מנהל מכשיר\" שמונעת מלהסיר את האפליקציה בלי לבטל אותה קודם בהגדרות — הגנת אנטי-גניבה. אינה עוקפת בקרת הורים ואינה משפיעה על מגבלת זמן מסך.</string>
+    <string name="admin_description">מונע הסרה של אפליקציית האיתור לפני ביטול ההרשאה בהגדרות.</string>
+    <string name="admin_add_explanation">הפעלת הרשאה זו מונעת ממישהו שמצא את הטלפון להסיר את \"מצא טלפון\" במהירות. אפשר לבטל אותה בכל רגע ב: הגדרות ← אבטחה ← אפליקציות ניהול מכשיר. ההרשאה אינה שולטת בסיסמה, בנעילה או במחיקת המכשיר.</string>
+    <string name="admin_disable_warning">אחרי ביטול ההרשאה אפשר יהיה להסיר את אפליקציית האיתור מהמכשיר.</string>
 
     <string name="privacy">האפליקציה משווה את מה שנשמע ואת טקסט ההתראות מול המשפט \"מצא טלפון\" בזיכרון בלבד. שום הקלטה ושום תוכן הודעה לא נשמרים במכשיר ולא נשלחים לשום מקום.</string>
 

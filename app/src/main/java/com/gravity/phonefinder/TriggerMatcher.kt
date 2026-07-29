@@ -21,6 +21,14 @@ object TriggerMatcher {
     private val DEVICE_WORDS =
         folded("טלפון", "פלאפון", "פלפון", "סלולרי", "נייד", "מכשיר", "מובייל")
 
+    /**
+     * Single, distinctive wake words that fire on their own. A recognizer catches one
+     * short unusual word far more reliably than a two-word phrase, which is why this
+     * is the primary voice trigger. The trade-off is that the word will also fire if
+     * it comes up in ordinary conversation, so it is chosen to be uncommon.
+     */
+    private val WAKE_WORDS = folded("גלידה")
+
     /** Phrases that silence a running alarm. */
     private val STOP_PHRASES =
         folded("עצור", "תעצור", "תפסיק", "הפסק", "מצאתי", "די", "שקט", "תשתוק")
@@ -66,9 +74,10 @@ object TriggerMatcher {
         if (text.isEmpty()) return false
         // "מצאתי" is a stop word, not a find word — don't let it satisfy "מצא".
         if (containsAny(text, STOP_PHRASES)) return false
+        val wake = containsAny(text, WAKE_WORDS)
         val hebrew = containsAny(text, FIND_WORDS) && containsAny(text, DEVICE_WORDS)
         val english = containsAny(text, FIND_WORDS_EN) && containsAny(text, DEVICE_WORDS_EN)
-        return hebrew || english
+        return wake || hebrew || english
     }
 
     /** True when [raw] asks a sounding alarm to stop. */
