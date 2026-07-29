@@ -3,8 +3,6 @@ package com.gravity.phonefinder
 import android.Manifest
 import android.app.Activity
 import android.app.NotificationManager
-import android.app.admin.DevicePolicyManager
-import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -121,12 +119,6 @@ class MainActivity : Activity() {
             action = null,
         )
 
-        addRow(
-            title = getString(R.string.check_admin),
-            ok = isDeviceAdminActive(),
-            detail = getString(R.string.check_admin_detail),
-        ) { requestDeviceAdmin() }
-
         val listening = FinderService.isRunning
         toggleButton.setText(if (listening) R.string.action_stop_app else R.string.action_start_app)
         statusText.setText(if (listening) R.string.status_on else R.string.status_off)
@@ -212,12 +204,6 @@ class MainActivity : Activity() {
     private fun isBatteryUnrestricted(): Boolean =
         getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
 
-    private val adminComponent: ComponentName
-        get() = ComponentName(this, DeviceAdmin::class.java)
-
-    private fun isDeviceAdminActive(): Boolean =
-        getSystemService(DevicePolicyManager::class.java).isAdminActive(adminComponent)
-
     private fun canUseFullScreenIntent(): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
@@ -243,16 +229,6 @@ class MainActivity : Activity() {
             "package:$packageName".toUri(),
         )
         if (!launch(intent)) openAppNotificationSettings()
-    }
-
-    private fun requestDeviceAdmin() {
-        val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-            .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
-            .putExtra(
-                DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                getString(R.string.admin_add_explanation),
-            )
-        if (!launch(intent)) open(Settings.ACTION_SECURITY_SETTINGS)
     }
 
     private fun openAppNotificationSettings() {
