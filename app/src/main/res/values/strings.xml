@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">מצא טלפון</string>
+
+    <string name="headline">מצא טלפון</string>
+    <string name="subhead">כשהמסך כבוי, האפליקציה מאזינה. תגיד \"מצא טלפון\" — והטלפון יצפור.</string>
+
+    <string name="status_on">פעיל · מאזין כשהמסך כבוי</string>
+    <string name="status_off">כבוי · הטלפון לא מאזין</string>
+    <string name="status_listening">מאזין — אמור \"מצא טלפון\"</string>
+    <string name="status_standby">ממתין · יאזין כשהמסך ייכבה</string>
+
+    <string name="action_start_app">הפעל האזנה</string>
+    <string name="action_stop_app">כבה האזנה</string>
+    <string name="action_test_alarm">בדוק צפירה</string>
+    <string name="action_stop_alarm">עצור צפירה</string>
+    <string name="action_fix">תקן</string>
+
+    <string name="check_mic">הרשאת מיקרופון</string>
+    <string name="check_mic_detail">בלעדיה אי אפשר לזהות את המשפט \"מצא טלפון\".</string>
+    <string name="check_notifications">הצגת התראות</string>
+    <string name="check_notifications_detail">נדרשת כדי שהאפליקציה תוכל לרוץ ברקע ולהציג את מסך העצירה.</string>
+    <string name="check_chat">גישה להתראות צ\'אט</string>
+    <string name="check_chat_detail">מאפשרת להפעיל צפירה גם מהודעת WhatsApp/SMS שכתוב בה \"מצא טלפון\". זה גם מה שעובד מיד אחרי הפעלה מחדש של הטלפון.</string>
+    <string name="check_battery">ללא הגבלת סוללה</string>
+    <string name="check_battery_detail">בלי זה אנדרואיד יסגור את ההאזנה אחרי כמה דקות עם מסך כבוי.</string>
+    <string name="check_fullscreen">התראה במסך מלא</string>
+    <string name="check_fullscreen_detail">מדליקה את המסך מעל מסך הנעילה כשהצפירה מתחילה.</string>
+    <string name="check_speech">מנוע זיהוי דיבור</string>
+    <string name="check_speech_detail">מגיע עם אפליקציית Google. להאזנה ללא אינטרנט התקן את חבילת העברית: הגדרות ← Google ← קלט קולי ← זיהוי דיבור לא מקוון.</string>
+
+    <string name="privacy">האפליקציה משווה את מה שנשמע ואת טקסט ההתראות מול המשפט \"מצא טלפון\" בזיכרון בלבד. שום הקלטה ושום תוכן הודעה לא נשמרים במכשיר ולא נשלחים לשום מקום.</string>
+
+    <string name="alarm_title">אני כאן!</string>
+    <string name="alarm_text">הקש כדי לעצור את הצפירה</string>
+    <string name="alarm_stop_button">מצאתי — עצור</string>
+
+    <string name="boot_hint_title">ההאזנה מושהית</string>
+    <string name="boot_hint_text">הטלפון הופעל מחדש. הקש כדי להחזיר את ההאזנה הקולית.</string>
+
+    <string name="channel_status">מצב האזנה</string>
+    <string name="channel_status_desc">ההתראה הקבועה ששומרת על האפליקציה פעילה ברקע.</string>
+    <string name="channel_alarm">צפירת איתור</string>
+    <string name="channel_alarm_desc">ההתראה שמופיעה כשהטלפון מצפצף.</string>
+</resources>
