@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.net.toUri
 
 /**
@@ -61,7 +62,15 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        // While this screen is open the service listens even with the screen on, so
+        // the trigger word can be tried without locking the phone first.
+        FinderService.setAppInForeground(true)
         render()
+    }
+
+    override fun onPause() {
+        FinderService.setAppInForeground(false)
+        super.onPause()
     }
 
     // --- checklist ---------------------------------------------------------
@@ -166,6 +175,11 @@ class MainActivity : Activity() {
         Prefs.setEnabled(this, true)
         cancelBootHint()
         startForegroundService(Intent(this, FinderService::class.java))
+        if (SpeechRecognizer.isRecognitionAvailable(this)) {
+            Toast.makeText(this, R.string.toast_say_word, Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, R.string.toast_no_speech, Toast.LENGTH_LONG).show()
+        }
         toggleButton.postDelayed({ render() }, 300)
     }
 

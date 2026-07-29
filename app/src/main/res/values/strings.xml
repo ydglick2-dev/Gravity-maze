@@ -36,6 +36,10 @@
 
     <string name="privacy">האפליקציה משווה את מה שנשמע ואת טקסט ההתראות מול המשפט \"מצא טלפון\" בזיכרון בלבד. שום הקלטה ושום תוכן הודעה לא נשמרים במכשיר ולא נשלחים לשום מקום.</string>
 
+    <string name="toast_heard">זוהתה מילת ההפעלה — מפעיל צפירה</string>
+    <string name="toast_say_word">ההאזנה פעילה. אמור עכשיו \"גלידה\" לבדיקה (בזמן שהמסך פתוח).</string>
+    <string name="toast_no_speech">אין מנוע זיהוי דיבור פעיל. התקן/עדכן את אפליקציית Google וחבילת העברית.</string>
+
     <string name="alarm_title">אני כאן!</string>
     <string name="alarm_text">הקש כדי לעצור את הצפירה</string>
     <string name="alarm_stop_button">מצאתי — עצור</string>

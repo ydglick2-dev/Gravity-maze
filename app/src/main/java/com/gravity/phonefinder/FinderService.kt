@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.ServiceCompat
 
 /**
@@ -116,11 +117,12 @@ class FinderService : Service() {
     // --- listening policy --------------------------------------------------
 
     /**
-     * Record while the screen is off, and also while the alarm is sounding so that
-     * saying "עצור" can silence it.
+     * Record while the screen is off (the state a lost phone is in), while the app's
+     * own screen is open (so the trigger can be tested without turning the screen
+     * off), and while the alarm is sounding so that saying "עצור" can silence it.
      */
     private fun syncListening() {
-        val shouldListen = screenOff || AlarmService.isPlaying
+        val shouldListen = screenOff || appInForeground || AlarmService.isPlaying
         if (shouldListen && !voice.isRunning) {
             acquireWakeLock()
             voice.start()
@@ -139,6 +141,11 @@ class FinderService : Service() {
         }
         if (TriggerMatcher.isFindCommand(phrase)) {
             Log.i(TAG, "trigger phrase recognised")
+            // Visible confirmation while testing that the word was heard, so a silent
+            // alarm points at the siren rather than at recognition.
+            if (appInForeground) {
+                Toast.makeText(this, R.string.toast_heard, Toast.LENGTH_SHORT).show()
+            }
             AlarmService.start(this)
         }
     }
@@ -198,6 +205,10 @@ class FinderService : Service() {
         @Volatile
         private var instance: FinderService? = null
 
+        /** True while the app's own setup screen is visible; enables listen-to-test. */
+        @Volatile
+        private var appInForeground: Boolean = false
+
         val isRunning: Boolean get() = instance != null
 
         /**
@@ -205,6 +216,12 @@ class FinderService : Service() {
          * stay on during an alarm even with the screen lit.
          */
         fun onAlarmStateChanged() {
+            instance?.syncListening()
+        }
+
+        /** [MainActivity] reports whether it is visible, so the trigger can be tested. */
+        fun setAppInForeground(visible: Boolean) {
+            appInForeground = visible
             instance?.syncListening()
         }
 
