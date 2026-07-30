@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#05060d">
+<meta name="description" content="נובה 9 — חמישה משחקים בכיס אחד: ארקייד לחיצה אחת, פאזל לייזר, ריצת שדרוגים, בוגד בתחנה וזירת קרב מול בוטים.">
+<title>נובה 9</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+
+<!-- ================= HUD (in-game) ================= -->
+<div id="hud" class="hud hidden">
+  <div class="hud-top">
+    <button id="btnPause" class="icobtn" aria-label="השהיה">❚❚</button>
+    <div id="hudCenter" class="hud-center"></div>
+    <div id="hudRight" class="hud-right"></div>
+  </div>
+  <div id="toast" class="toast"></div>
+</div>
+
+<!-- ================= HOME ================= -->
+<section id="home" class="screen">
+  <div class="topbar">
+    <button id="btnSettings" class="icobtn" aria-label="הגדרות">⚙</button>
+    <div class="wallet"><span class="coin">◈</span><span id="coinsHome">0</span></div>
+    <button id="btnShop" class="icobtn" aria-label="חנות">✦</button>
+  </div>
+
+  <div class="hero">
+    <div class="logo-orb"><i></i><i></i><i></i></div>
+    <h1 class="logo">נובה<span>9</span></h1>
+    <p class="tag">חמישה משחקים. כיס אחד. אפס שעמום.</p>
+  </div>
+
+  <div class="modes" id="modeList">
+    <button class="mode" data-mode="tap" style="--c:#21e6ff">
+      <div class="mico">⇅</div>
+      <div class="mtxt"><b>קפיצת כבידה</b><small>לחיצה אחת. עלייה אינסופית.</small></div>
+      <div class="mbest" data-best="tap"></div>
+    </button>
+    <button class="mode" data-mode="puzzle" style="--c:#ffc63a">
+      <div class="mico">◈</div>
+      <div class="mtxt"><b>מעגלי אור</b><small>סובב מראות. האר את כל הגבישים.</small></div>
+      <div class="mbest" data-best="puzzle"></div>
+    </button>
+    <button class="mode" data-mode="rogue" style="--c:#46f08a">
+      <div class="mico">⚔</div>
+      <div class="mtxt"><b>ריצת נובה</b><small>גלים, שדרוגים, בוסים.</small></div>
+      <div class="mbest" data-best="rogue"></div>
+    </button>
+    <button class="mode" data-mode="impostor" style="--c:#ff2e88">
+      <div class="mico">☠</div>
+      <div class="mtxt"><b>בוגד בתחנה</b><small>6 בוטים. אחד משקר. הצבעה.</small></div>
+      <div class="mbest" data-best="impostor"></div>
+    </button>
+    <button class="mode" data-mode="arena" style="--c:#9b5cff">
+      <div class="mico">✹</div>
+      <div class="mtxt"><b>זירת כוכבים</b><small>קרב 3 נגד 3 מול בוטים.</small></div>
+      <div class="mbest" data-best="arena"></div>
+    </button>
+  </div>
+
+  <div class="homefoot">
+    <button id="btnInstall" class="btn ghost hidden">התקן כאפליקציה</button>
+    <div class="ver">v1.0</div>
+  </div>
+</section>
+
+<!-- ================= MODE INTRO ================= -->
+<section id="intro" class="screen hidden center">
+  <div class="card">
+    <div id="introIco" class="bigico">⇅</div>
+    <h2 id="introTitle">מצב</h2>
+    <p id="introText" class="muted"></p>
+    <div id="introExtra"></div>
+    <div class="row">
+      <button id="introPlay" class="btn">שחק</button>
+      <button class="btn ghost" data-home>חזרה</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESULT ================= -->
+<section id="result" class="screen hidden center">
+  <div class="card">
+    <div id="resIco" class="bigico">★</div>
+    <h2 id="resTitle">סיבוב הסתיים</h2>
+    <div id="resStats" class="stats"></div>
+    <div class="earn"><span class="coin">◈</span><span id="resCoins">0</span></div>
+    <div class="row">
+      <button id="resRetry" class="btn">שוב</button>
+      <button class="btn ghost" data-home>תפריט</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PAUSE ================= -->
+<section id="pause" class="screen hidden center">
+  <div class="card">
+    <h2>הפסקה</h2>
+    <div class="row">
+      <button id="pauseResume" class="btn">המשך</button>
+      <button id="pauseRestart" class="btn ghost">התחל מחדש</button>
+      <button class="btn ghost" data-home>תפריט</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SHOP ================= -->
+<section id="shop" class="screen hidden">
+  <div class="topbar">
+    <button class="icobtn" data-home>✕</button>
+    <div class="wallet"><span class="coin">◈</span><span id="coinsShop">0</span></div>
+    <div style="width:44px"></div>
+  </div>
+  <h2 class="scrTitle">חנות הנובה</h2>
+  <p class="muted center-txt">עיצובים משנים את הגיבור בכל המצבים.</p>
+  <div id="skinGrid" class="grid"></div>
+</section>
+
+<!-- ================= SETTINGS ================= -->
+<section id="settings" class="screen hidden">
+  <div class="topbar">
+    <button class="icobtn" data-home>✕</button>
+    <div></div>
+    <div style="width:44px"></div>
+  </div>
+  <h2 class="scrTitle">הגדרות</h2>
+  <div class="setlist">
+    <label class="setrow"><span>מוזיקה</span><input type="checkbox" id="setMusic" checked></label>
+    <label class="setrow"><span>אפקטי קול</span><input type="checkbox" id="setSfx" checked></label>
+    <label class="setrow"><span>רטט</span><input type="checkbox" id="setHaptic" checked></label>
+    <label class="setrow"><span>רעידת מסך</span><input type="checkbox" id="setShake" checked></label>
+    <button id="btnReset" class="btn ghost danger">איפוס התקדמות</button>
+  </div>
+  <p class="muted center-txt small">כל ההתקדמות נשמרת במכשיר שלך בלבד.</p>
+</section>
+
+<!-- ================= MEETING (impostor) ================= -->
+<section id="meeting" class="screen hidden">
+  <h2 class="scrTitle" id="meetTitle">אספת חירום</h2>
+  <div id="meetChat" class="chat"></div>
+  <div id="meetVotes" class="votegrid"></div>
+  <div class="row" id="meetFoot"><button id="meetSkip" class="btn ghost">דלג על הצבעה</button></div>
+</section>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

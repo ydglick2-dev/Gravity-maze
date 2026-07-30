@@ -1,0 +1,36 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.nova9.game'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.nova9.game"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // debug-signed so `assembleRelease` still produces an installable APK
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // pins kotlin-stdlib-jdk7/jdk8 to the same version transitive deps pull in,
+    // otherwise they collide as duplicate classes at dex time
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.24')
+
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

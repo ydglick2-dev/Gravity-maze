@@ -1,0 +1,35 @@
+name: Build APK
+
+on:
+  push:
+    branches: ['**']
+    paths: ['web/**', 'android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Sync the game into the Android assets
+        run: |
+          rm -rf android/app/src/main/assets/www
+          mkdir -p android/app/src/main/assets/www
+          cp -r web/. android/app/src/main/assets/www/
+
+      - name: Build debug APK
+        run: cd android && gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova9-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
