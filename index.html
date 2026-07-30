@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v176</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v177</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -651,6 +651,7 @@
     <button class="chip" id="admSeaBall">⚽ ערכת כדורגל</button>
     <button class="chip" id="admSeaBday">🎂 ערכת יומולדת</button>
     <button class="chip" id="admSeaNeon">🌆 ערכת ניאון</button>
+    <button class="chip" id="admSeaNave">💙 ערכת נווה</button>
     <button class="chip" id="admSeaUp">🖼 העלאת קובץ עיצוב</button>
     <input type="file" id="admSeaFile" accept=".json,application/json" style="display:none">
   </div>
@@ -4079,7 +4080,7 @@ function skipBtnSync(){
       skipBtnEl.style.cssText='position:fixed;left:12px;top:38%;z-index:12;display:none;font-size:22px;font-weight:900;background:rgba(6,14,28,.8);border:2px solid #00f5d4;border-radius:14px;padding:9px 13px;color:#fff;box-shadow:0 0 16px rgba(0,245,212,.4)';
       skipBtnEl.onclick=()=>{
         if(!running||paused||customLv||duelLive||runMode)return;
-        if(skinSel!==SEASKIN_IDX||skpU>=3)return;
+        if(!SKIP_SKINS.includes(skinSel)||skpU>=3)return;
         skpU++;
         if(lvTime<.2)lvTime=.2; // דילוג מיידי עדיין נרשם כזמן אמיתי
         try{
@@ -4095,7 +4096,7 @@ function skipBtnSync(){
       };
       document.body.appendChild(skipBtnEl);
     }
-    const on=running&&!paused&&!customLv&&!duelLive&&!runMode&&skinSel===SEASKIN_IDX&&skpU<3;
+    const on=running&&!paused&&!customLv&&!duelLive&&!runMode&&SKIP_SKINS.includes(skinSel)&&skpU<3;
     skipBtnEl.style.display=on?'block':'none';
     if(on)skipBtnEl.textContent='⏭ '+(3-skpU);
   }catch(e){}
@@ -6464,10 +6465,175 @@ SKINS.push({name:'שער הניאון',en:'Neon Gate',price:0,rar:5,sea:1,shout:
   c.shadowBlur=0;
 }});
 const SEASKIN_IDX=SKINS.length-1;
+/* ============ 💙 עונת נווה — סקינים חדשים ============
+   העונה בנויה סביב שני הסקינים המיוחדים: נווה המגניב (ג'קפוט 1%)
+   ונווה הבת (הנדירות העונתית, 0.1%). סביבם עונה שלמה בכחול-חשמלי. */
+const NAVE_IMG=new Image();NAVE_IMG.src='nave.png';
+const NAVEB_IMG=new Image();NAVEB_IMG.src='nave-bat.png'; // תמונה שנייה (אם קיימת)
+function naveBg(c,r,a,b2){ // רקע כחול-חשמלי משותף לעונה
+  const g=c.createRadialGradient(-r*.25,-r*.3,r*.06,0,0,r);
+  g.addColorStop(0,a);g.addColorStop(1,b2);
+  c.fillStyle=g;c.fillRect(-r,-r,r*2,r*2);
+}
+function naveSpark(c,r,rot,n,col){ // ניצוצות מסתובבים
+  c.fillStyle=col;
+  for(let k=0;k<n;k++){
+    const a=rot*.8+k*(TAU/n),d=r*(.72+.14*Math.sin(rot*1.7+k));
+    const x=Math.cos(a)*d,y=Math.sin(a)*d,s2=r*(.05+.03*Math.abs(Math.sin(rot*2+k)));
+    c.beginPath();c.moveTo(x,y-s2);c.lineTo(x+s2*.5,y);c.lineTo(x,y+s2);c.lineTo(x-s2*.5,y);c.closePath();c.fill();
+  }
+}
+SKINS.push(
+ {name:'שיער כחול',en:'Blue Hair',price:450,rar:2,draw:(c,r,rot,T)=>{
+   naveBg(c,r,'#8fe3ff','#0b2a6b');
+   c.save();c.rotate(rot*.4); // גדילי שיער כחולים מתנופפים
+   for(let k=0;k<10;k++){
+     const a=k*(TAU/10);
+     c.strokeStyle=k%2?'#2f7bff':'#7cd4ff';c.lineWidth=r*.12;c.lineCap='round';
+     c.beginPath();c.moveTo(Math.cos(a)*r*.2,Math.sin(a)*r*.2);
+     c.quadraticCurveTo(Math.cos(a+.5)*r*.62,Math.sin(a+.5)*r*.62,Math.cos(a+.15)*r*.86,Math.sin(a+.15)*r*.86);
+     c.stroke();
+   }
+   c.restore();
+   c.fillStyle='rgba(255,255,255,.85)';
+   c.beginPath();c.ellipse(-r*.24,-r*.28,r*.16,r*.11,-.6,0,TAU);c.fill();
+   c.strokeStyle='rgba(124,212,255,.9)';c.lineWidth=r*.07;
+   c.beginPath();c.arc(0,0,r*.92,0,TAU);c.stroke();}},
+ {name:'ברק כחול',en:'Blue Bolt',price:800,rar:3,draw:(c,r,rot,T)=>{
+   naveBg(c,r,'#12306e','#04081c');
+   c.save();c.rotate(-rot*.5); // קשתות חשמל
+   for(let k=0;k<3;k++){
+     c.strokeStyle=['#8fe3ff','#2f7bff','#ffffff'][k];c.lineWidth=r*(.05-k*.012);
+     c.beginPath();
+     for(let j=0;j<=8;j++){
+       const a=j/8*TAU+k*.7,d=r*(.55+.28*Math.sin(j*2.3+k*1.6+rot));
+       const x=Math.cos(a)*d,y=Math.sin(a)*d;
+       j?c.lineTo(x,y):c.moveTo(x,y);
+     }
+     c.closePath();c.stroke();
+   }
+   c.restore();
+   c.fillStyle='#fff';c.shadowColor='#7cd4ff';c.shadowBlur=r*.5;
+   c.font='900 '+(r*.85|0)+'px system-ui';c.textAlign='center';c.textBaseline='middle';
+   c.fillText('⚡',0,r*.03);c.shadowBlur=0;
+   c.strokeStyle='rgba(47,123,255,.9)';c.lineWidth=r*.07;
+   c.beginPath();c.arc(0,0,r*.93,0,TAU);c.stroke();}},
+ {name:'גל הכחול',en:'Blue Wave',price:1100,rar:3,draw:(c,r,rot,T)=>{
+   naveBg(c,r,'#bff0ff','#063a72');
+   c.save();c.beginPath();c.arc(0,0,r*.9,0,TAU);c.clip();
+   for(let k=0;k<4;k++){ // גלים נעים
+     c.fillStyle=['rgba(47,123,255,.55)','rgba(124,212,255,.5)','rgba(255,255,255,.35)','rgba(10,40,110,.5)'][k];
+     c.beginPath();c.moveTo(-r,r);
+     for(let x=-r;x<=r;x+=r*.1){
+       const y=r*(.1+k*.22)-r*.5+Math.sin(x/r*3+rot*1.3+k)*r*.12;
+       c.lineTo(x,y);
+     }
+     c.lineTo(r,r);c.closePath();c.fill();
+   }
+   c.restore();
+   naveSpark(c,r,rot,6,'rgba(255,255,255,.75)');
+   c.strokeStyle='rgba(191,240,255,.9)';c.lineWidth=r*.07;
+   c.beginPath();c.arc(0,0,r*.92,0,TAU);c.stroke();}},
+ {name:'קרח נווה',en:'Nave Ice',price:0,rar:4,draw:(c,r,rot,T)=>{
+   naveBg(c,r,'#eaffff','#0a4a86');
+   c.save();c.rotate(rot*.25); // גביש קרח
+   for(let k=0;k<6;k++){
+     const a=k*(TAU/6);
+     c.strokeStyle='rgba(255,255,255,.9)';c.lineWidth=r*.06;c.lineCap='round';
+     c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*r*.72,Math.sin(a)*r*.72);c.stroke();
+     c.lineWidth=r*.035;
+     for(const t2 of[.42,.62]){
+       const bx=Math.cos(a)*r*t2,by=Math.sin(a)*r*t2;
+       c.beginPath();c.moveTo(bx,by);c.lineTo(bx+Math.cos(a+.9)*r*.2,by+Math.sin(a+.9)*r*.2);c.stroke();
+       c.beginPath();c.moveTo(bx,by);c.lineTo(bx+Math.cos(a-.9)*r*.2,by+Math.sin(a-.9)*r*.2);c.stroke();
+     }
+   }
+   c.restore();
+   naveSpark(c,r,-rot,8,'rgba(180,240,255,.9)');
+   c.strokeStyle='rgba(120,220,255,.95)';c.lineWidth=r*.08;
+   c.beginPath();c.arc(0,0,r*.93,0,TAU);c.stroke();}},
+ {name:'כתר כחול',en:'Blue Crown',price:0,rar:4,draw:(c,r,rot,T)=>{
+   naveBg(c,r,'#2f7bff','#050b24');
+   c.save();c.rotate(Math.sin(rot*.8)*.12);
+   const g=c.createLinearGradient(0,-r*.6,0,r*.5);
+   g.addColorStop(0,'#eaf6ff');g.addColorStop(.5,'#7cd4ff');g.addColorStop(1,'#1b4fd0');
+   c.fillStyle=g;
+   c.beginPath();c.moveTo(-r*.62,r*.3);c.lineTo(-r*.5,-r*.34);c.lineTo(-r*.22,r*.02);
+   c.lineTo(0,-r*.5);c.lineTo(r*.22,r*.02);c.lineTo(r*.5,-r*.34);c.lineTo(r*.62,r*.3);
+   c.closePath();c.fill();
+   c.fillStyle='#fff';
+   [-.42,0,.42].forEach(x=>{c.beginPath();c.arc(x*r,-r*.36,r*.07,0,TAU);c.fill();});
+   c.restore();
+   naveSpark(c,r,rot,7,'rgba(255,255,255,.8)');
+   c.strokeStyle='rgba(124,212,255,.95)';c.lineWidth=r*.08;
+   c.beginPath();c.arc(0,0,r*.93,0,TAU);c.stroke();}}
+);
+/* 💙 נווה הבת — הנדירות העונתית (0.1% מתיבה). מדלגת שלבים — 3 שימושים */
+SKINS.push({name:'נווה הבת',en:'Nave the Legend',price:0,rar:5,sea:1,shout:'נווה נכנס למשחק!!',draw:(c,r,rot,T)=>{
+  if(NAVEB_IMG.complete&&NAVEB_IMG.naturalWidth){ // תמונה אמיתית כשקיימת
+    c.save();c.rotate(rot*.25);c.beginPath();c.arc(0,0,r*.97,0,TAU);c.clip();
+    c.drawImage(NAVEB_IMG,-r*1.02,-r*1.02,r*2.04,r*2.04);c.restore();
+  }else{ // עיצוב עונתי עד שהתמונה נוספת
+    naveBg(c,r,'#d9c2ff','#2a0b5e');
+    c.save();c.rotate(rot*.3);
+    for(let k=0;k<3;k++){ // טבעות פורטל עונתיות
+      c.strokeStyle=['#f15bff','#7cd4ff','#ffffff'][k];
+      c.lineWidth=r*.075;c.setLineDash([r*.42,r*.26]);
+      c.beginPath();c.arc(0,0,r*(.76-k*.2),0,TAU);c.stroke();
+    }
+    c.restore();c.setLineDash([]);
+    c.fillStyle='#fff';c.shadowColor='#f15bff';c.shadowBlur=r*.45;
+    c.font='900 '+(r*.5|0)+'px system-ui';c.textAlign='center';c.textBaseline='middle';
+    c.fillText('⏭',0,r*.04);c.shadowBlur=0;
+  }
+  naveSpark(c,r,rot,9,'rgba(255,255,255,.85)'); // ניצוצות תמיד
+  c.strokeStyle='rgba(241,91,255,.95)';c.lineWidth=r*.085;
+  c.beginPath();c.arc(0,0,r*.95,0,TAU);c.stroke();
+}});
+const NAVE_SEA_IDX=SKINS.length-1;
+/* 💙👑 נווה המגניב — הג'קפוט של העונה: 1% מכל תיבה */
+SKINS.push({name:'נווה המגניב',en:'Nave the Cool',price:0,rar:5,face:1,leg:1,vkey:'nave',shout:'נווה המגניב!! אין עליו!!',draw:(c,r,rot,T)=>{
+  c.save();c.rotate(rot*.22);
+  if(NAVE_IMG.complete&&NAVE_IMG.naturalWidth){
+    c.beginPath();c.arc(0,0,r*.97,0,TAU);c.clip();
+    c.drawImage(NAVE_IMG,-r*1.02,-r*1.02,r*2.04,r*2.04);
+  }else{
+    naveBg(c,r,'#7cd4ff','#0a2a6b');
+    c.fillStyle='#eaf6ff';c.font='900 '+(r*.8|0)+'px system-ui';
+    c.textAlign='center';c.textBaseline='middle';c.fillText('💙',0,r*.05);
+  }
+  c.restore();
+  { // 🔥 להבות כחולות מסביב
+    const t2=rot*1.6;
+    for(let k=0;k<12;k++){
+      const a=k*(TAU/12)+t2*.25,h=r*(.14+.07*Math.abs(Math.sin(t2+k*1.3)));
+      const x=Math.cos(a)*r*.97,y=Math.sin(a)*r*.97;
+      const fg=c.createRadialGradient(x,y,0,x,y,h*1.6);
+      fg.addColorStop(0,'rgba(255,255,255,.95)');
+      fg.addColorStop(.4,'rgba(124,212,255,.75)');
+      fg.addColorStop(1,'rgba(47,123,255,0)');
+      c.fillStyle=fg;c.beginPath();c.arc(x,y,h*1.6,0,TAU);c.fill();
+    }
+  }
+  naveSpark(c,r,rot,8,'rgba(255,255,255,.9)');
+  c.save();c.rotate(Math.sin(rot*.9)*.09); // 👑 כתר זהב — בתוך הכדור שלא ייחתך
+  c.fillStyle='#ffd257';c.shadowColor='rgba(255,210,87,.95)';c.shadowBlur=r*.3;
+  c.beginPath();c.moveTo(-r*.3,-r*.42);c.lineTo(-r*.23,-r*.72);c.lineTo(-r*.09,-r*.5);
+  c.lineTo(0,-r*.8);c.lineTo(r*.09,-r*.5);c.lineTo(r*.23,-r*.72);c.lineTo(r*.3,-r*.42);
+  c.closePath();c.fill();
+  c.fillStyle='#fff8dc';
+  [-.23,0,.23].forEach(x=>{c.beginPath();c.arc(x*r,-r*(x?.72:.8),r*.045,0,TAU);c.fill();});
+  c.shadowBlur=0;c.restore();
+  c.strokeStyle='rgba(47,123,255,.95)';c.lineWidth=r*.085; // טבעת כחול-חשמלי
+  c.beginPath();c.arc(0,0,r*.95,0,TAU);c.stroke();
+}});
+const NAVE_JACK_IDX=SKINS.length-1;
+const NAVE_FIRST_IDX=SEASKIN_IDX+1; // תחילת סקיני עונת נווה
 /* 🌆 כל סקיני עונת הניאון — מהכדור הניאון ועד שער הניאון, כולל דרקון הניאון (1%).
    הנדירות העונתית מעניקה את כולם יחד. */
-const SEASON_SKINS=[];
-for(let i=GLIKI_IDX+1;i<=SEASKIN_IDX;i++)SEASON_SKINS.push(i);
+const SEASON_SKINS=[]; // 💙 עונת נווה — כל הסקינים שלה, כולל שני המיוחדים
+for(let i=NAVE_FIRST_IDX;i<=NAVE_JACK_IDX;i++)SEASON_SKINS.push(i);
+const SKIP_SKINS=[SEASKIN_IDX,NAVE_SEA_IDX]; // ⏭ סקינים שמדלגים שלב (גם שער הניאון הישן)
 let skpU=0; // ⏭ כמה דילוגים כבר נוצלו (מתוך 3)
 /* 💎 שדרוג ציורי הסקינים — שכבת פוליש אחידה שמוחלת על כל 35 הסקינים:
    רים-לייט תלת-ממדי לכולם, טבעת נדירות מסתובבת (אדיר+), ניצוצות מקיפים
@@ -7934,7 +8100,7 @@ function pickUnowned(cat,ow){
 /* ⭐ סטאר דרופ: הסיכויים הרשמיים של סופרסל (עמוד Starr Drop Chances) —
    נדיר 50% · נדיר במיוחד 28% · אדיר 15% · מדהים 5% · אגדי 2%. כל תיבה
    מכילה פריט מובטח בנדירות שמוגרלת לפי הסיכויים האלה — בדיוק כמו בבראול. */
-const DROP_PCT=[[7,.01],[5,8.99],[4,10],[3,20],[2,28],[1,33]]; // [נדירות, אחוז] — עונתי 0.01%, אגדי ~9%
+const DROP_PCT=[[7,.1],[5,8.9],[4,10],[3,20],[2,28],[1,33]]; // [נדירות, אחוז] — עונתי 0.1%, אגדי ~9%
 let _cx1=false,_cx2=false; // מפתחות פנימיים — לא מתועדים
 let pity=0; // נשמר לתאימות שמירות ישנות — כבר לא בשימוש (פריט מובטח בכל תיבה)
 function grantTier(t){
@@ -7993,10 +8159,10 @@ function rollChest(){
   const drops=[];
   // 👑 גליקי! סיכוי 1% (1 ל-100) בכל תיבה — הדרך היחידה להשיג אותו
   let messi=null;
-  if(troLife>=150&&!skinOwned.includes(DRAGON_IDX)&&Math.random()<.01){ // 🌱 הדרקון מחכה שתתקדמו קצת
-    skinOwned.push(DRAGON_IDX);
-    messi={icon:'🐉',label:tr('דרקון ניאון!!','Neon Dragon!!'),rar:5,
-      rv:{kind:'skin',idx:DRAGON_IDX,rar:5,label:tr('דרקון ניאון','Neon Dragon'),story:loreOf(DRAGON_IDX)}};
+  if(troLife>=150&&!skinOwned.includes(NAVE_JACK_IDX)&&Math.random()<.01){ // 💙 הג'קפוט של העונה
+    skinOwned.push(NAVE_JACK_IDX);
+    messi={icon:'💙',label:tr('נווה המגניב!!','Nave the Cool!!'),rar:5,
+      rv:{kind:'skin',idx:NAVE_JACK_IDX,rar:5,label:tr('נווה המגניב','Nave the Cool'),story:loreOf(NAVE_JACK_IDX)}};
     const gfx=grantGoalFx();if(gfx)messi._extra=gfx;
   }
   // ⭐ מגרילים את נדירות התיבה
@@ -8031,10 +8197,10 @@ function rollChest(){
       _new++;
       skinOwned.push(ix);
       const s=SKINS[ix];
-      drops.push({icon:ix===SEASKIN_IDX?'🌠':ix===DRAGON_IDX?'🐉':'🎨',
+      drops.push({icon:ix===NAVE_SEA_IDX?'🌠':ix===NAVE_JACK_IDX?'💙':'🎨',
         label:tr(s.name,s.en||s.name)+'!!',rar:5,
         rv:{kind:'skin',idx:ix,rar:5,label:tr(s.name,s.en||s.name),
-          story:ix===SEASKIN_IDX
+          story:ix===NAVE_SEA_IDX
             ?tr('הנדירות העונתית!! 0.01% בלבד. לבשו אותו ובשלב יופיע כפתור ⏭ שמדלג על השלב ונספר בטבלאות — 3 שימושים בלבד!','The seasonal rarity!! Only 0.01%. Wear it and a ⏭ button appears in-level — skips the level and counts in the tables. 3 uses only!')
             :loreOf(ix)}});
       if(s.face){const gfx=grantGoalFx();if(gfx)drops.push(gfx);}
@@ -8673,7 +8839,7 @@ $('chestBtn').onclick=()=>{
   $('chestBar').style.width=Math.min(100,(troLife%25)/25*100)+'%';
   $('chestCyc').textContent=tr('קווסטים לתיבה הבאה: ','Quests to next chest: ')+qCyc+'/6';
   $('chestDw').textContent=tr('🏅 ניצחונות יומיים (+2💎): ','🏅 Daily wins (+2💎): ')+((dwD===todayStr())?dwN:0)+'/6'+tr(' · איפוס בעוד ',' · resets in ')+dwResetStr();
-  $('chestOdds').textContent=tr('🎁 סקין ברוב התיבות (עד נדירות התיבה) · ','🎁 A skin in most chests · ')+'🟢33% · 🔵28% · 🟣20% · 🔴10% · 🟡9% · 🌠0.01% · 🐉1%';
+  $('chestOdds').textContent=tr('🎁 סקין ברוב התיבות (עד נדירות התיבה) · ','🎁 A skin in most chests · ')+'🟢33% · 🔵28% · 🟣20% · 🔴10% · 🟡9% · 🌠0.1% · 💙1%';
   $('menuOv').classList.add('hidden');$('chestOv').classList.remove('hidden');
 };
 function buyChestsGem(n,cost){ // תיבות נקנות רק ב-💎
@@ -9927,7 +10093,7 @@ function applyGift(g,target){
       }
     }
     if(g.gate){ // ⏭ שער הניאון + איפוס הדילוגים
-      if(!skinOwned.includes(SEASKIN_IDX))skinOwned.push(SEASKIN_IDX);
+      if(!skinOwned.includes(NAVE_SEA_IDX))skinOwned.push(NAVE_SEA_IDX);
       skpU=0;
       setTimeout(()=>showToast(tr('🌠 קיבלת את שער הניאון! 3 דילוגי שלב מחכים לך','🌠 You got the Neon Gate! 3 level-skips await')),800);
     }
@@ -9991,7 +10157,7 @@ function applyGift(g,target){
   }
   if(g.gate){
     d.ow=Array.isArray(d.ow)?d.ow:[0];
-    if(!d.ow.includes(SEASKIN_IDX))d.ow.push(SEASKIN_IDX);
+    if(!d.ow.includes(NAVE_SEA_IDX))d.ow.push(NAVE_SEA_IDX);
     d.sku=0;
   }
   if(g.px)d.psp=(d.psp|0)+(g.px|0);
@@ -10525,7 +10691,15 @@ const SKIN_LORE=[
  ['ברח מתוך משחק ארקייד ישן. הגריד זורם לו בדם.','Escaped an old arcade game. The grid runs in its veins.'],
  ['שער בין העולמות שהתכווץ לכדור. אף אחד לא יודע לאן הוא מוביל.','A gate between worlds, shrunk to a ball. Nobody knows where it leads.'],
  ['עיר שלמה שלא ישנה אף פעם — דחוסה לכדור אחד. שומעים את הבאסים מבפנים. 🌆','A city that never sleeps, packed into one ball. You can hear the bass inside. 🌆'],
- ['ישן מתחת לעיר הניאון אלף שנים. עכשיו הוא ער — והעין שלו עוקבת אחריך בכל פנייה. 🐉','Slept beneath the neon city for a thousand years. Now it is awake — and its eye follows your every turn. 🐉']];
+ ['ישן מתחת לעיר הניאון אלף שנים. עכשיו הוא ער — והעין שלו עוקבת אחריך בכל פנייה. 🐉','Slept beneath the neon city for a thousand years. Now it is awake — and its eye follows your every turn. 🐉'],
+ ['שער הזמן — 3 דילוגים ואז הוא נסגר. 🌠','The time gate — 3 skips and it closes. 🌠'],
+ ['בבוקר אחד הוא צבע את השיער בכחול, ומאז כל המבוך זוהר אחריו. 💙','One morning he dyed his hair blue — and the whole maze has been glowing after him since. 💙'],
+ ['מהיר מדי בשביל העין. אם ראית ברק כחול — זה כבר עבר אותך. ⚡','Too fast for the eye. If you saw a blue bolt — it already passed you. ⚡'],
+ ['הגל שסוחף את הלוח כולו. תרכב עליו, אל תילחם בו. 🌊','The wave that sweeps the whole board. Ride it, do not fight it. 🌊'],
+ ['גביש שנולד בליל החורף הכי קר של העונה. 🧊','A crystal born on the coldest winter night of the season. 🧊'],
+ ['הכתר הכחול נמסר רק למי שסיים עולם שלם בלי ליפול. 👑','The blue crown goes only to those who clear a whole world without falling. 👑'],
+ ['האגדה של העונה — 0.1% מכל תיבה. מדלגת שלבים כאילו הם לא היו שם. 🌠','The legend of the season — 0.1% per chest. Skips levels like they were never there. 🌠'],
+ ['הג\'קפוט של עונת נווה: 1% מכל תיבה. שיער כחול, כתר זהב, בלי מתחרים. 💙👑','The Nave season jackpot: 1% per chest. Blue hair, gold crown, no competition. 💙👑']];
 function loreOf(i){const l=SKIN_LORE[i];return l?tr(l[0],l[1]):'';}
 /* 🐣 היצור: הכדור נפתח לחיה חמודה — עיניים, גבות ופה לפי מצב רוח */
 function drawCreature(g,cx,cy,R,idx,mood,t){
@@ -11430,6 +11604,12 @@ const SEASON_PACKS={ // ⚽ אלביסלסטה — לפי קובץ העיצוב 
     gl:'rgba(94,160,230,.17)',
     bg1:'rgba(11,29,54,.93)',bg2:'rgba(5,14,28,.95)',
     gd:'rgba(126,200,242,.07)'},
+  nave:{ic:'💙',st:'1', // 💙 עונת נווה — כחול חשמלי על כהה
+    g1:'#2f7bff',g2:'#7cd4ff',
+    t1:'#eaf6ff',t2:'#bfe4ff',t3:'#7cd4ff',
+    gl:'rgba(47,123,255,.22)',
+    bg1:'rgba(6,14,38,.94)',bg2:'rgba(2,6,20,.96)',
+    gd:'rgba(124,212,255,.08)'},
   neon:{ic:'🌆',st:'1', // 🌆 עונת ניאון — טורקיז/מגנטה על כהה; הכותרת נשארת בגרדיאנט הדיפולטי
     g1:'#00f5d4',g2:'#f15bff',
     gl:'rgba(0,245,212,.22)',
@@ -11460,6 +11640,12 @@ $('admSeaNeon').onclick=()=>{
   if(!$('admSeaName').value)$('admSeaName').value='עונת הניאון';
   applySeasonTheme(admSeaTh);
   $('admMsg').textContent=tr('🌆 ערכת ניאון נטענה (תצוגה מקדימה) — לחצו "החלף עונה" להפצה','🌆 Neon pack loaded (preview) — hit Switch season to publish');
+};
+$('admSeaNave').onclick=()=>{
+  admSeaTh=SEASON_PACKS.nave;
+  if(!$('admSeaName').value)$('admSeaName').value='עונת נווה';
+  applySeasonTheme(admSeaTh);
+  $('admMsg').textContent=tr('💙 ערכת נווה נטענה (תצוגה מקדימה) — לחצו "החלף עונה" להפצה','💙 Nave pack loaded (preview) — hit Switch season to publish');
 };
 $('admSeaUp').onclick=()=>$('admSeaFile').click();
 $('admSeaFile').onchange=e=>{
