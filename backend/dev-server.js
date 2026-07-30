@@ -319,6 +319,7 @@ const server = http.createServer((req, res) => {
       if ('clr' in g) q.clr = g.clr | 0;
       if (g.dch) q.dch = (q.dch | 0) + (g.dch | 0); // 🎁➖ מחיקת תיבות
       if (g.rbx) q.rbx = 1; // 🧹 ביטול השלל מ-100 התיבות האחרונות
+      if (g.cvt) q.cvt = g.cvt | 0; // 🎨 הפיכת כל התיבות לנדירות אחת
       if (g.rst) q.rst = 1;
       if (g.rst) { // 🗑 גיבוי + דור חדש (מראה של worker.js)
         const old = doc.users[t].sv;

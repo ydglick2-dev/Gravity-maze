@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v178</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v179</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -738,6 +738,7 @@
       <option value="7">🌠 עונתי</option>
     </select>
     <button class="btn sec" id="admGiveGct" data-en="🎁 Send rarity chest">🎁 שלח תיבת נדירות</button>
+    <button class="btn sec" id="admCvtChests" data-en="🎨 Convert ALL chests">🎨 הפוך את כל התיבות</button>
     <button class="btn sec" id="admGcLink" data-en="🎟 Gift code">🎟 קוד מתנה</button>
   </div>
   <div style="font-size:11px;color:#8a94a8" data-en="🎁 to the target above · 🔗 creates a one-time share link (copied)">🎁 נשלחת ליעד שלמעלה · 🔗 יוצר קישור חד-פעמי לשיתוף (מועתק ללוח)</div>
@@ -4040,8 +4041,12 @@ function gcQueueAdd(t,u){
   try{
     const k=gcQKey(u),a=JSON.parse(store().getItem(k)||'[]');
     a.push((t|0)===6?5:t|0); // 🌌 קוסמי בוטל — קודים ישנים הופכים לאגדי
-    store().setItem(k,JSON.stringify(a.slice(0,10)));
+    store().setItem(k,JSON.stringify(a.slice(0,200)));
   }catch(e){}
+}
+/* 🎨 הפיכת כל התיבות שבמלאי לנדירות אחת (פעולת אדמין) */
+function gcQueueSet(arr,u){
+  try{store().setItem(gcQKey(u),JSON.stringify((arr||[]).slice(0,200)));}catch(e){}
 }
 function gcQueueTake(){
   try{
@@ -10017,6 +10022,14 @@ function applyGift(g,target){
     if(g.gm)gems+=g.gm|0;
     if(g.ch)chests+=g.ch|0;
     if(g.dch)chests=Math.max(0,chests-(g.dch|0)); // 🎁➖ מחיקת תיבות
+    if(g.cvt){ // 🎨 כל התיבות שבמלאי הופכות לנדירות אחת
+      const _t=(g.cvt|0)===6?5:g.cvt|0;
+      if(_t>=4&&_t<=7){
+        const n2=Math.min(200,Math.max(0,chests|0));
+        gcQueueSet(Array(n2).fill(_t));
+        if(n2)setTimeout(()=>showAdmToast(tr('🎨 האדמין הפך את כל ','🎨 Admin turned all your ')+n2+tr(' התיבות שלך ל',' chests into ')+(RAR[_t]||RAR[5]).n+'!'),700);
+      }
+    }
     if(g.rbx){ // 🧹 ביטול כל מה שיצא מ-100 התיבות האחרונות
       let nS=0,nW=0,nC=0,nG=0;
       dropLog.forEach(e=>{
@@ -11955,6 +11968,19 @@ $('admGivePet').onclick=()=>{
 $('admGiveGct').onclick=()=>{
   const t2=$('admChTier').value|0;
   admGive({ch:1,gct:[t2]},tr('תיבת ','Chest: ')+tr((RAR[t2]||RAR[5]).n,(RAR[t2]||RAR[5]).en));
+};
+let admCvtArm=0; // 🎨 הפיכת כל התיבות לנדירות — אישור כפול
+$('admCvtChests').onclick=()=>{
+  const t2=$('admChTier').value|0;
+  const t=cleanName($('admTarget').value)||curUser;
+  const nm=tr((RAR[t2]||RAR[5]).n,(RAR[t2]||RAR[5]).en);
+  if(Date.now()-admCvtArm>4000){
+    admCvtArm=Date.now();
+    $('admMsg').textContent=tr('🎨 להפוך את כל התיבות של "','🎨 Turn ALL chests of "')+t+tr('" ל','" into ')+nm+tr('? לחצו שוב לאישור','? Tap again to confirm');
+    return;
+  }
+  admCvtArm=0;
+  admGive({cvt:t2},tr('כל התיבות הפכו ל','All chests turned into ')+nm);
 };
 $('admGcLink').onclick=async()=>{
   const t2=$('admChTier').value|0;
