@@ -5,7 +5,7 @@ const ASSETS = [
   './css/style.css',
   './js/core.js', './js/ui.js', './js/main.js',
   './js/modes/tap.js', './js/modes/puzzle.js', './js/modes/rogue.js',
-  './js/modes/impostor.js', './js/modes/arena.js',
+  './js/modes/impostor.js', './js/modes/tasks.js',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png'
 ];
 

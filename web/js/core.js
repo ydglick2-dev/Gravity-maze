@@ -43,7 +43,7 @@ window.addEventListener('orientationchange', () => setTimeout(resize, 120));
 /* ---------------- save ---------------- */
 const DEFAULT_SAVE = {
   coins: 0, skin: 'nova', owned: ['nova'],
-  best: { tap: 0, rogue: 0, arena: 0, impostor: 0 },
+  best: { tap: 0, rogue: 0, impostor: 0 },
   puzzle: { solved: [], stars: 0 },
   seen: {},
   settings: { music: true, sfx: true, haptic: true, shake: true },

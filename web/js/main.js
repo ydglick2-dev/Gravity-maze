@@ -7,9 +7,8 @@ import * as tap from './modes/tap.js';
 import * as puzzle from './modes/puzzle.js';
 import * as rogue from './modes/rogue.js';
 import * as impostor from './modes/impostor.js';
-import * as arena from './modes/arena.js';
 
-const MODES = { tap, puzzle, rogue, impostor, arena };
+const MODES = { tap, puzzle, rogue, impostor };
 let current = null, currentOpts = {};
 
 Save.load();
@@ -68,7 +67,6 @@ function refreshHome() {
   const labels = {
     tap: v => v ? v + ' מ׳' : '',
     rogue: v => v ? v + ' נק׳' : '',
-    arena: v => v ? v + ' נק׳' : '',
     impostor: v => v ? v + ' נק׳' : '',
     puzzle: () => Save.d.puzzle.solved.length ? `${Save.d.puzzle.solved.length}/${puzzle.LEVELS}` : ''
   };
