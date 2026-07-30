@@ -312,7 +312,7 @@ const server = http.createServer((req, res) => {
       if (Array.isArray(g.bmsg)) q.bmsg = [...(Array.isArray(q.bmsg) ? q.bmsg : []), ...g.bmsg.map(m => ({ f: cleanName(m && m.f).slice(0, 14), t: String((m && m.t) || '').slice(0, 90), co: (m && m.co) | 0 }))].slice(-20);
       if (g.dnl) q.dnl = g.dnl | 0;
       if (g.pet !== undefined) q.pet = [...new Set([...(Array.isArray(q.pet) ? q.pet : []), ...[].concat(g.pet).map(n => n | 0)])].slice(0, 10);
-      if (g.gct) { q.gct = [...(Array.isArray(q.gct) ? q.gct : []), ...[].concat(g.gct).map(n => n | 0).filter(n => n >= 4 && n <= 7)].slice(-10); delete q.gcx; }
+      if (g.gct) { q.gct = [...(Array.isArray(q.gct) ? q.gct : []), ...[].concat(g.gct).map(n => n | 0).filter(n => n >= 1 && n <= 7)].slice(-10); delete q.gcx; }
       if (g.gate) q.gate = 1;
       if (g.px) q.px = (q.px | 0) + (g.px | 0);
       if (g.clv) q.clv = g.clv;
