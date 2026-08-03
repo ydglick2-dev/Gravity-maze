@@ -1,0 +1,55 @@
+{
+  "packageId": "com.gravitymaze.game",
+  "host": "gravity-maze.gravity-maze.workers.dev",
+  "name": "Gravity Maze",
+  "launcherName": "Gravity Maze",
+  "display": "standalone",
+  "themeColor": "#0b0f16",
+  "themeColorDark": "#0b0f16",
+  "navigationColor": "#05070c",
+  "navigationColorDark": "#05070c",
+  "navigationDividerColor": "#05070c",
+  "navigationDividerColorDark": "#05070c",
+  "backgroundColor": "#05070c",
+  "enableNotifications": false,
+  "startUrl": "/index.html",
+  "iconUrl": "https://gravity-maze.gravity-maze.workers.dev/icon-512.png",
+  "maskableIconUrl": "https://gravity-maze.gravity-maze.workers.dev/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "gravity-maze"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "אתגר יומי",
+      "shortName": "אתגר יומי",
+      "url": "/index.html?mode=daily",
+      "chosenIconUrl": "https://gravity-maze.gravity-maze.workers.dev/icon-192.png"
+    },
+    {
+      "name": "תחרות חיה",
+      "shortName": "תחרות חיה",
+      "url": "/index.html?mode=race",
+      "chosenIconUrl": "https://gravity-maze.gravity-maze.workers.dev/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://gravity-maze.gravity-maze.workers.dev/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": false,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://gravity-maze.gravity-maze.workers.dev/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}
