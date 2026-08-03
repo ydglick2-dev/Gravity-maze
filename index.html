@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v180</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v181</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -9633,8 +9633,9 @@ $('pauseBtn').addEventListener('click',syncToggles);
 /* ============ 👤 משתמשים · 🌍 רישום עולמי · 🛠 אדמין ============ */
 const UKEY='mazeUsers_v1',CKEY='mazeCurUser_v1';
 const REG_URL='https://textdb.dev/api/data/mzk-glk-reg-7g2k9-v1';
-const ADMIN_H='5b758919c1f5a4019d63bb03ffc4bdfa2dbf992043785e8ab81d3d943b393c11';
-const ADMIN_SEED={s:'glkmrj0s82lx7',h:'af2f11b3faa2c7f1491ba594da41b990a6f090172a8b2a338a312856939b5ccd',c:1783935181000};
+const ADMIN_NAME='גליקי'; // 👑 רק המשתמש הזה יכול להיות אדמין
+const ADMIN_H='81062731acfca4c833c4874fbf62b69f7fe2c84542ffe34b5ca11001b5f93f89';
+const ADMIN_SEED={s:'djje8ng5mscxteb7',h:'c43173579de9d8025459cd91256c8d9aeebb797ec6992ef16a93048cf2657baa',c:1783935181000};
 let curUser=null,isAdmin=false;
 /* ============ 🚀 שרת בקנד ייעודי (אופציונלי אך מומלץ) ============
    כשמחובר: דחיפת WebSocket מיידית, כתיבות אטומיות, הכרעת שמירות בשרת.
@@ -9893,7 +9894,7 @@ async function doAuth(reg){
   }
 }
 async function finishLogin(u,p){
-  try{isAdmin=(await pwHash(u,p,'adm#mzk#'))===ADMIN_H;}catch(e){isAdmin=false;}
+  try{isAdmin=(cleanName(u)===ADMIN_NAME)&&(await pwHash(u,p,'adm#mzk#'))===ADMIN_H;}catch(e){isAdmin=false;} // 👑 שם + סיסמה, שניהם
   const st=store();
   if(st)try{isAdmin?st.setItem('mazeAdm_v1','1'):st.removeItem('mazeAdm_v1');}catch(e){}
   applyUser(u);
@@ -12250,7 +12251,7 @@ function initAuth(){
   const users=getUsers();
   if(cu&&cu!=='__ask__'&&cu!=='__guest__'){
     applyUser(cu); // ✅ לא מנתקים — גם אם הרשומה המקומית אבדה
-    isAdmin=!!(st&&st.getItem('mazeAdm_v1')==='1');
+    isAdmin=!!(st&&st.getItem('mazeAdm_v1')==='1')&&cleanName(cu)===ADMIN_NAME; // 👑 דגל שמור תקף רק לחשבון האדמין
     $('adminBtn').style.display=isAdmin?'':'none';
     pushAutoRefresh(); // 🔔 רענון מנוי ההתראות בכניסה אוטומטית
     setTimeout(tryClaimGc,1500); // 🔗 מימוש קישור תיבת-מתנה שממתין
