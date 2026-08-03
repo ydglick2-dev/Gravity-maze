@@ -72,7 +72,7 @@ await verify('שורש האתר מפנה למשחק', url, t => t.includes('Bloc
 await verify('game/index.html', GAME + '/index.html', t => t.includes('__bp'));
 await verify('game/manifest.webmanifest', GAME + '/manifest.webmanifest',
   t => JSON.parse(t).name === 'Block Plast');
-await verify('game/sw.js', GAME + '/sw.js', t => t.includes('blockplast-v1'));
+await verify('game/sw.js', GAME + '/sw.js', t => /blockplast-v\d+/.test(t));
 await verify('game/icon-512.png', GAME + '/icon-512.png');
 await verify('game/privacy.html', GAME + '/privacy.html', t => t.includes('מדיניות פרטיות'));
 

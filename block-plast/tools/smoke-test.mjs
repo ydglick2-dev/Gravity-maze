@@ -137,7 +137,14 @@ try {
   // מארח כמו NOVA מפנה לתת-נתיב, ולכן הנכסים נבדקים יחסית לכתובת הסופית
   const assets = page.url().replace(/\/[^/]*$/, '');
   check('הכותרת נכונה', (await page.title()) === 'Block Plast', await page.title());
-  check('64 תאים בלוח', (await page.locator('#board .cell').count()) === 64);
+  const geo = await page.evaluate(() => window.__bp.layout());
+  check('הקנבס נפרס עם לוח בגודל סביר', geo.size > 150 && geo.cell > 15,
+    JSON.stringify(geo));
+  check('הקנבס בגודל התצוגה עם devicePixelRatio',
+    await page.evaluate(() => {
+      const c = document.getElementById('stage');
+      return c.width === Math.round(innerWidth * Math.min(devicePixelRatio, 3));
+    }));
   check('אין בקשות לדומיינים חיצוניים', offOrigin.length === 0, offOrigin.join(', '));
 
   for (const f of ['manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png', 'privacy.html']) {
@@ -169,46 +176,60 @@ try {
   // מזהה הצורה 0 הוא חלק תקין (1×1), ולכן משווים מול null ולא לפי truthiness
   check('3 חלקים במגש', st.tray.filter(t => t !== null).length === 3, JSON.stringify(st.tray));
   check('הלוח ריק', st.board.every(v => v === -1));
-  check('3 חלקים מרונדרים', (await page.locator('.slot .piece').count()) === 3);
+  // הלוח מצויר על קנבס, ולכן בודקים שיש שם פיקסלים ולא DOM
+  const painted = await page.evaluate(() => {
+    const c = document.getElementById('stage');
+    const g = c.getContext('2d');
+    const L = window.__bp.layout();
+    const d = Math.min(devicePixelRatio, 3);
+    const px = g.getImageData(Math.round(L.bx * d) + 4, Math.round(L.by * d) + 4, 1, 1).data;
+    return px[3] > 0 && (px[0] + px[1] + px[2]) > 0;
+  });
+  check('הלוח מצויר על הקנבס', painted === true);
   await page.screenshot({ path: path.join(SHOTS, '2-playing.png') });
 
   /* ---------- 3. גרירה אמיתית ---------- */
   console.log('\n3. גרירה עם עכבר');
   // מכניסים חלק ידוע (ריבוע 2×2, id=9) לתא הראשון כדי שהבדיקה תהיה דטרמיניסטית
   await page.evaluate(() => window.__bp.setTray(0, 9));
-  const m = await page.evaluate(() => window.__bp.metrics());
-  const br = await page.evaluate(() => {
-    const r = window.__bp.boardRect();
-    return { left: r.left, top: r.top };
-  });
-  const pieceBox = await page.locator('.slot[data-slot="0"] .piece').boundingBox();
+  await page.waitForTimeout(250);
+  const grab = await page.evaluate(() => window.__bp.slotCenter(0));
 
-  // יעד: שורה 3, עמודה 3. הגרירה מחזיקה את החלק בפינה השמאלית-עליונה,
-  // ולכן מוסיפים חזרה את ההיסט ואת ההרמה שהקוד מחיל.
-  const step = m.cellPx + m.gapPx;
-  const targetLeft = br.left + m.gapPx + 3 * step;
-  const targetTop = br.top + m.gapPx + 3 * step;
-  const grabX = 4, grabY = 4;                       // נקודת אחיזה בתוך החלק (בפיקסלים של המגש)
-  const scale = step / (m.trayCellPx + m.trayGapPx);
-
-  await page.mouse.move(pieceBox.x + grabX, pieceBox.y + grabY);
+  await page.mouse.move(grab.x, grab.y);
   await page.mouse.down();
-  await page.mouse.move(
-    targetLeft + grabX * scale,
-    targetTop + grabY * scale + m.LIFT * step,
-    { steps: 12 });
-  await page.waitForTimeout(80);
-  const hinted = await page.locator('#board .cell.hint').count();
-  check('תצוגה מקדימה מסמנת 4 תאים', hinted === 4, 'סומנו ' + hinted);
+  await page.waitForTimeout(40);
+  check('הגרירה התחילה', await page.evaluate(() => window.__bp.dragging()) === true);
+
+  // dropPoint מחשב לאן להזיז את המצביע כדי שהחלק יעגון בדיוק ב-(3,3)
+  const drop = await page.evaluate(() => window.__bp.dropPoint(3, 3));
+  await page.mouse.move(drop.x, drop.y, { steps: 14 });
+  await page.waitForTimeout(90);
+  const pv = await page.evaluate(() => window.__bp.preview());
+  check('תצוגה מקדימה נעולה על (3,3)', pv && pv.r === 3 && pv.c === 3, JSON.stringify(pv));
+  check('תצוגה מקדימה מכסה 4 תאים', pv && pv.cells === 4);
   await page.screenshot({ path: path.join(SHOTS, '3-drag-preview.png') });
 
+  // חלקות: כמה פריימים צוירו לאורך גרירה של חצי שנייה
+  const f0 = await page.evaluate(() => window.__bp.frames());
+  const t0 = Date.now();
+  for (let i = 0; i < 30; i++) {
+    await page.mouse.move(drop.x + Math.sin(i / 4) * 40, drop.y + Math.cos(i / 4) * 30);
+    await page.waitForTimeout(16);
+  }
+  const elapsed = Date.now() - t0;
+  const fps = ((await page.evaluate(() => window.__bp.frames())) - f0) / (elapsed / 1000);
+  check('הגרירה מציירת בקצב חלק (>40fps)', fps > 40, Math.round(fps) + 'fps');
+
+  await page.mouse.move(drop.x, drop.y, { steps: 6 });
+  await page.waitForTimeout(60);
   await page.mouse.up();
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(400);
   st = await page.evaluate(() => window.__bp.state());
   const filled = st.board.filter(v => v !== -1).length;
   check('4 תאים הונחו על הלוח', filled === 4, 'בפועל ' + filled);
   check('ההנחה במיקום הנכון', st.board[3 * 8 + 3] !== -1 && st.board[4 * 8 + 4] !== -1);
   check('הניקוד עלה ב-4', st.score === 4, 'ניקוד ' + st.score);
+  check('הגרירה הסתיימה', await page.evaluate(() => window.__bp.dragging()) === false);
 
   /* ---------- 4. Undo ---------- */
   console.log('\n4. ביטול מהלך');
@@ -289,22 +310,35 @@ try {
   const swatchColors = await page.locator('.swatch i').evaluateAll(
     els => [...new Set(els.map(e => getComputedStyle(e).backgroundColor))].length);
   check('לכל ערכה צבעים משלה', swatchColors > 4, 'גוונים ייחודיים: ' + swatchColors);
+  const beforeTheme = await page.evaluate(() => {
+    const L = window.__bp.layout();
+    const g = document.getElementById('stage').getContext('2d');
+    const d = Math.min(devicePixelRatio, 3);
+    return [...g.getImageData(Math.round(L.bx * d) + 4, Math.round(L.by * d) + 4, 1, 1).data];
+  });
   await page.locator('.swatch[data-theme="forest"]').click();
-  await page.waitForTimeout(200);
-  check('החלפת ערכה עובדת',
-    (await page.evaluate(() => document.body.dataset.theme)) === 'forest');
+  await page.waitForTimeout(250);
+  check('החלפת ערכה נשמרת',
+    (await page.evaluate(() => localStorage.getItem('bp.theme'))) === 'forest');
+  const afterTheme = await page.evaluate(() => {
+    const L = window.__bp.layout();
+    const g = document.getElementById('stage').getContext('2d');
+    const d = Math.min(devicePixelRatio, 3);
+    return [...g.getImageData(Math.round(L.bx * d) + 4, Math.round(L.by * d) + 4, 1, 1).data];
+  });
+  check('החלפת ערכה משנה את מה שמצויר',
+    beforeTheme.join() !== afterTheme.join(), beforeTheme + ' → ' + afterTheme);
   await page.screenshot({ path: path.join(SHOTS, '6-settings.png') });
   await page.click('#btnCloseSettings');
   await page.waitForTimeout(250);
   check('סגירת הגדרות חוזרת לתפריט',
     !(await page.locator('#ovStart').evaluate(e => e.classList.contains('hidden'))));
-  await page.evaluate(() => document.querySelector('.swatch[data-theme="aurora"]') && 0);
 
   /* ---------- 7b. פינוי מקום ל-UI שהמארח מזריק ---------- */
   console.log('\n7b. התאמה ל-UI של המארח');
   await page.click('#btnPlay');
-  await page.waitForTimeout(250);
-  const trayBefore = await page.locator('#tray').boundingBox();
+  await page.waitForTimeout(300);
+  const trayBefore = await page.evaluate(() => window.__bp.layout());
   // מדמים כפתור צף כמו זה ש-NOVA מזריקה לתחתית המסך
   await page.evaluate(() => {
     const b = document.createElement('button');
@@ -313,18 +347,18 @@ try {
     b.style.cssText = 'position:fixed;left:14px;bottom:14px;padding:11px 16px;z-index:2147483647';
     document.body.appendChild(b);
   });
-  await page.waitForTimeout(300);
-  const trayAfter = await page.locator('#tray').boundingBox();
+  await page.waitForTimeout(350);
+  const trayAfter = await page.evaluate(() => window.__bp.layout());
   const hostBox = await page.locator('#fake-host-chrome').boundingBox();
   check('המגש התרומם מעל הכפתור של המארח',
-    trayAfter.y + trayAfter.height <= hostBox.y + 1,
-    'תחתית המגש ' + Math.round(trayAfter.y + trayAfter.height) + ' מול ' + Math.round(hostBox.y));
-  check('המגש אכן זז', trayAfter.y + trayAfter.height < trayBefore.y + trayBefore.height);
+    trayAfter.trayY + trayAfter.trayH <= hostBox.y + 1,
+    'תחתית המגש ' + Math.round(trayAfter.trayY + trayAfter.trayH) + ' מול ' + Math.round(hostBox.y));
+  check('המגש אכן זז', trayAfter.trayY < trayBefore.trayY);
   await page.evaluate(() => document.getElementById('fake-host-chrome').remove());
-  await page.waitForTimeout(300);
-  const trayBack = await page.locator('#tray').boundingBox();
+  await page.waitForTimeout(350);
+  const trayBack = await page.evaluate(() => window.__bp.layout());
   check('המגש חוזר למקומו כשה-UI נעלם',
-    Math.abs((trayBack.y + trayBack.height) - (trayBefore.y + trayBefore.height)) < 2);
+    Math.abs(trayBack.trayY - trayBefore.trayY) < 2);
 
   /* ---------- 8. ריצת עומס: משחקים שלמים אוטומטית ---------- */
   console.log('\n8. ריצת עומס (5 משחקים מלאים)');
