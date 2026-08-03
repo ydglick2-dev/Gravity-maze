@@ -544,8 +544,37 @@ function layout(){
 
   renderTray();
 }
-window.addEventListener('resize', layout);
-window.addEventListener('orientationchange', () => setTimeout(layout, 120));
+window.addEventListener('resize', () => { reserveForHostChrome(); layout(); });
+window.addEventListener('orientationchange', () => setTimeout(() => {
+  reserveForHostChrome(); layout();
+}, 120));
+
+// מארחים שמריצים את המשחק (למשל NOVA) מזריקים לפעמים כפתור צף בתחתית המסך
+// שמכסה חלק מהמגש. מזהים כל אלמנט fixed בתחתית שאינו שלנו, ומפנים לו מקום.
+function reserveForHostChrome(){
+  const ours = new Set(['shell', 'ghost', 'toasts', 'bnInstall', 'bnUpdate'].concat(OVERLAYS));
+  let pad = 0;
+  Array.prototype.forEach.call(document.body.children, el => {
+    if (ours.has(el.id) || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+    if (getComputedStyle(el).position !== 'fixed') return;
+    const r = el.getBoundingClientRect();
+    if (r.height > 0 && r.bottom > window.innerHeight - 140) {
+      pad = Math.max(pad, window.innerHeight - r.top + 10);
+    }
+  });
+  // שומרים על ה-safe-area של המכשיר שמוגדר ב-CSS
+  const next = pad ? 'calc(env(safe-area-inset-bottom,0px) + ' + pad + 'px)' : '';
+  if (shellEl.dataset.hostPad === next) return false;
+  shellEl.dataset.hostPad = next;
+  shellEl.style.paddingBottom = next;
+  return true;
+}
+
+// הזרקה כזו קורית אחרי הטעינה, ולכן עוקבים אחרי שינויים ב-body
+if (window.MutationObserver) {
+  new MutationObserver(() => { if (reserveForHostChrome()) layout(); })
+    .observe(document.body, { childList:true });
+}
 
 /* ============================================================
    שמע — סינתזה ב-WebAudio, בלי קבצי שמע
@@ -1248,6 +1277,7 @@ if ('serviceWorker' in navigator) {
 /* ============================================================
    הפעלה
    ============================================================ */
+reserveForHostChrome();
 layout();
 renderScore();
 renderBoard();

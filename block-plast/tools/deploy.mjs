@@ -55,20 +55,26 @@ const url = HUB + '/s/' + slug;
 console.log('הועלה. כתובת: ' + url);
 
 /* ---------- אימות ---------- */
+// NOVA עוטפת את ההעלאה: שורש האתר מפנה ל-<slug>/game/index.html, ובשורש
+// מוגשים manifest ו-sw משלה. הקבצים שהעלינו נמצאים תחת /game/.
+const GAME = url + '/game';
+
 let bad = 0;
-async function verify(label, suffix, test) {
-  const r = await fetch(url + suffix);
+async function verify(label, target, test) {
+  const r = await fetch(target);
   const text = r.headers.get('content-type')?.includes('image') ? '' : await r.text();
   const ok = r.status === 200 && (!test || test(text));
   console.log((ok ? '  ✓ ' : '  ✗ ') + label + ' (' + r.status + ')');
   if (!ok) bad++;
 }
 console.log('\nאימות הקישור החי:');
-await verify('index.html', '/', t => t.includes('Block Plast') && t.includes('__bp'));
-await verify('manifest.webmanifest', '/manifest.webmanifest', t => t.includes('"Block Plast"'));
-await verify('sw.js', '/sw.js', t => t.includes('blockplast-v1'));
-await verify('icon-512.png', '/icon-512.png');
-await verify('privacy.html', '/privacy.html');
+await verify('שורש האתר מפנה למשחק', url, t => t.includes('Block Plast') && t.includes('__bp'));
+await verify('game/index.html', GAME + '/index.html', t => t.includes('__bp'));
+await verify('game/manifest.webmanifest', GAME + '/manifest.webmanifest',
+  t => JSON.parse(t).name === 'Block Plast');
+await verify('game/sw.js', GAME + '/sw.js', t => t.includes('blockplast-v1'));
+await verify('game/icon-512.png', GAME + '/icon-512.png');
+await verify('game/privacy.html', GAME + '/privacy.html', t => t.includes('מדיניות פרטיות'));
 
 fs.rmSync(zipPath, { force: true });
 

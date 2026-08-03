@@ -1,15 +1,59 @@
 // בדיקת עשן ל-Block Plast.
-//   node block-plast/tools/smoke-test.mjs [baseUrl]
-// ברירת מחדל: מרים שרת סטטי מקומי על התיקייה block-plast.
-// אפשר להעביר URL כדי לבדוק את הגרסה החיה אחרי הפריסה.
+//   node block-plast/tools/smoke-test.mjs            → בודק את הקבצים המקומיים
+//   node block-plast/tools/smoke-test.mjs <url>      → מוריד את הגרסה החיה ובודק אותה
+//
+// בשני המקרים הבדיקה רצה מול שרת סטטי מקומי. ל-Chromium בסביבה הזו אין יציאה
+// לאינטרנט, ולכן בדיקה של אתר חי מתבצעת ע"י הורדת הקבצים שהשרת באמת מגיש
+// (כולל כל מה שהמארח הזריק לתוכם) והרצת אותן בדיקות עליהם.
 import http from 'node:http';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadPlaywright } from './pw.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SHOTS = process.env.SHOT_DIR || path.join(ROOT, '.smoke-shots');
+const ASSET_FILES = ['index.html', 'privacy.html', 'sw.js', 'manifest.webmanifest',
+                     'icon-192.png', 'icon-512.png'];
+
+// מוריד את המשחק החי לתיקייה זמנית ומחזיר את הנתיב אליה
+async function mirror(url) {
+  const first = await fetch(url);
+  if (!first.ok) throw new Error('לא ניתן לטעון ' + url + ' (' + first.status + ')');
+  const gameDir = first.url.replace(/\/[^/]*$/, '');   // אחרי ההפניה של המארח
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bp-live-'));
+  console.log('ממשיך מהמארח: ' + gameDir);
+
+  let indexHtml = '';
+  for (const f of ASSET_FILES) {
+    const r = await fetch(gameDir + '/' + f);
+    if (!r.ok) throw new Error('חסר בשרת החי: ' + f + ' (' + r.status + ')');
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (f === 'index.html') indexHtml = buf.toString('utf8');
+    fs.writeFileSync(path.join(dir, f), buf);
+  }
+
+  // מארחים מזריקים לדף קישורים לנתיבים מוחלטים משלהם (Service Worker, manifest).
+  // מורידים גם אותם לאותם נתיבים, אחרת העותק המקומי ייתן 404 מדומה.
+  const origin = new URL(gameDir).origin;
+  const scope = new URL(gameDir).pathname.replace(/\/[^/]*$/, '');   // ללא /game
+  const injected = new Set(
+    (indexHtml.match(/["'](\/[A-Za-z0-9_\-./]+\.(?:js|webmanifest|css|png|ico))["']/g) || [])
+      .map(m => m.slice(1, -1))
+      // חלק מהנתיבים נבנים בזמן ריצה משרשור (APP_SCOPE + "/sw.js"),
+      // ולכן מוסיפים גם את הווריאנט שמתחת ל-scope של האתר
+      .concat([scope + '/sw.js', scope + '/manifest.webmanifest']));
+  for (const p of injected) {
+    const r = await fetch(origin + p).catch(() => null);
+    if (!r || !r.ok) continue;
+    const dest = path.join(dir, p);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, Buffer.from(await r.arrayBuffer()));
+    console.log('  + נתיב מהמארח: ' + p);
+  }
+  return dir;
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -23,18 +67,22 @@ function check(name, cond, detail) {
   if (cond) { console.log('  ✓ ' + name); }
   else { failures++; console.log('  ✗ ' + name + (detail ? '  → ' + detail : '')); }
 }
+function skip(name, why) { console.log('  – ' + name + ' (דילוג: ' + why + ')'); }
 
-function startServer() {
+function startServer(root) {
   const server = http.createServer((req, res) => {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/') p = '/index.html';
-    const file = path.join(ROOT, p);
-    if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+    const file = path.join(root, p);
+    if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
       res.writeHead(404); res.end('not found'); return;
     }
     res.writeHead(200, {
       'Content-Type': MIME[path.extname(file)] || 'application/octet-stream',
-      'Cache-Control': 'no-store'
+      'Cache-Control': 'no-store',
+      // מארחים שמגישים Service Worker מתת-נתיב שולחים את הכותרת הזו;
+      // בלעדיה רישום ה-SW של המארח ייכשל בעותק המקומי.
+      'Service-Worker-Allowed': '/'
     });
     fs.createReadStream(file).pipe(res);
   });
@@ -45,12 +93,13 @@ function startServer() {
 }
 
 const { chromium } = await loadPlaywright();
-const external = process.argv[2];
-const started = external ? null : await startServer();
-const base = (external || started.base).replace(/\/$/, '');
+const liveUrl = process.argv[2];
+const serveRoot = liveUrl ? await mirror(liveUrl) : ROOT;
+const started = await startServer(serveRoot);
+const base = started.base.replace(/\/$/, '');
 fs.mkdirSync(SHOTS, { recursive: true });
 
-console.log('בודק: ' + base + '\n');
+console.log('בודק: ' + (liveUrl ? liveUrl + ' (עותק מקומי)' : 'קבצים מקומיים') + '\n');
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({
@@ -62,31 +111,52 @@ const page = await ctx.newPage();
 
 const errors = [];
 const offOrigin = [];
-page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+const origin = new URL(base).origin;
+page.on('console', m => {
+  if (m.type() !== 'error') return;
+  if (liveUrl && isHostInfra(m.location()?.url || '')) return;
+  errors.push(m.text());
+});
 page.on('pageerror', e => errors.push('pageerror: ' + e.message));
 page.on('request', r => {
   const u = r.url();
-  if (!u.startsWith(base) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u);
+  if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u);
+});
+// /cdn-cgi/ הוא תשתית ה-CDN של המארח, לא חלק מהמשחק. בעותק המקומי הוא
+// בהכרח חסר, ולכן הוא מוחרג מבדיקות המשאבים והשגיאות.
+const isHostInfra = u => u.includes('/cdn-cgi/');
+const notFound = [];
+page.on('response', r => {
+  if (r.status() === 404 && !isHostInfra(r.url())) notFound.push(new URL(r.url()).pathname);
 });
 
 try {
   /* ---------- 1. טעינה ---------- */
   console.log('1. טעינה ומשאבים');
-  await page.goto(base + '/index.html', { waitUntil: 'networkidle' });
+  await page.goto(base + '/', { waitUntil: 'networkidle' });
+  // מארח כמו NOVA מפנה לתת-נתיב, ולכן הנכסים נבדקים יחסית לכתובת הסופית
+  const assets = page.url().replace(/\/[^/]*$/, '');
   check('הכותרת נכונה', (await page.title()) === 'Block Plast', await page.title());
   check('64 תאים בלוח', (await page.locator('#board .cell').count()) === 64);
   check('אין בקשות לדומיינים חיצוניים', offOrigin.length === 0, offOrigin.join(', '));
 
   for (const f of ['manifest.webmanifest', 'sw.js', 'icon-192.png', 'icon-512.png', 'privacy.html']) {
-    const r = await page.request.get(base + '/' + f);
+    const r = await page.request.get(assets + '/' + f);
     check(f + ' מוגש (200)', r.status() === 200, 'status ' + r.status());
   }
-  const mf = await (await page.request.get(base + '/manifest.webmanifest')).json();
+  const mf = await (await page.request.get(assets + '/manifest.webmanifest')).json();
   check('manifest: שם ו-RTL', mf.name === 'Block Plast' && mf.dir === 'rtl');
 
-  const swReady = await page.evaluate(() =>
-    navigator.serviceWorker.ready.then(() => true).catch(() => false));
-  check('service worker נרשם', swReady === true);
+  // מארחים מסוימים חוסמים navigator.serviceWorker בתוך המשחק ורושמים
+  // Service Worker משלהם ברמת האתר — במקרה כזה אין מה לבדוק כאן.
+  const swAvailable = await page.evaluate(() => 'serviceWorker' in navigator);
+  if (swAvailable) {
+    const swReady = await page.evaluate(() =>
+      navigator.serviceWorker.ready.then(() => true).catch(() => false));
+    check('service worker נרשם', swReady === true);
+  } else {
+    skip('service worker נרשם', 'המארח חוסם navigator.serviceWorker');
+  }
 
   await page.screenshot({ path: path.join(SHOTS, '1-start.png') });
 
@@ -96,7 +166,8 @@ try {
   await page.waitForTimeout(350);
   let st = await page.evaluate(() => window.__bp.state());
   check('המשחק רץ', st.running === true);
-  check('3 חלקים במגש', st.tray.filter(Boolean).length === 3);
+  // מזהה הצורה 0 הוא חלק תקין (1×1), ולכן משווים מול null ולא לפי truthiness
+  check('3 חלקים במגש', st.tray.filter(t => t !== null).length === 3, JSON.stringify(st.tray));
   check('הלוח ריק', st.board.every(v => v === -1));
   check('3 חלקים מרונדרים', (await page.locator('.slot .piece').count()) === 3);
   await page.screenshot({ path: path.join(SHOTS, '2-playing.png') });
@@ -229,6 +300,32 @@ try {
     !(await page.locator('#ovStart').evaluate(e => e.classList.contains('hidden'))));
   await page.evaluate(() => document.querySelector('.swatch[data-theme="aurora"]') && 0);
 
+  /* ---------- 7b. פינוי מקום ל-UI שהמארח מזריק ---------- */
+  console.log('\n7b. התאמה ל-UI של המארח');
+  await page.click('#btnPlay');
+  await page.waitForTimeout(250);
+  const trayBefore = await page.locator('#tray').boundingBox();
+  // מדמים כפתור צף כמו זה ש-NOVA מזריקה לתחתית המסך
+  await page.evaluate(() => {
+    const b = document.createElement('button');
+    b.id = 'fake-host-chrome';
+    b.textContent = 'התקן אפליקציה';
+    b.style.cssText = 'position:fixed;left:14px;bottom:14px;padding:11px 16px;z-index:2147483647';
+    document.body.appendChild(b);
+  });
+  await page.waitForTimeout(300);
+  const trayAfter = await page.locator('#tray').boundingBox();
+  const hostBox = await page.locator('#fake-host-chrome').boundingBox();
+  check('המגש התרומם מעל הכפתור של המארח',
+    trayAfter.y + trayAfter.height <= hostBox.y + 1,
+    'תחתית המגש ' + Math.round(trayAfter.y + trayAfter.height) + ' מול ' + Math.round(hostBox.y));
+  check('המגש אכן זז', trayAfter.y + trayAfter.height < trayBefore.y + trayBefore.height);
+  await page.evaluate(() => document.getElementById('fake-host-chrome').remove());
+  await page.waitForTimeout(300);
+  const trayBack = await page.locator('#tray').boundingBox();
+  check('המגש חוזר למקומו כשה-UI נעלם',
+    Math.abs((trayBack.y + trayBack.height) - (trayBefore.y + trayBefore.height)) < 2);
+
   /* ---------- 8. ריצת עומס: משחקים שלמים אוטומטית ---------- */
   console.log('\n8. ריצת עומס (5 משחקים מלאים)');
   const soak = await page.evaluate(() => {
@@ -269,6 +366,7 @@ try {
   console.log('\n9. קונסולה');
   check('אין שגיאות בקונסולה', errors.length === 0, errors.slice(0, 4).join(' | '));
   check('אין בקשות חיצוניות לאורך כל הריצה', offOrigin.length === 0, offOrigin.slice(0, 3).join(', '));
+  check('כל המשאבים נמצאו', notFound.length === 0, [...new Set(notFound)].join(', '));
 
 } catch (e) {
   failures++;
