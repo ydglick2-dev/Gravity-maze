@@ -369,7 +369,7 @@
 <div id="lobbyUI">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
     <div id="lbStars" style="display:var(--stars,none);color:#ffd65c;letter-spacing:8px;font-size:12px;text-shadow:0 0 10px rgba(255,214,92,.6)">★ ★ ★</div>
-    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v181</span></div>
+    <div id="lbTitle">Gravity Maze <span style="font-size:11px;opacity:.55;font-weight:700">v182</span></div>
     <div class="pills">
       <div class="pill" id="lbTro">🏆 0</div>
       <div class="pill" id="lbCoin">🪙 0</div>
@@ -9808,6 +9808,13 @@ function refreshUserChip(){
     '<div style="color:#a9c6e2;font-size:11px;font-weight:700;line-height:1.25;text-align:right">'+esc(nm)+
     '<br><span style="color:#fff;font-size:12px">'+tr('שלב ','Level ')+Math.min(unlocked+1,1000)+'</span></div>';
 }
+/* 👑 אדמין = חשבון הבעלים בלבד. לא תלוי בסיסמה ולא בדגלים במכשיר. */
+function syncAdmin(){
+  isAdmin=cleanName(curUser||'')===ADMIN_NAME;
+  try{$('adminBtn').style.display=isAdmin?'':'none';}catch(e){}
+  const st=store();
+  if(st)try{isAdmin?st.setItem('mazeAdm_v1','1'):st.removeItem('mazeAdm_v1');}catch(e){}
+}
 function applyUser(name){
   curUser=name;
   if(name){KEY='mazeU_'+name;GKEY='mazeG_'+name;}
@@ -9818,6 +9825,7 @@ function applyUser(name){
   load();refreshUserChip();
   // בלי save() כאן — שמירה מוקדמת הייתה גוברת בטעות על השמירה שבענן
   if(name&&!myName)myName=name.slice(0,12);
+  syncAdmin(); // 👑 כל החלפת משתמש מעדכנת את מצב האדמין
   if(name)setTimeout(wsInbox,400); // 🔌 חיבור לדחיפה מיידית מהשרת
 }
 function authMsg(m){
@@ -9894,12 +9902,8 @@ async function doAuth(reg){
   }
 }
 async function finishLogin(u,p){
-  try{isAdmin=(cleanName(u)===ADMIN_NAME)&&(await pwHash(u,p,'adm#mzk#'))===ADMIN_H;}catch(e){isAdmin=false;} // 👑 שם + סיסמה, שניהם
-  const st=store();
-  if(st)try{isAdmin?st.setItem('mazeAdm_v1','1'):st.removeItem('mazeAdm_v1');}catch(e){}
-  applyUser(u);
+  applyUser(u); // 👑 applyUser→syncAdmin קובע אדמין לפי שם המשתמש בלבד
   $('authOv').classList.add('hidden');
-  $('adminBtn').style.display=isAdmin?'':'none';
   checkGifts();
   pushAutoRefresh(); // 🔔 מכשיר שכבר אישר התראות — נרשם מחדש אוטומטית
   setTimeout(tryClaimGc,1500); // 🔗 מימוש קישור תיבת-מתנה שממתין
@@ -12210,7 +12214,7 @@ $('admStars').onclick=()=>admGive({st:1},'3★ בהכל');
 $('admAll').onclick=()=>admGive({tro:Math.max(1,$('admTro').value|0),co:Math.max(1,$('admCoins').value|0),ch:Math.max(1,$('admChests').value|0),gm:Math.max(1,$('admGems').value|0),un:1,sk:1,st:1},'החבילה המלאה');
 $('authLogin').onclick=()=>doAuth(false);
 $('authReg').onclick=()=>doAuth(true);
-$('authGuest').onclick=()=>{isAdmin=false;$('adminBtn').style.display='none';applyUser(null);$('authOv').classList.add('hidden');};
+$('authGuest').onclick=()=>{applyUser(null);$('authOv').classList.add('hidden');};
 $('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth(false);});
 let chipArm=0; // בלי confirm() — לחיצה כפולה
 $('userChip').onclick=()=>{
@@ -12251,8 +12255,7 @@ function initAuth(){
   const users=getUsers();
   if(cu&&cu!=='__ask__'&&cu!=='__guest__'){
     applyUser(cu); // ✅ לא מנתקים — גם אם הרשומה המקומית אבדה
-    isAdmin=!!(st&&st.getItem('mazeAdm_v1')==='1')&&cleanName(cu)===ADMIN_NAME; // 👑 דגל שמור תקף רק לחשבון האדמין
-    $('adminBtn').style.display=isAdmin?'':'none';
+    syncAdmin(); // 👑 אדמין לפי שם המשתמש בלבד
     pushAutoRefresh(); // 🔔 רענון מנוי ההתראות בכניסה אוטומטית
     setTimeout(tryClaimGc,1500); // 🔗 מימוש קישור תיבת-מתנה שממתין
     if(!users[cu]){ // הרשומה המקומית אבדה — משחזרים מהענן ברקע
@@ -12265,7 +12268,7 @@ function initAuth(){
     }
     checkGifts();
   }
-  else if(cu==='__guest__'){isAdmin=false;$('adminBtn').style.display='none';applyUser(null);}
+  else if(cu==='__guest__'){applyUser(null);} // אורח — syncAdmin יכבה אדמין
   else{refreshUserChip();$('authOv').classList.remove('hidden');}
 }
 /* 📱 המסך לא נכבה בזמן המשחק — כמו בוויז (Wake Lock) */
