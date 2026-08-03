@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="משחק פאזל בלוקים 8×8 — בלי פרסומות, בלי מעקב, עובד גם אופליין.">
+<title>Block Plast</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1020">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+     user-select:none;-webkit-user-select:none;}
+  html,body{height:100%;overflow:hidden;touch-action:none;overscroll-behavior:none;}
+  body{
+    background:var(--bg);
+    color:#e9eefb;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Rubik,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .5s ease;
+  }
+
+  /* ---- ערכות צבע ---- */
+  /* הסלקטורים אינם מוגבלים ל-body בכוונה: גם הריבועים בבורר הערכות
+     נושאים data-theme, וכך כל אחד מציג את הצבעים של הערכה שלו. */
+  :root, [data-theme="aurora"]{
+    --bg:radial-gradient(120% 90% at 50% 0%,#1b2450 0%,#0b1020 55%,#05070f 100%);
+    --tc:#0b1020;
+    --panel:rgba(255,255,255,.06);
+    --panel-line:rgba(255,255,255,.10);
+    --cell:rgba(255,255,255,.045);
+    --cell-line:rgba(255,255,255,.07);
+    --accent:#ffc861;
+    --accent2:#ff8f5e;
+    --text-dim:#93a0c2;
+    --c0:#5b8cff; --c1:#39d3a7; --c2:#ffd05e; --c3:#ff6f91; --c4:#b07bff; --c5:#ff9f45; --c6:#4fd8f5;
+  }
+  [data-theme="sunset"]{
+    --bg:radial-gradient(120% 90% at 50% 0%,#4a1f3d 0%,#1b0d20 55%,#0a050d 100%);
+    --tc:#1b0d20;
+    --accent:#ffb0d0; --accent2:#ff7aa2;
+    --c0:#ff7aa2; --c1:#ffb05e; --c2:#ffe28a; --c3:#c96bff; --c4:#6ad0ff; --c5:#ff6b6b; --c6:#8affc1;
+  }
+  [data-theme="forest"]{
+    --bg:radial-gradient(120% 90% at 50% 0%,#12402f 0%,#0a1c16 55%,#040b08 100%);
+    --tc:#0a1c16;
+    --accent:#a9f0b4; --accent2:#5fd694;
+    --c0:#5fd694; --c1:#c9e86a; --c2:#f5d76e; --c3:#6ec6ff; --c4:#ff9a6e; --c5:#b6f0e0; --c6:#d68cff;
+  }
+  [data-theme="mono"]{
+    --bg:radial-gradient(120% 90% at 50% 0%,#2a2f3a 0%,#14171d 55%,#07080b 100%);
+    --tc:#14171d;
+    --accent:#e6ecf7; --accent2:#a7b3c9;
+    --c0:#8fa3c4; --c1:#c3ccdd; --c2:#e8edf7; --c3:#6d7d99; --c4:#a9b6cc; --c5:#7f8ca6; --c6:#d6dcea;
+  }
+  /* הריבועים בבורר לא אמורים לרשת את רקע הערכה, רק את הצבעים */
+  .swatch[data-theme]{--bg:none;}
+
+  /* ---- מסגרת ראשית ---- */
+  #shell{
+    width:100%;height:100%;max-width:560px;
+    display:flex;flex-direction:column;align-items:center;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 12px calc(env(safe-area-inset-bottom,0px) + 10px);
+    gap:10px;
+    will-change:transform;
+  }
+
+  /* ---- סרגל עליון ---- */
+  #topbar{width:100%;display:flex;align-items:center;gap:8px;}
+  .scorebox{
+    flex:1;background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
+    padding:8px 14px;backdrop-filter:blur(8px);
+  }
+  .scorebox .lbl{font-size:11px;letter-spacing:1.5px;color:var(--text-dim);font-weight:700;}
+  .scorebox .val{font-size:26px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums;}
+  .scorebox.best .val{font-size:20px;color:var(--accent);}
+  .scorebox.best{flex:0 0 auto;min-width:96px;}
+  #score.pop{animation:pop .3s ease;}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.22)}100%{transform:scale(1)}}
+
+  .iconbtn{
+    width:42px;height:42px;flex:0 0 auto;border:1px solid var(--panel-line);border-radius:14px;
+    background:var(--panel);color:#e9eefb;font-size:19px;display:grid;place-items:center;
+    cursor:pointer;backdrop-filter:blur(8px);transition:transform .1s ease,opacity .2s;
+  }
+  .iconbtn:active{transform:scale(.9);}
+  .iconbtn:disabled{opacity:.32;cursor:default;}
+  #btnCol{display:flex;flex-direction:column;gap:6px;}
+  #btnCol .iconbtn{width:42px;height:34px;font-size:16px;border-radius:12px;}
+
+  /* ---- שורת קומבו ---- */
+  #combobar{height:20px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:800;
+    color:var(--accent);opacity:0;transition:opacity .25s;}
+  #combobar.on{opacity:1;}
+
+  /* ---- לוח ---- */
+  /* margin אוטומטי אנכי: הסרגל נשאר למעלה, המגש נדחף לתחתית (נוח לאגודל),
+     והלוח מתמרכז במרחב שנשאר. */
+  #boardWrap{position:relative;direction:ltr;margin-block:auto;}
+  #board{
+    direction:ltr;
+    display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+    gap:var(--gap);
+    padding:var(--gap);
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:18px;
+    backdrop-filter:blur(8px);
+  }
+  .cell{
+    border-radius:var(--cellr);background:var(--cell);
+    box-shadow:inset 0 0 0 1px var(--cell-line);
+    position:relative;transition:background .12s ease;
+  }
+  .cell.filled{
+    background:var(--bc);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.42), inset 0 -3px 0 rgba(0,0,0,.28),
+               0 2px 6px rgba(0,0,0,.35);
+  }
+  .cell.hint{background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 2px rgba(255,255,255,.34);}
+  .cell.hint.bad{background:rgba(255,90,90,.18);box-shadow:inset 0 0 0 2px rgba(255,90,90,.45);}
+  .cell.linehint{animation:lineglow .6s ease-in-out infinite;}
+  @keyframes lineglow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.85)}}
+  .cell.drop{animation:drop .22s cubic-bezier(.2,1.6,.4,1);}
+  @keyframes drop{from{transform:scale(.55);opacity:.4}to{transform:scale(1);opacity:1}}
+  .cell.clearing{animation:clearOut .26s ease forwards;}
+  @keyframes clearOut{
+    0%{transform:scale(1);filter:brightness(1)}
+    40%{transform:scale(1.22);filter:brightness(2.4)}
+    100%{transform:scale(0);filter:brightness(2.4);opacity:0}
+  }
+  #fx{position:absolute;left:0;top:0;pointer-events:none;border-radius:18px;}
+
+  /* ---- מגש ---- */
+  #tray{
+    width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:18px;
+    padding:10px 8px;backdrop-filter:blur(8px);
+  }
+  .slot{direction:ltr;display:grid;place-items:center;min-height:var(--slotH);touch-action:none;}
+  .piece{display:grid;gap:var(--tgap);cursor:grab;transition:transform .16s cubic-bezier(.2,1.6,.4,1),opacity .2s;}
+  .piece.spawn{animation:pieceIn .3s cubic-bezier(.2,1.6,.4,1);}
+  @keyframes pieceIn{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+  .piece.dead{opacity:.26;filter:grayscale(.75);}
+  .piece.dragging{opacity:0;}
+  .pcell{
+    border-radius:var(--tcellr);background:var(--bc);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.42), inset 0 -2px 0 rgba(0,0,0,.28),
+               0 2px 5px rgba(0,0,0,.32);
+  }
+  /* direction:ltr חובה — אחרת רשת ה-grid של החלק תתהפך מול הלוח */
+  #ghost{
+    position:fixed;left:0;top:0;direction:ltr;display:grid;pointer-events:none;z-index:40;
+    filter:drop-shadow(0 10px 18px rgba(0,0,0,.5));
+  }
+  #ghost.hidden{display:none;}
+  #ghost .pcell{border-radius:var(--cellr);}
+
+  /* ---- טוסטים ---- */
+  #toasts{position:fixed;left:0;right:0;top:38%;display:flex;flex-direction:column;align-items:center;
+    gap:6px;pointer-events:none;z-index:30;}
+  .toast{
+    font-size:30px;font-weight:900;letter-spacing:.5px;
+    background:linear-gradient(180deg,#fff8e2,var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 3px 10px rgba(0,0,0,.65));
+    animation:toastUp 1.05s ease forwards;
+  }
+  @keyframes toastUp{
+    0%{transform:translateY(16px) scale(.7);opacity:0}
+    22%{transform:translateY(0) scale(1.1);opacity:1}
+    62%{transform:translateY(-6px) scale(1);opacity:1}
+    100%{transform:translateY(-42px) scale(.94);opacity:0}
+  }
+
+  /* ---- שכבות ---- */
+  .overlay{
+    position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;
+    background:rgba(5,7,15,.84);backdrop-filter:blur(16px);
+    transition:opacity .3s ease;
+  }
+  .overlay.hidden{opacity:0;pointer-events:none;}
+  .overlay:not(.hidden){animation:ovIn .25s ease;}
+  @keyframes ovIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+  .overlay h1{
+    font-size:42px;font-weight:900;letter-spacing:1px;
+    background:linear-gradient(180deg,#fff4d6,var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 20px rgba(255,190,90,.35));
+  }
+  .overlay h2{font-size:28px;font-weight:900;}
+  .sub{font-size:15px;line-height:1.7;max-width:330px;color:var(--text-dim);}
+  .btn{
+    border:none;border-radius:16px;padding:14px 34px;font-size:18px;font-weight:800;
+    color:#23180a;background:linear-gradient(180deg,#ffe6b0,var(--accent));
+    box-shadow:0 0 24px rgba(255,180,80,.3),0 5px 0 rgba(0,0,0,.35);
+    cursor:pointer;font-family:inherit;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 0 24px rgba(255,180,80,.3),0 2px 0 rgba(0,0,0,.35);}
+  .btn.sec{
+    color:#dfe7f6;background:var(--panel);font-size:15px;padding:11px 22px;
+    box-shadow:0 0 0 1.5px var(--panel-line);
+  }
+  .btn.sec:active{transform:translateY(2px);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .bigscore{font-size:60px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#fff4d6,var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .newbest{font-size:14px;font-weight:800;color:var(--accent2);letter-spacing:1px;}
+
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:330px;}
+  .stat{background:var(--panel);border:1px solid var(--panel-line);border-radius:14px;padding:10px 12px;text-align:center;}
+  .stat .k{font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:.5px;}
+  .stat .v{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;}
+
+  .themes{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .swatch{
+    width:52px;height:52px;border-radius:14px;cursor:pointer;border:2px solid transparent;
+    display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;padding:5px;
+    background:rgba(255,255,255,.07);
+  }
+  .swatch.on{border-color:var(--accent);box-shadow:0 0 14px rgba(255,190,90,.4);}
+  .swatch i{border-radius:4px;display:block;}
+
+  .toggle{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;max-width:330px;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:14px;padding:12px 16px;
+    font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .toggle .sw{width:46px;height:26px;border-radius:99px;background:rgba(255,255,255,.16);position:relative;transition:background .2s;}
+  .toggle .sw::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;
+    background:#fff;transition:transform .2s;}
+  .toggle.on .sw{background:var(--accent);}
+  .toggle.on .sw::after{transform:translateX(-20px);}
+
+  /* ---- באנרים ---- */
+  .banner{
+    position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:45;
+    background:rgba(18,24,44,.94);border:1px solid var(--panel-line);border-radius:16px;
+    padding:12px 14px;display:flex;align-items:center;gap:10px;font-size:14px;
+    backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.5);
+    animation:bnIn .35s ease;
+  }
+  @keyframes bnIn{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+  .banner.hidden{display:none;}
+  .banner span{flex:1;line-height:1.4;}
+  .banner button{border:none;border-radius:10px;padding:8px 14px;font-weight:800;font-size:13px;
+    background:var(--accent);color:#23180a;cursor:pointer;font-family:inherit;}
+  .banner button.x{background:transparent;color:var(--text-dim);padding:8px 6px;}
+
+  .foot{font-size:12px;color:var(--text-dim);}
+  .foot a{color:var(--text-dim);}
+  .noads{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;letter-spacing:.5px;
+    color:#8de6b4;background:rgba(60,220,150,.10);border:1px solid rgba(60,220,150,.28);
+    border-radius:99px;padding:5px 12px;
+  }
+
+  @media (max-height:640px){
+    .overlay h1{font-size:34px;}
+    .bigscore{font-size:48px;}
+    .scorebox .val{font-size:22px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <div id="topbar">
+    <div class="scorebox">
+      <div class="lbl">ניקוד</div>
+      <div class="val" id="score">0</div>
+    </div>
+    <div class="scorebox best">
+      <div class="lbl">שיא</div>
+      <div class="val" id="best">0</div>
+    </div>
+    <div id="btnCol">
+      <button class="iconbtn" id="btnUndo" title="בטל מהלך" aria-label="בטל מהלך" disabled>↺</button>
+      <button class="iconbtn" id="btnMenu" title="תפריט" aria-label="תפריט">☰</button>
+    </div>
+  </div>
+
+  <div id="combobar"><span id="comboTxt"></span></div>
+
+  <div id="boardWrap">
+    <div id="board" aria-label="לוח המשחק"></div>
+    <canvas id="fx"></canvas>
+  </div>
+
+  <div id="tray">
+    <div class="slot" data-slot="0"></div>
+    <div class="slot" data-slot="1"></div>
+    <div class="slot" data-slot="2"></div>
+  </div>
+</div>
+
+<div id="ghost" class="hidden"></div>
+<div id="toasts"></div>
+
+<!-- מסך פתיחה -->
+<div class="overlay" id="ovStart">
+  <h1>BLOCK PLAST</h1>
+  <span class="noads">◆ בלי פרסומות · בלי מעקב</span>
+  <p class="sub">גררו את הבלוקים אל הלוח. שורה או עמודה שמתמלאת — מתפוצצת.
+    נגמרו המקומות? המשחק נגמר. נסו לשבור את השיא.</p>
+  <button class="btn" id="btnPlay">שחק</button>
+  <div class="row">
+    <button class="btn sec" id="btnStats">סטטיסטיקות</button>
+    <button class="btn sec" id="btnSettings">הגדרות</button>
+  </div>
+  <div class="foot">עובד גם ללא אינטרנט · <a href="privacy.html">פרטיות</a></div>
+</div>
+
+<!-- סוף משחק -->
+<div class="overlay hidden" id="ovOver">
+  <h2>נגמרו המהלכים</h2>
+  <div class="bigscore" id="finalScore">0</div>
+  <div class="newbest" id="newBest" style="display:none">★ שיא חדש! ★</div>
+  <p class="sub" id="overSub"></p>
+  <button class="btn" id="btnContinue">המשך בחינם ✦</button>
+  <div class="row">
+    <button class="btn sec" id="btnAgain">משחק חדש</button>
+    <button class="btn sec" id="btnHome">תפריט</button>
+  </div>
+</div>
+
+<!-- תפריט משחק -->
+<div class="overlay hidden" id="ovPause">
+  <h2>הפסקה</h2>
+  <button class="btn" id="btnResume">חזרה למשחק</button>
+  <div class="row">
+    <button class="btn sec" id="btnRestart">משחק חדש</button>
+    <button class="btn sec" id="btnSettings2">הגדרות</button>
+    <button class="btn sec" id="btnQuit">תפריט ראשי</button>
+  </div>
+</div>
+
+<!-- הגדרות -->
+<div class="overlay hidden" id="ovSettings">
+  <h2>הגדרות</h2>
+  <div class="toggle" id="tgSound"><span>צלילים</span><i class="sw"></i></div>
+  <div class="toggle" id="tgVibe"><span>רטט</span><i class="sw"></i></div>
+  <div class="toggle" id="tgFx"><span>אפקטים ואנימציות</span><i class="sw"></i></div>
+  <p class="sub" style="margin-top:4px">ערכת צבעים</p>
+  <div class="themes" id="themeRow"></div>
+  <button class="btn sec" id="btnCloseSettings">סגור</button>
+</div>
+
+<!-- סטטיסטיקות -->
+<div class="overlay hidden" id="ovStats">
+  <h2>סטטיסטיקות</h2>
+  <div class="statgrid">
+    <div class="stat"><div class="k">שיא</div><div class="v" id="stBest">0</div></div>
+    <div class="stat"><div class="k">משחקים</div><div class="v" id="stGames">0</div></div>
+    <div class="stat"><div class="k">קומבו מקסימלי</div><div class="v" id="stCombo">0</div></div>
+    <div class="stat"><div class="k">סה״כ קווים</div><div class="v" id="stLines">0</div></div>
+    <div class="stat"><div class="k">סה״כ בלוקים</div><div class="v" id="stBlocks">0</div></div>
+    <div class="stat"><div class="k">ניקוי מרובע</div><div class="v" id="stQuad">0</div></div>
+  </div>
+  <div class="row">
+    <button class="btn sec" id="btnResetStats">איפוס נתונים</button>
+    <button class="btn sec" id="btnCloseStats">סגור</button>
+  </div>
+</div>
+
+<div class="banner hidden" id="bnInstall">
+  <span>אפשר להתקין את המשחק כאפליקציה על המסך הראשי.</span>
+  <button id="bnInstallYes">התקן</button>
+  <button class="x" id="bnInstallNo">✕</button>
+</div>
+<div class="banner hidden" id="bnUpdate">
+  <span>יש גרסה חדשה של המשחק.</span>
+  <button id="bnUpdateYes">רענן</button>
+  <button class="x" id="bnUpdateNo">✕</button>
+</div>
+
+<script>
+"use strict";
+(function(){
+
+/* ============================================================
+   אחסון מקומי בטוח — localStorage עלול לזרוק במצב פרטי/iframe
+   ============================================================ */
+const store = (function(){
+  let ok = false;
+  try { const s = window.localStorage; s.setItem('__bp','1'); s.removeItem('__bp'); ok = true; } catch(e){}
+  return {
+    get(k, d){ if(!ok) return d; try{ const v = localStorage.getItem(k); return v===null ? d : v; }catch(e){ return d; } },
+    set(k, v){ if(!ok) return; try{ localStorage.setItem(k, v); }catch(e){} },
+    getJSON(k, d){ const v = this.get(k, null); if(v===null) return d;
+      try{ const p = JSON.parse(v); return (p && typeof p === 'object') ? p : d; }catch(e){ return d; } },
+    setJSON(k, v){ this.set(k, JSON.stringify(v)); }
+  };
+})();
+
+/* ============================================================
+   קבועים ומאגר הצורות
+   ============================================================ */
+const N = 8;                 // גודל הלוח
+const COLORS = 7;            // מספר צבעי הבלוקים
+const LIFT = 1.35;           // כמה תאים להרים את החלק מעל האצבע בזמן גרירה
+
+// כל צורה מוגדרת כשורות של תווים: X = מלא, . = ריק. w = משקל בהגרלה.
+const SHAPE_DEFS = [
+  { p:['X'],                     w:7  },
+  { p:['XX'],                    w:9  },
+  { p:['XXX'],                   w:9  },
+  { p:['XXXX'],                  w:6  },
+  { p:['XXXXX'],                 w:3  },
+  { p:['X','X'],                 w:9  },
+  { p:['X','X','X'],             w:9  },
+  { p:['X','X','X','X'],         w:6  },
+  { p:['X','X','X','X','X'],     w:3  },
+  { p:['XX','XX'],               w:8  },
+  { p:['XXX','XXX','XXX'],       w:2  },
+  { p:['XXX','XXX'],             w:3  },
+  { p:['XX','XX','XX'],          w:3  },
+  // פינות בגודל 2 (3 תאים)
+  { p:['XX','X.'],               w:6  },
+  { p:['XX','.X'],               w:6  },
+  { p:['X.','XX'],               w:6  },
+  { p:['.X','XX'],               w:6  },
+  // פינות בגודל 3 (5 תאים)
+  { p:['X..','X..','XXX'],       w:3  },
+  { p:['..X','..X','XXX'],       w:3  },
+  { p:['XXX','X..','X..'],       w:3  },
+  { p:['XXX','..X','..X'],       w:3  },
+  // S / Z
+  { p:['.XX','XX.'],             w:3  },
+  { p:['XX.','.XX'],             w:3  },
+  { p:['X.','XX','.X'],          w:3  },
+  { p:['.X','XX','X.'],          w:3  },
+  // T
+  { p:['XXX','.X.'],             w:3  },
+  { p:['.X.','XXX'],             w:3  },
+  { p:['X.','XX','X.'],          w:3  },
+  { p:['.X','XX','.X'],          w:3  }
+];
+
+const SHAPES = SHAPE_DEFS.map((def, id) => {
+  const cells = [];
+  def.p.forEach((row, r) => {
+    for (let c = 0; c < row.length; c++) if (row[c] === 'X') cells.push([r, c]);
+  });
+  return {
+    id,
+    cells,
+    h: def.p.length,
+    w: Math.max.apply(null, def.p.map(r => r.length)),
+    size: cells.length,
+    weight: def.w
+  };
+});
+const WEIGHT_TOTAL = SHAPES.reduce((s, sh) => s + sh.weight, 0);
+
+const THEMES = [
+  { id:'aurora', name:'אורורה' },
+  { id:'sunset', name:'שקיעה'  },
+  { id:'forest', name:'יער'    },
+  { id:'mono',   name:'מונו'   }
+];
+
+/* ============================================================
+   מצב
+   ============================================================ */
+let board   = new Array(N * N).fill(-1);   // -1 = ריק, אחרת אינדקס צבע
+let tray    = [null, null, null];          // { shape, color } או null
+let score   = 0;
+let combo   = 0;
+let running = false;
+let over    = false;
+let usedContinue = false;
+let snapshot = null;                       // ל-Undo (מהלך אחד אחורה)
+
+const settings = {
+  sound: store.get('bp.sound', '1') === '1',
+  vibe:  store.get('bp.vibe',  '1') === '1',
+  fx:    store.get('bp.fx',    '1') === '1',
+  theme: store.get('bp.theme', 'aurora')
+};
+
+const stats = Object.assign(
+  { best:0, games:0, maxCombo:0, lines:0, blocks:0, quads:0 },
+  store.getJSON('bp.stats', {})
+);
+
+/* ============================================================
+   אלמנטים
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const shellEl = $('shell'), boardEl = $('board'), fxEl = $('fx'), ghostEl = $('ghost');
+const scoreEl = $('score'), bestEl = $('best'), toastsEl = $('toasts');
+const comboBar = $('combobar'), comboTxt = $('comboTxt'), undoBtn = $('btnUndo');
+const slotEls = Array.prototype.slice.call(document.querySelectorAll('.slot'));
+const cellEls = [];
+
+for (let i = 0; i < N * N; i++) {
+  const d = document.createElement('div');
+  d.className = 'cell';
+  boardEl.appendChild(d);
+  cellEls.push(d);
+}
+
+/* ============================================================
+   פריסה — גדלי תאים מחושבים לפי גודל המסך
+   ============================================================ */
+let cellPx = 34, gapPx = 4, trayCellPx = 20, trayGapPx = 3;
+
+function layout(){
+  const vw = Math.min(window.innerWidth, 560);
+  const vh = window.innerHeight;
+  // הלוח: ריבוע שמשאיר מקום לסרגל העליון ולמגש
+  const byW = vw - 24;
+  const byH = vh - 250;
+  const boardPx = Math.max(200, Math.min(byW, byH, 460));
+
+  gapPx  = Math.max(3, Math.round(boardPx * 0.011));
+  cellPx = Math.floor((boardPx - gapPx * (N + 1)) / N);
+
+  const inner = cellPx * N + gapPx * (N + 1);
+  boardEl.style.width  = inner + 'px';
+  boardEl.style.height = inner + 'px';
+
+  document.documentElement.style.setProperty('--gap', gapPx + 'px');
+  document.documentElement.style.setProperty('--cellr', Math.round(cellPx * 0.22) + 'px');
+
+  // המגש: חלק בן 5 תאים חייב להיכנס לשליש מהרוחב
+  const slotW = (vw - 24 - 16 - 16) / 3;
+  trayCellPx = Math.max(11, Math.min(Math.floor(cellPx * 0.62), Math.floor((slotW - 12) / 5)));
+  trayGapPx  = Math.max(2, Math.round(trayCellPx * 0.10));
+  document.documentElement.style.setProperty('--tgap', trayGapPx + 'px');
+  document.documentElement.style.setProperty('--tcellr', Math.round(trayCellPx * 0.22) + 'px');
+  document.documentElement.style.setProperty('--slotH', (trayCellPx * 5 + trayGapPx * 4) + 'px');
+
+  fxEl.width  = inner;
+  fxEl.height = inner;
+  fxEl.style.width  = inner + 'px';
+  fxEl.style.height = inner + 'px';
+
+  renderTray();
+}
+window.addEventListener('resize', layout);
+window.addEventListener('orientationchange', () => setTimeout(layout, 120));
+
+/* ============================================================
+   שמע — סינתזה ב-WebAudio, בלי קבצי שמע
+   ============================================================ */
+const audio = (function(){
+  let ctx = null;
+  function ac(){
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { ctx = new AC(); } catch(e){ return null; }
+    }
+    if (ctx.state === 'suspended') ctx.resume().catch(()=>{});
+    return ctx;
+  }
+  function tone(freq, dur, type, gain, delay, slideTo){
+    if (!settings.sound) return;
+    const c = ac(); if (!c) return;
+    const t0 = c.currentTime + (delay || 0);
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain || 0.14, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g); g.connect(c.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.02);
+  }
+  return {
+    unlock(){ ac(); },
+    place(){ tone(320, 0.08, 'triangle', 0.11); tone(480, 0.05, 'sine', 0.05, 0.02); },
+    pick(){  tone(560, 0.05, 'sine', 0.06); },
+    bad(){   tone(150, 0.12, 'sawtooth', 0.07, 0, 90); },
+    clear(lines, cb){
+      const base = 520 + Math.min(cb, 6) * 55;
+      for (let i = 0; i < lines; i++) tone(base * Math.pow(1.26, i), 0.20, 'triangle', 0.13, i * 0.055);
+      tone(base * 1.5, 0.32, 'sine', 0.07, lines * 0.055);
+    },
+    combo(cb){ tone(700 + cb * 70, 0.24, 'square', 0.06, 0.05, 1180 + cb * 90); },
+    over(){ tone(360, 0.5, 'sawtooth', 0.1, 0, 90); tone(240, 0.6, 'triangle', 0.07, 0.06, 70); },
+    ui(){ tone(620, 0.05, 'sine', 0.05); }
+  };
+})();
+
+function vibe(pattern){
+  if (!settings.vibe) return;
+  if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch(e){} }
+}
+
+/* ============================================================
+   חלקיקים ורעידת מסך
+   ============================================================ */
+const fxCtx = fxEl.getContext('2d');
+let particles = [];
+let shakeAmp = 0, fxRunning = false;
+
+function emit(x, y, colorIdx, count){
+  if (!settings.fx) return;
+  const col = getComputedStyle(document.body).getPropertyValue('--c' + colorIdx).trim() || '#fff';
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 1.4 + Math.random() * 3.6;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp - 1.6,
+      life: 1,
+      decay: 0.018 + Math.random() * 0.022,
+      size: 2 + Math.random() * 4,
+      col
+    });
+  }
+  startFx();
+}
+
+function shake(amount){
+  if (!settings.fx) return;
+  shakeAmp = Math.max(shakeAmp, amount);
+  startFx();
+}
+
+function startFx(){
+  if (fxRunning) return;
+  fxRunning = true;
+  requestAnimationFrame(stepFx);
+}
+
+function stepFx(){
+  fxCtx.clearRect(0, 0, fxEl.width, fxEl.height);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.22; p.vx *= 0.99;
+    p.life -= p.decay;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    fxCtx.globalAlpha = Math.max(0, p.life);
+    fxCtx.fillStyle = p.col;
+    const s = p.size * p.life;
+    fxCtx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+  }
+  fxCtx.globalAlpha = 1;
+
+  if (shakeAmp > 0.35) {
+    shellEl.style.transform =
+      'translate(' + (Math.random() - 0.5) * shakeAmp + 'px,' + (Math.random() - 0.5) * shakeAmp + 'px)';
+    shakeAmp *= 0.86;
+  } else if (shakeAmp !== 0) {
+    shakeAmp = 0;
+    shellEl.style.transform = '';
+  }
+
+  if (particles.length || shakeAmp) requestAnimationFrame(stepFx);
+  else fxRunning = false;
+}
+
+function toast(text){
+  const d = document.createElement('div');
+  d.className = 'toast';
+  d.textContent = text;
+  toastsEl.appendChild(d);
+  setTimeout(() => d.remove(), 1100);
+}
+
+/* ============================================================
+   לוגיקת המשחק
+   ============================================================ */
+function idx(r, c){ return r * N + c; }
+
+function randomShape(){
+  let t = Math.random() * WEIGHT_TOTAL;
+  for (let i = 0; i < SHAPES.length; i++) {
+    t -= SHAPES[i].weight;
+    if (t <= 0) return SHAPES[i];
+  }
+  return SHAPES[0];
+}
+
+function fitsAt(shape, r0, c0, b){
+  b = b || board;
+  for (let i = 0; i < shape.cells.length; i++) {
+    const r = r0 + shape.cells[i][0], c = c0 + shape.cells[i][1];
+    if (r < 0 || c < 0 || r >= N || c >= N) return false;
+    if (b[idx(r, c)] !== -1) return false;
+  }
+  return true;
+}
+
+function fitsAnywhere(shape, b){
+  b = b || board;
+  for (let r = 0; r <= N - shape.h; r++)
+    for (let c = 0; c <= N - shape.w; c++)
+      if (fitsAt(shape, r, c, b)) return true;
+  return false;
+}
+
+function anyMoveLeft(){
+  for (let i = 0; i < 3; i++) if (tray[i] && fitsAnywhere(tray[i].shape)) return true;
+  return false;
+}
+
+// מגש חדש. מנסה להבטיח שלפחות חלק אחד נכנס, כדי שהמשחק לא ייתקע באקראיות.
+function refillTray(){
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const cand = [0, 1, 2].map(() => ({ shape: randomShape(), color: (Math.random() * COLORS) | 0 }));
+    if (cand.some(p => fitsAnywhere(p.shape))) { tray = cand; return; }
+  }
+  // גיבוי: אם ההגרלה לא הצליחה, נכפה חלק אחד שבטוח נכנס
+  const fitting = SHAPES.filter(s => fitsAnywhere(s));
+  tray = [0, 1, 2].map(() => ({ shape: randomShape(), color: (Math.random() * COLORS) | 0 }));
+  if (fitting.length) tray[0] = { shape: fitting[0], color: (Math.random() * COLORS) | 0 };
+}
+
+function takeSnapshot(){
+  snapshot = {
+    board: board.slice(),
+    tray: tray.map(p => p ? { shape: p.shape, color: p.color } : null),
+    score, combo
+  };
+  undoBtn.disabled = false;
+}
+
+function undo(){
+  if (!snapshot || !running) return;
+  board = snapshot.board.slice();
+  tray  = snapshot.tray.map(p => p ? { shape: p.shape, color: p.color } : null);
+  score = snapshot.score;
+  combo = snapshot.combo;
+  snapshot = null;
+  undoBtn.disabled = true;
+  audio.ui(); vibe(12);
+  renderBoard(); renderTray(); renderScore(); renderCombo();
+}
+
+// מחזיר את השורות והעמודות שיתמלאו אם נניח את shape ב-(r0,c0)
+function linesAfter(shape, r0, c0){
+  const b = board.slice();
+  shape.cells.forEach(cell => { b[idx(r0 + cell[0], c0 + cell[1])] = 0; });
+  const rows = [], cols = [];
+  for (let r = 0; r < N; r++) {
+    let full = true;
+    for (let c = 0; c < N; c++) if (b[idx(r, c)] === -1) { full = false; break; }
+    if (full) rows.push(r);
+  }
+  for (let c = 0; c < N; c++) {
+    let full = true;
+    for (let r = 0; r < N; r++) if (b[idx(r, c)] === -1) { full = false; break; }
+    if (full) cols.push(c);
+  }
+  return { rows, cols };
+}
+
+const PRAISE = ['יופי!', 'מצוין!', 'אדיר!', 'מדהים!', 'בלתי ייאמן!', 'מפלצתי!'];
+
+function place(slot, r0, c0){
+  const piece = tray[slot];
+  if (!piece || !running || over) return false;
+  if (!fitsAt(piece.shape, r0, c0)) return false;
+
+  takeSnapshot();
+
+  const placed = [];
+  piece.shape.cells.forEach(cell => {
+    const r = r0 + cell[0], c = c0 + cell[1];
+    board[idx(r, c)] = piece.color;
+    placed.push(idx(r, c));
+  });
+  tray[slot] = null;
+
+  score += piece.shape.size;
+  stats.blocks += piece.shape.size;
+
+  renderBoard();
+  if (settings.fx) placed.forEach(i => {
+    cellEls[i].classList.add('drop');
+    setTimeout(() => cellEls[i].classList.remove('drop'), 230);
+  });
+
+  audio.place();
+  vibe(10);
+
+  const { rows, cols } = linesAfter(piece.shape, r0, c0);
+  const lines = rows.length + cols.length;
+
+  if (lines > 0) {
+    combo++;
+    stats.maxCombo = Math.max(stats.maxCombo, combo);
+    stats.lines += lines;
+    if (lines >= 4) stats.quads++;
+
+    // ניקוד: 10·L² ובונוס קומבו של חצי מזה לכל שלב מעבר לראשון
+    const lineScore  = 10 * lines * lines;
+    const comboBonus = Math.round(lineScore * 0.5 * (combo - 1));
+    score += lineScore + comboBonus;
+
+    clearLines(rows, cols);
+    audio.clear(lines, combo);
+    if (combo > 1) audio.combo(combo);
+    vibe(lines >= 3 ? [24, 30, 24, 30, 50] : [18, 24, 30]);
+    shake(4 + lines * 3 + combo * 1.5);
+
+    if (lines >= 2) toast(PRAISE[Math.min(lines - 2, PRAISE.length - 1)]);
+    if (combo > 1)  setTimeout(() => toast('קומבו ×' + combo), lines >= 2 ? 190 : 0);
+  } else {
+    combo = 0;
+  }
+
+  renderScore();
+  renderCombo();
+
+  if (!tray[0] && !tray[1] && !tray[2]) refillTray();
+  renderTray();
+  saveStats();   // כדי שנתונים לא ילכו לאיבוד אם סוגרים את המשחק באמצע
+
+  if (!anyMoveLeft()) setTimeout(gameOver, 480);
+  return true;
+}
+
+function clearLines(rows, cols){
+  const targets = new Set();
+  rows.forEach(r => { for (let c = 0; c < N; c++) targets.add(idx(r, c)); });
+  cols.forEach(c => { for (let r = 0; r < N; r++) targets.add(idx(r, c)); });
+
+  targets.forEach(i => {
+    const colorIdx = board[i];
+    const r = (i / N) | 0, c = i % N;
+    const x = gapPx + c * (cellPx + gapPx) + cellPx / 2;
+    // הקנבס בכיוון LTR כמו הלוח, ולכן אין צורך בהיפוך ציר
+    const y = gapPx + r * (cellPx + gapPx) + cellPx / 2;
+    if (colorIdx >= 0) emit(x, y, colorIdx, 7);
+    if (settings.fx) {
+      cellEls[i].classList.add('clearing');
+      setTimeout(() => cellEls[i].classList.remove('clearing'), 280);
+    }
+  });
+
+  // מנקים במודל הנתונים מיד, והרינדור מתעדכן אחרי האנימציה
+  targets.forEach(i => { board[i] = -1; });
+  setTimeout(renderBoard, settings.fx ? 270 : 0);
+}
+
+function gameOver(){
+  if (over) return;
+  over = true;
+  running = false;
+  audio.over();
+  vibe([60, 40, 60, 40, 120]);
+
+  stats.games++;
+  const isBest = score > stats.best;
+  if (isBest) stats.best = score;
+  saveStats();
+
+  $('finalScore').textContent = score.toLocaleString('he-IL');
+  $('newBest').style.display = isBest ? '' : 'none';
+  $('overSub').textContent = isBest
+    ? 'שיא חדש! ' + score.toLocaleString('he-IL') + ' נקודות.'
+    : 'השיא שלך: ' + stats.best.toLocaleString('he-IL') + ' נקודות.';
+  $('btnContinue').style.display = usedContinue ? 'none' : '';
+  renderScore();
+  show('ovOver');
+}
+
+// המשך חינם — מפנה את שתי השורות התחתונות ומחדש את המגש. פעם אחת למשחק.
+function continueGame(){
+  if (usedContinue) return;
+  usedContinue = true;
+  for (let r = N - 2; r < N; r++)
+    for (let c = 0; c < N; c++) board[idx(r, c)] = -1;
+  // אם עדיין אין מהלך, מפנים עוד שורה
+  refillTray();
+  let guard = 0;
+  while (!anyMoveLeft() && guard < N) {
+    const r = N - 3 - guard;
+    if (r < 0) break;
+    for (let c = 0; c < N; c++) board[idx(r, c)] = -1;
+    guard++;
+  }
+  over = false;
+  running = true;
+  combo = 0;
+  snapshot = null;
+  undoBtn.disabled = true;
+  hide('ovOver');
+  renderBoard(); renderTray(); renderScore(); renderCombo();
+  audio.ui();
+}
+
+function newGame(){
+  board = new Array(N * N).fill(-1);
+  score = 0; combo = 0;
+  over = false; running = true; usedContinue = false;
+  snapshot = null;
+  undoBtn.disabled = true;
+  particles = [];
+  fxCtx.clearRect(0, 0, fxEl.width, fxEl.height);
+  refillTray();
+  renderBoard(); renderTray(); renderScore(); renderCombo();
+  hideAll();
+}
+
+function saveStats(){
+  store.setJSON('bp.stats', stats);
+}
+
+/* ============================================================
+   רינדור
+   ============================================================ */
+function renderBoard(){
+  for (let i = 0; i < N * N; i++) {
+    const v = board[i], el = cellEls[i];
+    if (v === -1) {
+      if (el.classList.contains('filled')) { el.classList.remove('filled'); el.style.removeProperty('--bc'); }
+    } else {
+      el.classList.add('filled');
+      el.style.setProperty('--bc', 'var(--c' + v + ')');
+    }
+  }
+}
+
+function buildPieceEl(piece, cell, gap){
+  const el = document.createElement('div');
+  el.className = 'piece';
+  el.style.gridTemplateColumns = 'repeat(' + piece.shape.w + ',' + cell + 'px)';
+  el.style.gridTemplateRows    = 'repeat(' + piece.shape.h + ',' + cell + 'px)';
+  el.style.gap = gap + 'px';
+  const filled = new Set(piece.shape.cells.map(c => c[0] * piece.shape.w + c[1]));
+  for (let r = 0; r < piece.shape.h; r++) {
+    for (let c = 0; c < piece.shape.w; c++) {
+      const d = document.createElement('div');
+      if (filled.has(r * piece.shape.w + c)) {
+        d.className = 'pcell';
+        d.style.setProperty('--bc', 'var(--c' + piece.color + ')');
+      }
+      el.appendChild(d);
+    }
+  }
+  return el;
+}
+
+function renderTray(){
+  slotEls.forEach((slot, i) => {
+    slot.innerHTML = '';
+    const piece = tray[i];
+    if (!piece) return;
+    const el = buildPieceEl(piece, trayCellPx, trayGapPx);
+    if (!fitsAnywhere(piece.shape)) el.classList.add('dead');
+    el.classList.add('spawn');
+    el.dataset.slot = String(i);
+    slot.appendChild(el);
+  });
+}
+
+function renderScore(){
+  scoreEl.textContent = score.toLocaleString('he-IL');
+  bestEl.textContent  = Math.max(stats.best, score).toLocaleString('he-IL');
+  scoreEl.classList.remove('pop');
+  void scoreEl.offsetWidth;
+  scoreEl.classList.add('pop');
+}
+
+function renderCombo(){
+  if (combo > 1) {
+    comboTxt.textContent = '✦ קומבו ×' + combo + ' ✦';
+    comboBar.classList.add('on');
+  } else {
+    comboBar.classList.remove('on');
+  }
+}
+
+function clearHints(){
+  for (let i = 0; i < N * N; i++) cellEls[i].classList.remove('hint', 'bad', 'linehint');
+}
+
+/* ============================================================
+   גרירה — Pointer Events, עכבר ומגע באותו מימוש
+   ============================================================ */
+let drag = null;
+
+function pieceElFor(slot){
+  return slotEls[slot].querySelector('.piece');
+}
+
+function onPointerDown(e){
+  if (!running || over) return;
+  const pieceEl = e.target.closest ? e.target.closest('.piece') : null;
+  if (!pieceEl) return;
+  const slot = Number(pieceEl.dataset.slot);
+  const piece = tray[slot];
+  if (!piece) return;
+
+  e.preventDefault();
+  audio.unlock();
+  audio.pick();
+
+  const rect = pieceEl.getBoundingClientRect();
+  const scale = (cellPx + gapPx) / (trayCellPx + trayGapPx);
+
+  drag = {
+    slot,
+    piece,
+    pointerId: e.pointerId,
+    // המיקום שנתפס בתוך החלק, מומר לקנה המידה של הלוח
+    grabX: (e.clientX - rect.left) * scale,
+    grabY: (e.clientY - rect.top)  * scale,
+    target: null
+  };
+
+  pieceEl.classList.add('dragging');
+  ghostEl.innerHTML = '';
+  const g = buildPieceEl(piece, cellPx, gapPx);
+  g.style.position = 'static';
+  ghostEl.style.gridTemplateColumns = '1fr';
+  ghostEl.appendChild(g);
+  ghostEl.classList.remove('hidden');
+
+  // אין צורך ב-setPointerCapture: מגע נתפס במשתמע ליעד המקורי,
+  // ובעכבר המאזינים יושבים על document ולכן התנועה נקלטת בכל מקרה.
+  moveGhost(e.clientX, e.clientY);
+}
+
+function moveGhost(px, py){
+  if (!drag) return;
+  const left = px - drag.grabX;
+  const top  = py - drag.grabY - LIFT * (cellPx + gapPx);
+  ghostEl.style.transform = 'translate(' + left + 'px,' + top + 'px)';
+
+  const br = boardEl.getBoundingClientRect();
+  const step = cellPx + gapPx;
+  const c0 = Math.round((left - br.left - gapPx) / step);
+  const r0 = Math.round((top  - br.top  - gapPx) / step);
+
+  clearHints();
+
+  const sh = drag.piece.shape;
+  const inRange = r0 >= 0 && c0 >= 0 && r0 + sh.h <= N && c0 + sh.w <= N;
+  if (!inRange) { drag.target = null; return; }
+
+  const ok = fitsAt(sh, r0, c0);
+  drag.target = ok ? { r: r0, c: c0 } : null;
+
+  sh.cells.forEach(cell => {
+    const el = cellEls[idx(r0 + cell[0], c0 + cell[1])];
+    el.classList.add('hint');
+    if (!ok) el.classList.add('bad');
+  });
+
+  if (ok) {
+    const { rows, cols } = linesAfter(sh, r0, c0);
+    rows.forEach(r => { for (let c = 0; c < N; c++) cellEls[idx(r, c)].classList.add('linehint'); });
+    cols.forEach(c => { for (let r = 0; r < N; r++) cellEls[idx(r, c)].classList.add('linehint'); });
+  }
+}
+
+function onPointerMove(e){
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  e.preventDefault();
+  moveGhost(e.clientX, e.clientY);
+}
+
+function onPointerUp(e){
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  const d = drag;
+  drag = null;
+  ghostEl.classList.add('hidden');
+  ghostEl.innerHTML = '';
+  clearHints();
+
+  const el = pieceElFor(d.slot);
+  if (el) el.classList.remove('dragging');
+
+  if (d.target) {
+    place(d.slot, d.target.r, d.target.c);
+  } else {
+    audio.bad();
+  }
+}
+
+document.addEventListener('pointerdown', onPointerDown, { passive:false });
+document.addEventListener('pointermove', onPointerMove, { passive:false });
+document.addEventListener('pointerup', onPointerUp);
+document.addEventListener('pointercancel', onPointerUp);
+
+/* ============================================================
+   שכבות ותפריטים
+   ============================================================ */
+const OVERLAYS = ['ovStart', 'ovOver', 'ovPause', 'ovSettings', 'ovStats'];
+function show(id){ $(id).classList.remove('hidden'); }
+function hide(id){ $(id).classList.add('hidden'); }
+function hideAll(){ OVERLAYS.forEach(hide); }
+
+$('btnPlay').onclick = () => { audio.unlock(); audio.ui(); newGame(); };
+$('btnAgain').onclick = () => { audio.ui(); newGame(); };
+$('btnRestart').onclick = () => { audio.ui(); newGame(); };
+$('btnContinue').onclick = continueGame;
+$('btnHome').onclick = () => { audio.ui(); hideAll(); show('ovStart'); };
+$('btnQuit').onclick = () => { audio.ui(); running = false; hideAll(); show('ovStart'); };
+$('btnResume').onclick = () => { audio.ui(); hide('ovPause'); running = true; };
+$('btnUndo').onclick = undo;
+
+$('btnMenu').onclick = () => {
+  audio.ui();
+  if (over) { show('ovOver'); return; }
+  running = false;
+  show('ovPause');
+};
+
+// לאיזו שכבה לחזור כשסוגרים הגדרות/סטטיסטיקות
+let returnTo = 'ovStart';
+function openSub(id, from){
+  returnTo = from;
+  audio.ui(); hide(from); show(id);
+}
+function closeSub(id){
+  audio.ui(); hide(id); show(returnTo);
+}
+$('btnSettings').onclick  = () => openSub('ovSettings', 'ovStart');
+$('btnSettings2').onclick = () => openSub('ovSettings', 'ovPause');
+$('btnCloseSettings').onclick = () => closeSub('ovSettings');
+
+$('btnStats').onclick = () => { renderStats(); openSub('ovStats', 'ovStart'); };
+$('btnCloseStats').onclick = () => closeSub('ovStats');
+$('btnResetStats').onclick = () => {
+  ['best','games','maxCombo','lines','blocks','quads'].forEach(k => { stats[k] = 0; });
+  saveStats(); renderStats(); renderScore(); audio.ui();
+};
+
+function renderStats(){
+  $('stBest').textContent   = stats.best.toLocaleString('he-IL');
+  $('stGames').textContent  = stats.games.toLocaleString('he-IL');
+  $('stCombo').textContent  = stats.maxCombo.toLocaleString('he-IL');
+  $('stLines').textContent  = stats.lines.toLocaleString('he-IL');
+  $('stBlocks').textContent = stats.blocks.toLocaleString('he-IL');
+  $('stQuads').textContent  = stats.quads.toLocaleString('he-IL');
+}
+
+// מקלדת (דסקטופ)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (!$('ovSettings').classList.contains('hidden')) { $('btnCloseSettings').click(); return; }
+    if (!$('ovStats').classList.contains('hidden'))    { $('btnCloseStats').click(); return; }
+    if (!$('ovPause').classList.contains('hidden'))    { $('btnResume').click(); return; }
+    if (running && !over) $('btnMenu').click();
+  }
+  if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undo(); }
+});
+
+/* ---- מתגים וערכות צבע ---- */
+function bindToggle(elId, key){
+  const el = $(elId);
+  const sync = () => el.classList.toggle('on', settings[key]);
+  el.onclick = () => {
+    settings[key] = !settings[key];
+    store.set('bp.' + key, settings[key] ? '1' : '0');
+    sync();
+    if (key === 'sound') { audio.unlock(); audio.ui(); }
+    if (key === 'vibe') vibe(20);
+  };
+  sync();
+}
+bindToggle('tgSound', 'sound');
+bindToggle('tgVibe', 'vibe');
+bindToggle('tgFx', 'fx');
+
+function applyTheme(id){
+  settings.theme = id;
+  document.body.dataset.theme = id;
+  store.set('bp.theme', id);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  const tc = getComputedStyle(document.body).getPropertyValue('--tc').trim();
+  if (meta && tc) meta.setAttribute('content', tc);
+  Array.prototype.forEach.call(document.querySelectorAll('.swatch'),
+    s => s.classList.toggle('on', s.dataset.theme === id));
+}
+
+(function buildThemes(){
+  const row = $('themeRow');
+  THEMES.forEach(t => {
+    const s = document.createElement('div');
+    s.className = 'swatch';
+    // data-theme על הריבוע עצמו — משתני ה-CSS נפתרים לפי הערכה שלו
+    s.dataset.theme = t.id;
+    s.title = t.name;
+    s.setAttribute('aria-label', t.name);
+    for (let i = 0; i < 4; i++) {
+      const b = document.createElement('i');
+      b.style.background = 'var(--c' + i + ')';
+      s.appendChild(b);
+    }
+    s.onclick = () => { applyTheme(t.id); audio.ui(); };
+    row.appendChild(s);
+  });
+})();
+applyTheme(settings.theme);
+
+/* ============================================================
+   PWA — service worker, התקנה, עדכון
+   ============================================================ */
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  if (store.get('bp.noinstall', '0') !== '1') $('bnInstall').classList.remove('hidden');
+});
+$('bnInstallYes').onclick = async () => {
+  $('bnInstall').classList.add('hidden');
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  try { await deferredInstall.userChoice; } catch(e){}
+  deferredInstall = null;
+};
+$('bnInstallNo').onclick = () => {
+  $('bnInstall').classList.add('hidden');
+  store.set('bp.noinstall', '1');
+};
+
+$('bnUpdateNo').onclick = () => $('bnUpdate').classList.add('hidden');
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      function watch(worker){
+        if (!worker) return;
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            $('bnUpdate').classList.remove('hidden');
+            $('bnUpdateYes').onclick = () => {
+              worker.postMessage('SKIP_WAITING');
+              setTimeout(() => location.reload(), 220);
+            };
+          }
+        });
+      }
+      watch(reg.waiting);
+      reg.addEventListener('updatefound', () => watch(reg.installing));
+    }).catch(()=>{});
+  });
+}
+
+/* ============================================================
+   הפעלה
+   ============================================================ */
+layout();
+renderScore();
+renderBoard();
+document.addEventListener('pointerdown', () => audio.unlock(), { once:true });
+
+/* ============================================================
+   ווים לבדיקות אוטומטיות
+   ============================================================ */
+window.__bp = {
+  state: () => ({
+    board: board.slice(),
+    score, combo, over, running,
+    tray: tray.map(p => p ? p.shape.id : null),
+    best: stats.best
+  }),
+  newGame,
+  undo,
+  gameOver,
+  // ממלא שורה חוץ מ-`keep` תאים בקצה, כדי להכין ניקוי קו לבדיקה
+  fillRow(r, keepFrom){
+    for (let c = 0; c < N; c++) if (c < keepFrom) board[idx(r, c)] = 0;
+    renderBoard();
+  },
+  setTray(i, shapeId){
+    tray[i] = { shape: SHAPES[shapeId], color: 1 };
+    renderTray();
+  },
+  place,
+  fitsAt: (shapeId, r, c) => fitsAt(SHAPES[shapeId], r, c),
+  boardRect: () => boardEl.getBoundingClientRect(),
+  metrics: () => ({ cellPx, gapPx, trayCellPx, trayGapPx, LIFT }),
+  shapes: () => SHAPES.map(s => ({ id:s.id, w:s.w, h:s.h, size:s.size }))
+};
+
+})();
+</script>
+</body>
+</html>
