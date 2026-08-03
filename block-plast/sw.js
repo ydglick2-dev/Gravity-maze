@@ -1,4 +1,4 @@
-const CACHE = 'blockplast-v2';
+const CACHE = 'blockplast-v3';
 const ASSETS = [
   './',
   './index.html',

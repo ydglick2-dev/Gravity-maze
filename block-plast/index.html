@@ -91,7 +91,14 @@
     position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:16px;padding:26px;text-align:center;
     background:rgba(6,9,22,.86);backdrop-filter:blur(18px);transition:opacity .28s ease;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
   }
+  /* מסכים עמוסים מתחילים מלמעלה במקום להתמרכז ולגלוש החוצה */
+  #ovStart, #ovAch{justify-content:flex-start;gap:13px;
+    padding-top:calc(env(safe-area-inset-top,0px) + 22px);
+    padding-bottom:calc(env(safe-area-inset-bottom,0px) + 22px);}
+  #ovStart{justify-content:center;}
+  @media (max-height:700px){ #ovStart{justify-content:flex-start;gap:10px;} }
   .overlay.hidden{opacity:0;pointer-events:none;}
   .overlay:not(.hidden){animation:ovIn .26s cubic-bezier(.16,1,.3,1);}
   @keyframes ovIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
@@ -133,7 +140,83 @@
   .stat .k{font-size:11px;color:#96a2c8;font-weight:700;}
   .stat .v{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;}
 
+  /* ---------- הישגים, יעדים וכוכבים ---------- */
+  .starPill{
+    display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:900;
+    color:#ffd15e;background:rgba(255,200,80,.10);border:1px solid rgba(255,200,80,.32);
+    border-radius:99px;padding:5px 15px;
+  }
+  /* מספרים ומונים נשארים בכיוון LTR — אחרת «8 / 17» מוצג כ«17 / 8» */
+  .ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;}
+  .goalBox{
+    width:100%;max-width:340px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:11px 13px;
+  }
+  .goalHead{font-size:11px;font-weight:800;letter-spacing:1.5px;color:#8592b8;margin-bottom:7px;}
+  .goal{display:flex;align-items:center;gap:9px;padding:5px 0;}
+  .goal + .goal{border-top:1px solid rgba(255,255,255,.06);}
+  .goal .tx{flex:1;text-align:right;min-width:0;}
+  .goal .tt{font-size:13px;font-weight:700;line-height:1.35;}
+  .goal .num{font-size:11px;color:#8592b8;font-variant-numeric:tabular-nums;white-space:nowrap;
+             direction:ltr;unicode-bidi:isolate;}
+  .goal .st{font-size:12px;font-weight:900;color:#ffd15e;white-space:nowrap;
+            direction:ltr;unicode-bidi:isolate;}
+
+  .bar{height:5px;border-radius:99px;background:rgba(255,255,255,.13);margin-top:5px;overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:99px;
+         background:linear-gradient(90deg,#ffd15e,#ff8f3d);transition:width .4s ease;}
+
+  .achTop{display:flex;align-items:center;gap:12px;}
+  .achCount{font-size:13px;font-weight:800;color:#8592b8;font-variant-numeric:tabular-nums;
+            direction:ltr;unicode-bidi:isolate;}
+  .achList{
+    width:100%;max-width:340px;max-height:42vh;overflow-y:auto;
+    display:flex;flex-direction:column;gap:7px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .ach{
+    display:flex;align-items:center;gap:11px;text-align:right;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+    border-radius:14px;padding:10px 12px;
+  }
+  .ach.done{border-color:rgba(255,200,80,.42);background:rgba(255,190,70,.09);}
+  .ach .ic{font-size:23px;width:32px;text-align:center;flex:0 0 auto;
+           filter:grayscale(1);opacity:.42;}
+  .ach.done .ic{filter:none;opacity:1;}
+  .ach .tx{flex:1;min-width:0;}
+  .ach .tt{font-size:14px;font-weight:800;}
+  .ach .dd{font-size:11.5px;color:#8592b8;line-height:1.4;}
+  .ach .pg{font-size:11.5px;color:#8592b8;margin-top:3px;font-variant-numeric:tabular-nums;
+           direction:ltr;unicode-bidi:isolate;}
+  .ach .st{font-size:12px;font-weight:900;color:#ffd15e;white-space:nowrap;flex:0 0 auto;
+           direction:ltr;unicode-bidi:isolate;}
+
+  #unlock{
+    position:fixed;left:50%;top:11%;transform:translateX(-50%);z-index:32;
+    display:flex;align-items:center;gap:12px;text-align:right;
+    background:linear-gradient(180deg,rgba(46,38,18,.97),rgba(26,22,12,.97));
+    border:1px solid rgba(255,200,80,.5);border-radius:18px;padding:11px 16px;
+    box-shadow:0 14px 40px rgba(0,0,0,.6),0 0 30px rgba(255,180,60,.18);
+    max-width:min(340px,88vw);pointer-events:none;
+  }
+  #unlock.hidden{display:none;}
+  #unlock.go{animation:unlockIn .45s cubic-bezier(.16,1,.3,1);}
+  @keyframes unlockIn{
+    0%{transform:translateX(-50%) translateY(-30px) scale(.85);opacity:0}
+    60%{transform:translateX(-50%) translateY(3px) scale(1.03);opacity:1}
+    100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}
+  }
+  #unlockIcon{font-size:30px;flex:0 0 auto;filter:drop-shadow(0 0 10px rgba(255,190,70,.6));}
+  #unlock .ut{flex:1;min-width:0;}
+  #unlockKind{font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:#c8a85e;}
+  #unlockTitle{font-size:15px;font-weight:900;line-height:1.3;}
+  #unlockStars{font-size:14px;font-weight:900;color:#ffd15e;flex:0 0 auto;
+               direction:ltr;unicode-bidi:isolate;}
+
   .themes{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .swatch.locked{cursor:default;position:relative;display:grid;place-items:center;
+                 opacity:.55;border-color:rgba(255,255,255,.12);}
+  .lockTag{font-size:12px;font-weight:900;color:#c9d2e8;}
   .swatch{
     width:54px;height:54px;border-radius:15px;cursor:pointer;border:2px solid transparent;
     display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;padding:6px;
@@ -184,9 +267,9 @@
 </head>
 <body>
 
-<canvas id="stage"></canvas>
+<canvas id="stage" data-own></canvas>
 
-<div id="hud">
+<div id="hud" data-own>
   <div class="pill"><span class="crown">♛</span><span id="best">0</span></div>
   <div id="scoreWrap">
     <div id="score">0</div>
@@ -198,34 +281,61 @@
   </div>
 </div>
 
-<div id="toasts"></div>
+<div id="toasts" data-own></div>
 
-<div class="overlay" id="ovStart">
+<div class="overlay" id="ovStart" data-own>
   <div class="logo">BLOCK PLAST</div>
+  <div class="starPill">★ <span class="starCount">0</span> כוכבים</div>
   <span class="noads">◆ בלי פרסומות · בלי מעקב</span>
-  <p class="sub">גררו בלוקים אל הלוח. שורה או עמודה שמתמלאת — מתפוצצת.
-    שרשרת ניקויים נותנת קומבו. נגמרו המקומות? המשחק נגמר.</p>
+
+  <div class="goalBox">
+    <div class="goalHead">היעדים שלך</div>
+    <div id="startGoals"></div>
+  </div>
+
   <button class="btn" id="btnPlay">שחק</button>
   <div class="row">
+    <button class="btn sec" id="btnAch">הישגים</button>
     <button class="btn sec" id="btnStats">סטטיסטיקות</button>
     <button class="btn sec" id="btnSettings">הגדרות</button>
   </div>
   <div class="foot">עובד גם ללא אינטרנט · <a href="privacy.html">פרטיות</a></div>
 </div>
 
-<div class="overlay hidden" id="ovOver">
+<div class="overlay hidden" id="ovOver" data-own>
   <h2>נגמרו המהלכים</h2>
   <div class="bigscore" id="finalScore">0</div>
   <div class="newbest" id="newBest" style="display:none">★ שיא חדש ★</div>
   <p class="sub" id="overSub"></p>
+
+  <div class="goalBox">
+    <div class="goalHead">היעדים שלך</div>
+    <div id="overGoals"></div>
+  </div>
+
   <button class="btn" id="btnContinue">המשך בחינם ✦</button>
   <div class="row">
     <button class="btn sec" id="btnAgain">משחק חדש</button>
+    <button class="btn sec" id="btnAch2">הישגים</button>
     <button class="btn sec" id="btnHome">תפריט</button>
   </div>
 </div>
 
-<div class="overlay hidden" id="ovPause">
+<div class="overlay hidden" id="ovAch" data-own>
+  <h2>הישגים</h2>
+  <div class="achTop">
+    <span class="starPill">★ <span class="starCount">0</span></span>
+    <span class="achCount" id="achCount">0 / 0</span>
+  </div>
+  <div class="goalBox">
+    <div class="goalHead">יעדים פעילים</div>
+    <div id="achGoals"></div>
+  </div>
+  <div class="achList" id="achList"></div>
+  <button class="btn sec" id="btnCloseAch">סגור</button>
+</div>
+
+<div class="overlay hidden" id="ovPause" data-own>
   <h2>הפסקה</h2>
   <button class="btn" id="btnResume">חזרה למשחק</button>
   <div class="row">
@@ -235,7 +345,7 @@
   </div>
 </div>
 
-<div class="overlay hidden" id="ovSettings">
+<div class="overlay hidden" id="ovSettings" data-own>
   <h2>הגדרות</h2>
   <div class="toggle" id="tgSound"><span>צלילים</span><i class="sw"></i></div>
   <div class="toggle" id="tgVibe"><span>רטט</span><i class="sw"></i></div>
@@ -245,7 +355,7 @@
   <button class="btn sec" id="btnCloseSettings">סגור</button>
 </div>
 
-<div class="overlay hidden" id="ovStats">
+<div class="overlay hidden" id="ovStats" data-own>
   <h2>סטטיסטיקות</h2>
   <div class="statgrid">
     <div class="stat"><div class="k">שיא</div><div class="v" id="stBest">0</div></div>
@@ -254,6 +364,8 @@
     <div class="stat"><div class="k">סה״כ קווים</div><div class="v" id="stLines">0</div></div>
     <div class="stat"><div class="k">סה״כ בלוקים</div><div class="v" id="stBlocks">0</div></div>
     <div class="stat"><div class="k">ניקוי מרובע</div><div class="v" id="stQuad">0</div></div>
+    <div class="stat"><div class="k">לוח נקי</div><div class="v" id="stPerfect">0</div></div>
+    <div class="stat"><div class="k">כוכבים</div><div class="v starCount">0</div></div>
   </div>
   <div class="row">
     <button class="btn sec" id="btnResetStats">איפוס נתונים</button>
@@ -261,12 +373,21 @@
   </div>
 </div>
 
-<div class="banner hidden" id="bnInstall">
+<div id="unlock" class="hidden" data-own>
+  <div id="unlockIcon">🏆</div>
+  <div class="ut">
+    <div id="unlockKind">הישג נפתח</div>
+    <div id="unlockTitle">—</div>
+  </div>
+  <div id="unlockStars">+1 ★</div>
+</div>
+
+<div class="banner hidden" id="bnInstall" data-own>
   <span>אפשר להתקין את המשחק כאפליקציה על המסך הראשי.</span>
   <button id="bnInstallYes">התקן</button>
   <button class="x" id="bnInstallNo">✕</button>
 </div>
-<div class="banner hidden" id="bnUpdate">
+<div class="banner hidden" id="bnUpdate" data-own>
   <span>יש גרסה חדשה של המשחק.</span>
   <button id="bnUpdateYes">רענן</button>
   <button class="x" id="bnUpdateNo">✕</button>
@@ -337,24 +458,41 @@ const SHAPES = SHAPE_DEFS.map((def, id) => {
 });
 const WEIGHT_TOTAL = SHAPES.reduce((s, sh) => s + sh.weight, 0);
 
+// req = כמה כוכבים דרושים כדי לפתוח את הערכה
 const THEMES = [
-  { id:'aurora', name:'אורורה',
+  { id:'aurora', name:'אורורה', req:0,
     bg:['#232c6b','#101740','#070a18'],
     glow:'#3d5bd9', panel:'rgba(255,255,255,.055)', edge:'rgba(255,255,255,.10)',
     empty:'#242c58',
     blocks:['#4a9bff','#3ed9a4','#ffd23f','#ff5d84','#a56eff','#ff9a3d','#3fd9e8'] },
-  { id:'sunset', name:'שקיעה',
+  { id:'sunset', name:'שקיעה', req:0,
     bg:['#5a2148','#2a0f28','#0b050c'], glow:'#c4478f', panel:'rgba(255,255,255,.06)',
     edge:'rgba(255,255,255,.11)', empty:'#3a1c36',
     blocks:['#ff6f9c','#ffab4d','#ffe066','#c46bff','#5ec8ff','#ff5c5c','#66e6b0'] },
-  { id:'forest', name:'יער',
+  { id:'forest', name:'יער', req:0,
     bg:['#14503a','#0b2a20','#04100c'], glow:'#2aa87a', panel:'rgba(255,255,255,.055)',
     edge:'rgba(255,255,255,.10)', empty:'#173d31',
     blocks:['#4fd693','#c2e85c','#ffd85e','#5cc4ff','#ff9166','#8ef0dc','#c98cff'] },
-  { id:'mono',   name:'מונו',
+  { id:'mono',   name:'מונו', req:0,
     bg:['#333a49','#1a1e26','#080a0e'], glow:'#7d8aa5', panel:'rgba(255,255,255,.06)',
     edge:'rgba(255,255,255,.12)', empty:'#2a3040',
-    blocks:['#8fa3c4','#c8d2e4','#eef2fb','#6d7d99','#a9b6cc','#7f8ca6','#dbe1ee'] }
+    blocks:['#8fa3c4','#c8d2e4','#eef2fb','#6d7d99','#a9b6cc','#7f8ca6','#dbe1ee'] },
+  { id:'candy',  name:'סוכריות', req:6,
+    bg:['#6d3a63','#3a1f3d','#150a17'], glow:'#ff8fc4', panel:'rgba(255,255,255,.07)',
+    edge:'rgba(255,255,255,.13)', empty:'#4a2b48',
+    blocks:['#ff9ec7','#ffd6a0','#b8f0d0','#a8c8ff','#ffc2e0','#e0b0ff','#fff0a8'] },
+  { id:'neon',   name:'ניאון', req:15,
+    bg:['#141033','#0a0720','#030209'], glow:'#8a2be2', panel:'rgba(255,255,255,.05)',
+    edge:'rgba(180,120,255,.20)', empty:'#1c1640',
+    blocks:['#00e5ff','#ff2d95','#c6ff00','#ffb300','#7c4dff','#00ff9d','#ff5252'] },
+  { id:'ocean',  name:'מעמקים', req:30,
+    bg:['#0e3d5c','#062338','#010c14'], glow:'#1e9fd4', panel:'rgba(255,255,255,.055)',
+    edge:'rgba(255,255,255,.11)', empty:'#123049',
+    blocks:['#40c9f0','#5ce6c8','#a8e063','#ffd97d','#ff8a80','#9fa8ff','#ffffff'] },
+  { id:'ember',  name:'גחלים', req:50,
+    bg:['#5c1f16','#2c0e0a','#0f0403'], glow:'#e05a2b', panel:'rgba(255,255,255,.06)',
+    edge:'rgba(255,180,120,.16)', empty:'#3d1a13',
+    blocks:['#ff7a3d','#ffc247','#ff5252','#ffe0a3','#d94f8c','#8fd6ff','#b0ff8f'] }
 ];
 
 /* ============================================================
@@ -374,8 +512,139 @@ const settings = {
 };
 let theme = THEMES.find(t => t.id === settings.theme) || THEMES[0];
 
-const stats = Object.assign({ best:0, games:0, maxCombo:0, lines:0, blocks:0, quads:0 },
-                            store.getJSON('bp.stats', {}));
+const stats = Object.assign(
+  { best:0, games:0, maxCombo:0, lines:0, blocks:0, quads:0, triples:0, perfects:0 },
+  store.getJSON('bp.stats', {}));
+
+/* ============================================================
+   הישגים, יעדים וכוכבים
+   ============================================================ */
+// כל הישג נמדד מול הסטטיסטיקות המצטברות, כדי שגם התקדמות ישנה תיספר.
+const ACHIEVEMENTS = [
+  { id:'sc1', ic:'🎯', t:'צעד ראשון',   d:'100 נקודות במשחק',      stars:1, goal:100,  get:s=>s.best },
+  { id:'sc2', ic:'🏅', t:'מתחמם',       d:'500 נקודות במשחק',      stars:1, goal:500,  get:s=>s.best },
+  { id:'sc3', ic:'🏆', t:'אלף',         d:'1,000 נקודות במשחק',    stars:2, goal:1000, get:s=>s.best },
+  { id:'sc4', ic:'👑', t:'אלוף',        d:'2,500 נקודות במשחק',    stars:3, goal:2500, get:s=>s.best },
+  { id:'sc5', ic:'💎', t:'אגדה',        d:'5,000 נקודות במשחק',    stars:5, goal:5000, get:s=>s.best },
+  { id:'ln1', ic:'🧹', t:'מנקה',        d:'50 קווים בסך הכול',     stars:1, goal:50,   get:s=>s.lines },
+  { id:'ln2', ic:'🌊', t:'גל ניקיון',   d:'250 קווים בסך הכול',    stars:2, goal:250,  get:s=>s.lines },
+  { id:'ln3', ic:'🌪', t:'סופה',        d:'1,000 קווים בסך הכול',  stars:4, goal:1000, get:s=>s.lines },
+  { id:'cb3', ic:'🔥', t:'חם',          d:'קומבו ×3',              stars:1, goal:3,    get:s=>s.maxCombo },
+  { id:'cb5', ic:'⚡', t:'בוער',        d:'קומבו ×5',              stars:2, goal:5,    get:s=>s.maxCombo },
+  { id:'cb8', ic:'☄',  t:'בלתי נעצר',   d:'קומבו ×8',              stars:4, goal:8,    get:s=>s.maxCombo },
+  { id:'tri', ic:'✨', t:'שלישייה',     d:'3 קווים במכה אחת',      stars:2, goal:1,    get:s=>s.triples },
+  { id:'qud', ic:'💥', t:'פיצוץ מרובע', d:'4 קווים במכה אחת',      stars:3, goal:1,    get:s=>s.quads },
+  { id:'prf', ic:'🪄', t:'לוח נקי',     d:'לרוקן את הלוח לגמרי',   stars:5, goal:1,    get:s=>s.perfects },
+  { id:'gm1', ic:'🎮', t:'קבוע',        d:'10 משחקים',             stars:1, goal:10,   get:s=>s.games },
+  { id:'gm2', ic:'🕹', t:'מכור',        d:'50 משחקים',             stars:3, goal:50,   get:s=>s.games },
+  { id:'blk', ic:'🧱', t:'בנאי',        d:'2,000 בלוקים',          stars:2, goal:2000, get:s=>s.blocks }
+];
+
+// יעדים מתחלפים. kind:'game' נמדד בתוך משחק בודד, kind:'total' מצטבר.
+const GOAL_POOL = [
+  { id:'g_score',  kind:'game',  stars:1, vals:[150,300,600,1000],
+    txt:n => 'להגיע ל-' + n.toLocaleString('he-IL') + ' נקודות במשחק', get:() => score },
+  { id:'g_lines',  kind:'game',  stars:1, vals:[5,10,18,30],
+    txt:n => 'לנקות ' + n + ' קווים במשחק אחד', get:() => run.lines },
+  { id:'g_combo',  kind:'game',  stars:2, vals:[2,3,4,6],
+    txt:n => 'להגיע לקומבו ×' + n, get:() => run.maxCombo },
+  { id:'g_multi',  kind:'game',  stars:2, vals:[1,3,6],
+    txt:n => 'לנקות 2 קווים במכה — ' + n + ' פעמים', get:() => run.multis },
+  { id:'g_blocks', kind:'total', stars:1, vals:[100,300,800],
+    txt:n => 'להניח ' + n.toLocaleString('he-IL') + ' בלוקים', get:() => stats.blocks },
+  { id:'g_games',  kind:'total', stars:1, vals:[3,8,15],
+    txt:n => 'לשחק ' + n + ' משחקים', get:() => stats.games }
+];
+
+const prog = Object.assign({ stars:0, ach:{}, goals:null }, store.getJSON('bp.prog', {}));
+if (!prog.ach || typeof prog.ach !== 'object') prog.ach = {};
+
+// מונים של המשחק הנוכחי (מתאפסים בכל משחק חדש)
+let run = { lines:0, multis:0, maxCombo:0 };
+
+function saveProg(){ store.setJSON('bp.prog', prog); }
+
+function makeGoal(){
+  const active = new Set((prog.goals || []).map(g => g && g.id));
+  const pool = GOAL_POOL.filter(p => !active.has(p.id));
+  const def = (pool.length ? pool : GOAL_POOL)[(Math.random() * (pool.length || GOAL_POOL.length)) | 0];
+  const val = def.vals[(Math.random() * def.vals.length) | 0];
+  // ביעד מצטבר שומרים את נקודת ההתחלה, אחרת הוא היה מושלם מיד
+  return { id: def.id, val, base: def.kind === 'total' ? def.get() : 0 };
+}
+function goalDef(g){ return GOAL_POOL.find(p => p.id === g.id); }
+function goalProgress(g){
+  const def = goalDef(g);
+  if (!def) return 0;
+  return Math.max(0, def.get() - (def.kind === 'total' ? g.base : 0));
+}
+function ensureGoals(){
+  if (!Array.isArray(prog.goals)) prog.goals = [];
+  while (prog.goals.length < 3) prog.goals.push(makeGoal());
+  prog.goals = prog.goals.slice(0, 3);
+}
+ensureGoals();
+
+// תור של כרטיסי פתיחה, כדי ששני הישגים בו-זמנית לא ידרסו זה את זה
+const unlockQueue = [];
+let unlockBusy = false;
+
+function queueUnlock(card){ unlockQueue.push(card); if (!unlockBusy) nextUnlock(); }
+
+function nextUnlock(){
+  const card = unlockQueue.shift();
+  if (!card) { unlockBusy = false; return; }
+  unlockBusy = true;
+  const el = $('unlock');
+  $('unlockIcon').textContent  = card.ic;
+  $('unlockKind').textContent  = card.kind;
+  $('unlockTitle').textContent = card.t;
+  $('unlockStars').textContent = card.stars ? '+' + card.stars + ' ★' : '';
+  $('unlockStars').style.display = card.stars ? '' : 'none';
+  el.classList.remove('hidden');
+  el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+  audio.unlockJingle();
+  setTimeout(() => { el.classList.add('hidden'); nextUnlock(); }, 2100);
+}
+
+// נקרא אחרי כל מהלך ובסוף משחק. silent משמש בטעינה הראשונה, כדי לזכות
+// שחקן ותיק בהישגים שכבר צבר בלי להציף אותו בכרטיסים.
+function checkProgress(silent){
+  let gained = 0;
+  const announce = card => { if (!silent) queueUnlock(card); };
+
+  ACHIEVEMENTS.forEach(a => {
+    if (prog.ach[a.id]) return;
+    if (a.get(stats) < a.goal) return;
+    prog.ach[a.id] = 1;
+    gained += a.stars;
+    announce({ ic:a.ic, kind:'הישג נפתח', t:a.t, stars:a.stars });
+  });
+
+  ensureGoals();
+  prog.goals.forEach((g, i) => {
+    const def = goalDef(g);
+    if (!def || goalProgress(g) < g.val) return;
+    gained += def.stars;
+    announce({ ic:'🎖', kind:'יעד הושלם', t:def.txt(g.val), stars:def.stars });
+    prog.goals[i] = null;
+  });
+  prog.goals = prog.goals.filter(Boolean);
+  ensureGoals();
+
+  if (gained) {
+    const before = prog.stars;
+    prog.stars += gained;
+    // ערכה חדשה שנפתחה בזכות הכוכבים האלה
+    THEMES.forEach(t => {
+      if (t.req > before && t.req <= prog.stars)
+        announce({ ic:'🎨', kind:'ערכה נפתחה', t:t.name, stars:0 });
+    });
+    buildThemes();
+  }
+  saveProg();
+  renderStars();
+}
 
 // אנימציות
 const pop  = new Float32Array(N*N).fill(1);   // 0..1 — כניסת בלוק ללוח
@@ -423,52 +692,129 @@ function rr(x, y, w, h, r){
   ctx.closePath();
 }
 
-// בלוק תלת-ממדי מבריק — הצורה הוויזואלית המרכזית של המשחק
-function drawBlock(x, y, s, hex, alpha, flash){
-  if (alpha <= 0.003) return;
-  const r = s * 0.235;
+/* ------------------------------------------------------------
+   מטמון ספרייטים.
+   ציור בלוק מלא עולה מעבר צבע + חמש מילויי נתיב. לצייר כך 60 בלוקים
+   בכל פריים חורג מתקציב ה-16.7ms, ולכן כל בלוק מצויר פעם אחת לקנבס
+   נסתר, ובלולאה נשאר רק drawImage.
+   ------------------------------------------------------------ */
+const sprites = { key:'', block:new Map(), empty:null, bg:null };
+
+function makeSprite(w, h, paint){
+  const c = document.createElement('canvas');
+  c.width  = Math.max(1, Math.ceil(w * dpr));
+  c.height = Math.max(1, Math.ceil(h * dpr));
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  paint(g);
+  return c;
+}
+
+// ציור הבלוק עצמו — רץ רק בבניית הספרייט
+function paintBlock(g, x, y, s, hex){
+  const r = s * .235;
+  const R = (a, b, w, h, rad) => {
+    rad = Math.min(rad, w/2, h/2);
+    g.beginPath();
+    if (g.roundRect) { g.roundRect(a, b, w, h, rad); return; }
+    g.moveTo(a+rad, b);
+    g.arcTo(a+w, b,   a+w, b+h, rad);
+    g.arcTo(a+w, b+h, a,   b+h, rad);
+    g.arcTo(a,   b+h, a,   b,   rad);
+    g.arcTo(a,   b,   a+w, b,   rad);
+    g.closePath();
+  };
+  g.fillStyle = 'rgba(0,0,0,.28)';
+  R(x + s*.04, y + s*.10, s*.92, s*.92, r); g.fill();
+
+  const grad = g.createLinearGradient(x, y, x, y + s);
+  grad.addColorStop(0,   mix(hex, true,  .26));
+  grad.addColorStop(.45, hex);
+  grad.addColorStop(1,   mix(hex, false, .26));
+  g.fillStyle = grad;
+  R(x, y, s, s, r); g.fill();
+
+  g.fillStyle = 'rgba(255,255,255,.34)';
+  R(x + s*.15, y + s*.11, s*.70, s*.19, s*.095); g.fill();
+
+  g.fillStyle = 'rgba(0,0,0,.20)';
+  R(x + s*.12, y + s*.71, s*.76, s*.17, s*.085); g.fill();
+
+  g.strokeStyle = 'rgba(255,255,255,.16)';
+  g.lineWidth = Math.max(1, s*.035);
+  R(x + s*.02, y + s*.02, s*.96, s*.96, r*.95); g.stroke();
+}
+
+function buildSprites(){
+  if (!L.cell) return;
+  // הספרייטים תלויים בערכה, בגודל התא וברזולוציית המסך בלבד
+  const key = theme.id + '|' + L.cell.toFixed(2) + '|' + L.tCell.toFixed(2) + '|' +
+              dpr + '|' + L.w + 'x' + L.h;
+  if (sprites.key === key) return;
+  sprites.key = key;
+  sprites.block.clear();
+
+  [['b', L.cell], ['t', L.tCell]].forEach(([tag, size]) => {
+    const pad = Math.ceil(size * .16);
+    theme.blocks.forEach((hex, i) => {
+      sprites.block.set(tag + i, {
+        cv: makeSprite(size + pad*2, size + pad*2, g => paintBlock(g, pad, pad, size, hex)),
+        pad, size
+      });
+    });
+  });
+
+  sprites.empty = makeSprite(L.cell, L.cell, g => {
+    const s = L.cell;
+    const R = (a,b,w,h,rad) => { g.beginPath();
+      if (g.roundRect) g.roundRect(a,b,w,h,rad);
+      else { g.moveTo(a+rad,b); g.arcTo(a+w,b,a+w,b+h,rad); g.arcTo(a+w,b+h,a,b+h,rad);
+             g.arcTo(a,b+h,a,b,rad); g.arcTo(a,b,a+w,b,rad); g.closePath(); } };
+    g.fillStyle = theme.empty;      R(0, 0, s, s, s*.235); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.045)'; g.lineWidth = 1;
+    R(.5, .5, s-1, s-1, s*.23);     g.stroke();
+  });
+
+  // הרקע קבוע לחלוטין, כולל ההילה — מעבר צבע רדיאלי בכל פריים היה
+  // הפריט היקר ביותר בציור.
+  sprites.bg = makeSprite(L.w, L.h, g => {
+    const lin = g.createLinearGradient(0, 0, 0, L.h);
+    lin.addColorStop(0, theme.bg[0]);
+    lin.addColorStop(.55, theme.bg[1]);
+    lin.addColorStop(1, theme.bg[2]);
+    g.fillStyle = lin;
+    g.fillRect(0, 0, L.w, L.h);
+
+    const cx = L.w / 2, cy = L.by + L.size * .32, rad = Math.max(L.w, L.h) * .55;
+    const gl = g.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    gl.addColorStop(0,  rgba(theme.glow, .30));
+    gl.addColorStop(.55, rgba(theme.glow, .07));
+    gl.addColorStop(1,  rgba(theme.glow, 0));
+    g.fillStyle = gl;
+    g.fillRect(0, 0, L.w, L.h);
+  });
+}
+
+// בלולאה נשאר רק העתקת ספרייט, כולל קנה מידה לאנימציות
+function drawBlock(x, y, s, colorIdx, alpha, flash){
+  if (alpha <= .003) return;
+  const tag = Math.abs(s - L.tCell) < Math.abs(s - L.cell) ? 't' : 'b';
+  const sp = sprites.block.get(tag + colorIdx);
+  if (!sp) return;
+  const k = s / sp.size, full = (sp.size + sp.pad * 2) * k;
   ctx.save();
   ctx.globalAlpha = alpha;
-
-  // צל מתחת
-  ctx.fillStyle = 'rgba(0,0,0,.28)';
-  rr(x + s*.04, y + s*.10, s*.92, s*.92, r); ctx.fill();
-
-  // גוף עם מעבר אנכי
-  const g = ctx.createLinearGradient(x, y, x, y + s);
-  g.addColorStop(0,   mix(hex, true,  .26));
-  g.addColorStop(.45, hex);
-  g.addColorStop(1,   mix(hex, false, .26));
-  ctx.fillStyle = g;
-  rr(x, y, s, s, r); ctx.fill();
-
-  // ברק עליון
-  ctx.fillStyle = 'rgba(255,255,255,.34)';
-  rr(x + s*.15, y + s*.11, s*.70, s*.19, s*.095); ctx.fill();
-
-  // הצללה תחתונה
-  ctx.fillStyle = 'rgba(0,0,0,.20)';
-  rr(x + s*.12, y + s*.71, s*.76, s*.17, s*.085); ctx.fill();
-
-  // קו מתאר עדין
-  ctx.strokeStyle = 'rgba(255,255,255,.16)';
-  ctx.lineWidth = Math.max(1, s*.035);
-  rr(x + s*.02, y + s*.02, s*.96, s*.96, r*.95); ctx.stroke();
-
+  ctx.drawImage(sp.cv, x - sp.pad * k, y - sp.pad * k, full, full);
   if (flash > 0) {
     ctx.globalAlpha = alpha * flash;
     ctx.fillStyle = '#fff';
-    rr(x, y, s, s, r); ctx.fill();
+    rr(x, y, s, s, s * .235); ctx.fill();
   }
   ctx.restore();
 }
 
 function drawEmptyCell(x, y, s){
-  ctx.fillStyle = theme.empty;
-  rr(x, y, s, s, s*.235); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,.045)';
-  ctx.lineWidth = 1;
-  rr(x + .5, y + .5, s - 1, s - 1, s*.23); ctx.stroke();
+  if (sprites.empty) ctx.drawImage(sprites.empty, x, y, s, s);
 }
 
 /* ============================================================
@@ -530,6 +876,7 @@ function layout(){
     w: slotW,
     h: L.trayH - 22
   }));
+  buildSprites();
   needsDraw();
 }
 
@@ -546,14 +893,16 @@ function layout(){
 /* מארחים (כמו NOVA) מזריקים כפתור צף בתחתית — מפנים לו מקום */
 let hostChromePad = 0;
 function reserveForHostChrome(){
-  const ours = new Set(['stage','hud','toasts','bnInstall','bnUpdate',
-                        'ovStart','ovOver','ovPause','ovSettings','ovStats']);
   let pad = 0;
   Array.prototype.forEach.call(document.body.children, el => {
-    if (ours.has(el.id) || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+    // כל מה ששייך למשחק מסומן ב-data-own, ולכן אין רשימת מזהים לתחזק
+    if (el.dataset.own !== undefined || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
     if (getComputedStyle(el).position !== 'fixed') return;
     const r = el.getBoundingClientRect();
-    if (r.height > 0 && r.bottom > window.innerHeight - 140)
+    // סרגל תחתון הוא אלמנט נמוך שנצמד לתחתית. אלמנט שמכסה חלק ניכר מהמסך
+    // הוא שכבה, לא סרגל — פינוי מקום עבורו היה מוחץ את הפריסה.
+    if (r.height <= 0 || r.height > window.innerHeight * .35) return;
+    if (r.bottom > window.innerHeight - 140)
       pad = Math.max(pad, window.innerHeight - r.top + 10);
   });
   if (pad === hostChromePad) return false;
@@ -610,7 +959,12 @@ const audio = (function(){
     },
     combo(cb){ tone(680 + cb*70, .26, 'square', .055, .04, 1150 + cb*95); },
     over(){ tone(340, .55, 'sawtooth', .09, 0, 85); tone(230, .65, 'triangle', .06, .07, 65); },
-    ui(){ tone(600, .05, 'sine', .045); }
+    ui(){ tone(600, .05, 'sine', .045); },
+    // ארפג׳ עולה לפתיחת הישג / יעד / ערכה
+    unlockJingle(){ [523, 659, 784, 1047].forEach((f, i) =>
+      tone(f, .28, 'triangle', .09, i * .085)); },
+    perfect(){ [523, 659, 784, 1047, 1319].forEach((f, i) =>
+      tone(f, .4, 'sine', .10, i * .07)); }
   };
 })();
 
@@ -702,22 +1056,8 @@ function render(){
 }
 
 function drawBackground(w, h){
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, theme.bg[0]);
-  g.addColorStop(.55, theme.bg[1]);
-  g.addColorStop(1, theme.bg[2]);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-
-  // הילה רכה שנעה לאט מאחורי הלוח
-  const cx = w/2 + Math.sin(timeMs * .00013) * w * .16;
-  const cy = L.by + L.size * .32 + Math.cos(timeMs * .00017) * 40;
-  const rad = Math.max(w, h) * .55;
-  const gl = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-  gl.addColorStop(0, rgba(theme.glow, .30));
-  gl.addColorStop(.55, rgba(theme.glow, .07));
-  gl.addColorStop(1, rgba(theme.glow, 0));
-  ctx.fillStyle = gl;
+  if (sprites.bg) { ctx.drawImage(sprites.bg, 0, 0, w, h); return; }
+  ctx.fillStyle = theme.bg[1];
   ctx.fillRect(0, 0, w, h);
 }
 
@@ -760,19 +1100,19 @@ function drawBoard(){
       const s = p >= 1 ? L.cell : L.cell * easeBack(Math.max(0, p));
       if (s <= 0) continue;
       const off = (L.cell - s) / 2;
-      drawBlock(cellX(c) + off, cellY(r) + off, s, theme.blocks[v], 1, 0);
+      drawBlock(cellX(c) + off, cellY(r) + off, s, v, 1, 0);
     }
   }
 
   // בלוקים בתהליך ניקוי
   bursts.forEach(b => {
     const t = b.t - b.delay;
-    if (t < 0) { drawBlock(b.x, b.y, L.cell, theme.blocks[b.color], 1, 0); return; }
+    if (t < 0) { drawBlock(b.x, b.y, L.cell, b.color, 1, 0); return; }
     const p = Math.min(1, t / 300);
     const flash = p < .3 ? 1 : Math.max(0, 1 - (p - .3) / .3);
     const s = L.cell * (1 + p * .45);
     const off = (L.cell - s) / 2;
-    drawBlock(b.x + off, b.y + off, s, theme.blocks[b.color], 1 - p*p, flash);
+    drawBlock(b.x + off, b.y + off, s, b.color, 1 - p*p, flash);
   });
 
   // גלי הדף — נחתכים לגבולות הלוח כדי שלא ייראו כקשתות על כל המסך
@@ -830,7 +1170,7 @@ function drawTray(){
     const ph = pieceH(piece.shape, L.tCell, L.tGap);
     const x0 = slot.x + (slot.w - pw) / 2;
     const y0 = slot.y + (slot.h - ph) / 2;
-    const dead = !fitsAnywhere(piece.shape);
+    const dead = piece.dead;
     const sc = easeBack(Math.max(0, Math.min(1, piece.spawn)));
     if (sc <= 0) continue;
     ctx.save();
@@ -839,7 +1179,7 @@ function drawTray(){
     ctx.translate(-pw/2, -ph/2);
     piece.shape.cells.forEach(cl => {
       drawBlock(cl[1] * (L.tCell + L.tGap), cl[0] * (L.tCell + L.tGap),
-                L.tCell, theme.blocks[piece.color], dead ? .3 : 1, 0);
+                L.tCell, piece.color, dead ? .3 : 1, 0);
     });
     ctx.restore();
   }
@@ -870,7 +1210,7 @@ function drawDragged(){
   });
   sh.cells.forEach(cl => {
     drawBlock(cl[1] * (L.cell + L.gap), cl[0] * (L.cell + L.gap),
-              L.cell, theme.blocks[drag.piece.color], 1, 0);
+              L.cell, drag.piece.color, 1, 0);
   });
   ctx.restore();
 }
@@ -946,8 +1286,14 @@ function fitsAnywhere(shape, b){
       if (fitsAt(shape, r, c, b)) return true;
   return false;
 }
+// סריקת «האם החלק נכנס בכלל» עולה 64 בדיקות מיקום לכל חלק, ולכן היא מחושבת
+// פעם אחת אחרי כל שינוי בלוח ולא בכל פריים של הציור.
+function refreshFits(){
+  for (let i = 0; i < 3; i++) if (tray[i]) tray[i].dead = !fitsAnywhere(tray[i].shape);
+  needsDraw();
+}
 function anyMoveLeft(){
-  for (let i = 0; i < 3; i++) if (tray[i] && fitsAnywhere(tray[i].shape)) return true;
+  for (let i = 0; i < 3; i++) if (tray[i] && !tray[i].dead) return true;
   return false;
 }
 
@@ -956,13 +1302,21 @@ function newPiece(shape){
 }
 
 function refillTray(){
+  tray = drawTrio();
+  refreshFits();
+}
+
+// מגריל שלושה חלקים ומוודא שלפחות אחד מהם נכנס ללוח,
+// כדי שהמשחק לא ייגמר בגלל הגרלה גרועה ולא בגלל השחקן.
+function drawTrio(){
   for (let a = 0; a < 40; a++) {
     const cand = [0,1,2].map(() => newPiece(randomShape()));
-    if (cand.some(p => fitsAnywhere(p.shape))) { tray = cand; return; }
+    if (cand.some(p => fitsAnywhere(p.shape))) return cand;
   }
-  const fitting = SHAPES.filter(s => fitsAnywhere(s));
-  tray = [0,1,2].map(() => newPiece(randomShape()));
-  if (fitting.length) tray[0] = newPiece(fitting[0]);
+  const cand = [0,1,2].map(() => newPiece(randomShape()));
+  const fitting = SHAPES.find(s => fitsAnywhere(s));
+  if (fitting) cand[0] = newPiece(fitting);
+  return cand;
 }
 
 function takeSnapshot(){
@@ -976,11 +1330,12 @@ function takeSnapshot(){
 function undo(){
   if (!snapshot || !running) return;
   board = snapshot.board.slice();
-  tray  = snapshot.tray.map(p => p ? { shape:p.shape, color:p.color, spawn:1 } : null);
+  tray  = snapshot.tray.map(p => p ? { shape:p.shape, color:p.color, spawn:1, dead:false } : null);
   score = snapshot.score; shownScore = score; combo = snapshot.combo;
   snapshot = null; undoBtn.disabled = true;
   bursts = []; particles = []; rings = []; flashT = 0;
   pop.fill(1);
+  refreshFits();
   audio.ui(); vibe(12);
   renderCombo(); renderScore(); needsDraw();
 }
@@ -1026,7 +1381,11 @@ function place(slot, r0, c0){
     combo++;
     stats.maxCombo = Math.max(stats.maxCombo, combo);
     stats.lines += lines;
+    if (lines >= 3) stats.triples++;
     if (lines >= 4) stats.quads++;
+    run.lines += lines;
+    run.maxCombo = Math.max(run.maxCombo, combo);
+    if (lines >= 2) run.multis++;
 
     const lineScore  = 10 * lines * lines;
     const comboBonus = Math.round(lineScore * .5 * (combo - 1));
@@ -1041,6 +1400,16 @@ function place(slot, r0, c0){
     if (lines >= 2) toast(PRAISE[Math.min(lines - 2, PRAISE.length - 1)]);
     if (combo > 1)  setTimeout(() => toast('קומבו ×' + combo, lines >= 2), lines >= 2 ? 200 : 0);
 
+    // לוח נקי — הבונוס הגדול של המשחק
+    if (board.every(v => v === -1)) {
+      stats.perfects++;
+      score += 300;
+      audio.perfect();
+      shake(18);
+      setTimeout(() => toast('לוח נקי! +300'), 320);
+      vibe([40,30,40,30,40,30,90]);
+    }
+
     scoreEl.classList.add('bump');
     setTimeout(() => scoreEl.classList.remove('bump'), 140);
   } else {
@@ -1051,7 +1420,9 @@ function place(slot, r0, c0){
   renderScore();
 
   if (!tray[0] && !tray[1] && !tray[2]) refillTray();
+  else refreshFits();          // הלוח השתנה, אז ההתאמות של החלקים שנשארו כבר לא תקפות
   saveStats();
+  checkProgress();
   needsDraw();
 
   if (!anyMoveLeft()) setTimeout(gameOver, 620);
@@ -1107,6 +1478,8 @@ function gameOver(){
     : 'השיא שלך: ' + stats.best.toLocaleString('he-IL') + ' נקודות.';
   $('btnContinue').style.display = usedContinue ? 'none' : '';
   renderScore();
+  checkProgress();
+  renderGoals('overGoals');
   show('ovOver');
 }
 
@@ -1121,7 +1494,9 @@ function continueGame(){
     if (r < 0) break;
     for (let c = 0; c < N; c++) board[idx(r,c)] = -1;
     guard++;
+    refreshFits();
   }
+  refreshFits();
   over = false; running = true; combo = 0;
   snapshot = null; undoBtn.disabled = true;
   hide('ovOver');
@@ -1135,6 +1510,7 @@ function newGame(){
   over = false; running = true; usedContinue = false;
   snapshot = null; undoBtn.disabled = true;
   particles = []; bursts = []; rings = []; flashT = 0; shakeAmp = 0;
+  run = { lines:0, multis:0, maxCombo:0 };
   refillTray();
   renderCombo(); renderScore(); hideAll(); needsDraw();
 }
@@ -1257,8 +1633,8 @@ $('btnPlay').onclick     = () => { audio.unlock(); audio.ui(); newGame(); };
 $('btnAgain').onclick    = () => { audio.ui(); newGame(); };
 $('btnRestart').onclick  = () => { audio.ui(); newGame(); };
 $('btnContinue').onclick = continueGame;
-$('btnHome').onclick     = () => { audio.ui(); hideAll(); show('ovStart'); };
-$('btnQuit').onclick     = () => { audio.ui(); running = false; hideAll(); show('ovStart'); };
+$('btnHome').onclick     = () => { audio.ui(); renderGoals('startGoals'); hideAll(); show('ovStart'); };
+$('btnQuit').onclick     = () => { audio.ui(); renderGoals('startGoals'); running = false; hideAll(); show('ovStart'); };
 $('btnResume').onclick   = () => { audio.ui(); hide('ovPause'); running = true; needsDraw(); };
 $('btnUndo').onclick     = undo;
 $('btnMenu').onclick     = () => {
@@ -1266,15 +1642,69 @@ $('btnMenu').onclick     = () => {
   if (over) { show('ovOver'); return; }
   running = false; show('ovPause');
 };
-$('btnSettings').onclick      = () => openSub('ovSettings', 'ovStart');
-$('btnSettings2').onclick     = () => openSub('ovSettings', 'ovPause');
+$('btnSettings').onclick      = () => { buildThemes(); openSub('ovSettings', 'ovStart'); };
+$('btnSettings2').onclick     = () => { buildThemes(); openSub('ovSettings', 'ovPause'); };
 $('btnCloseSettings').onclick = () => closeSub('ovSettings');
 $('btnStats').onclick         = () => { renderStats(); openSub('ovStats', 'ovStart'); };
 $('btnCloseStats').onclick    = () => closeSub('ovStats');
+$('btnAch').onclick           = () => { renderAch(); openSub('ovAch', 'ovStart'); };
+$('btnAch2').onclick          = () => { renderAch(); openSub('ovAch', 'ovOver'); };
+$('btnCloseAch').onclick      = () => closeSub('ovAch');
 $('btnResetStats').onclick    = () => {
-  ['best','games','maxCombo','lines','blocks','quads'].forEach(k => { stats[k] = 0; });
-  saveStats(); renderStats(); renderScore(); audio.ui();
+  ['best','games','maxCombo','lines','blocks','quads','triples','perfects']
+    .forEach(k => { stats[k] = 0; });
+  prog.stars = 0; prog.ach = {}; prog.goals = []; ensureGoals();
+  saveStats(); saveProg();
+  applyTheme(settings.theme); buildThemes();
+  renderStats(); renderScore(); renderStars(); audio.ui();
 };
+
+/* ---------- הישגים, יעדים וכוכבים ---------- */
+function renderStars(){
+  Array.prototype.forEach.call(document.querySelectorAll('.starCount'),
+    e => { e.textContent = prog.stars; });
+}
+
+function bar(cur, goal){
+  const p = Math.min(100, Math.round(cur / goal * 100));
+  return '<div class="bar"><i style="width:' + p + '%"></i></div>';
+}
+
+function renderGoals(targetId){
+  ensureGoals();
+  const host = $(targetId);
+  if (!host) return;
+  host.innerHTML = prog.goals.map(g => {
+    const def = goalDef(g);
+    if (!def) return '';
+    const cur = Math.min(goalProgress(g), g.val);
+    return '<div class="goal"><div class="tx"><div class="tt">' + def.txt(g.val) + '</div>' +
+           bar(cur, g.val) + '</div>' +
+           '<div class="num">' + cur.toLocaleString('he-IL') + '/' + g.val.toLocaleString('he-IL') + '</div>' +
+           '<div class="st">' + def.stars + '★</div></div>';
+  }).join('');
+}
+
+function renderAch(){
+  const done = ACHIEVEMENTS.filter(a => prog.ach[a.id]).length;
+  $('achCount').textContent = done + ' / ' + ACHIEVEMENTS.length;
+  $('achList').innerHTML = ACHIEVEMENTS.map(a => {
+    const got = !!prog.ach[a.id];
+    const cur = Math.min(a.get(stats), a.goal);
+    return '<div class="ach' + (got ? ' done' : '') + '">' +
+      '<div class="ic">' + a.ic + '</div>' +
+      '<div class="tx"><div class="tt">' + a.t + '</div>' +
+      '<div class="dd">' + a.d + '</div>' +
+      (got ? '' : bar(cur, a.goal) +
+        '<div class="pg">' +
+        cur.toLocaleString('he-IL') + ' / ' + a.goal.toLocaleString('he-IL') + '</div>') +
+      '</div>' +
+      '<div class="st">' + (got ? '✓ ' : '') + a.stars + '★</div></div>';
+  }).join('');
+  renderGoals('achGoals');
+}
+
+function themeUnlocked(t){ return t.req <= prog.stars; }
 
 function renderStats(){
   $('stBest').textContent   = stats.best.toLocaleString('he-IL');
@@ -1282,7 +1712,9 @@ function renderStats(){
   $('stCombo').textContent  = stats.maxCombo.toLocaleString('he-IL');
   $('stLines').textContent  = stats.lines.toLocaleString('he-IL');
   $('stBlocks').textContent = stats.blocks.toLocaleString('he-IL');
-  $('stQuad').textContent   = stats.quads.toLocaleString('he-IL');
+  $('stQuad').textContent    = stats.quads.toLocaleString('he-IL');
+  $('stPerfect').textContent = stats.perfects.toLocaleString('he-IL');
+  renderStars();
 }
 
 document.addEventListener('keydown', e => {
@@ -1311,7 +1743,9 @@ function bindToggle(elId, key){
 bindToggle('tgSound','sound'); bindToggle('tgVibe','vibe'); bindToggle('tgFx','fx');
 
 function applyTheme(id){
-  theme = THEMES.find(t => t.id === id) || THEMES[0];
+  const found = THEMES.find(t => t.id === id);
+  // ערכה נעולה (למשל אחרי איפוס נתונים) חוזרת לברירת המחדל
+  theme = (found && themeUnlocked(found)) ? found : THEMES[0];
   settings.theme = theme.id;
   store.set('bp.theme', theme.id);
   document.body.style.background = theme.bg[2];
@@ -1319,27 +1753,42 @@ function applyTheme(id){
   if (meta) meta.setAttribute('content', theme.bg[1]);
   Array.prototype.forEach.call(document.querySelectorAll('.swatch'),
     s => s.classList.toggle('on', s.dataset.theme === theme.id));
+  buildSprites();
   needsDraw();
 }
 
-(function buildThemes(){
+function buildThemes(){
   const row = $('themeRow');
+  row.innerHTML = '';
   THEMES.forEach(t => {
+    const open = themeUnlocked(t);
     const s = document.createElement('div');
-    s.className = 'swatch';
+    s.className = 'swatch' + (open ? '' : ' locked');
     s.dataset.theme = t.id;
-    s.title = t.name;
-    s.setAttribute('aria-label', t.name);
+    s.title = open ? t.name : t.name + ' — ' + t.req + ' כוכבים';
+    s.setAttribute('aria-label', s.title);
     s.style.background = t.bg[1];
-    for (let i = 0; i < 4; i++) {
-      const b = document.createElement('i');
-      b.style.background = t.blocks[i];
-      s.appendChild(b);
+    if (open) {
+      for (let i = 0; i < 4; i++) {
+        const b = document.createElement('i');
+        b.style.background = t.blocks[i];
+        s.appendChild(b);
+      }
+    } else {
+      const lock = document.createElement('span');
+      lock.className = 'lockTag';
+      lock.textContent = '🔒' + t.req;
+      s.appendChild(lock);
     }
-    s.onclick = () => { applyTheme(t.id); audio.ui(); };
+    s.onclick = () => {
+      if (!open) { audio.bad(); toast(t.req + ' ★ נדרשים', true); return; }
+      applyTheme(t.id); audio.ui();
+    };
     row.appendChild(s);
   });
-})();
+  Array.prototype.forEach.call(row.querySelectorAll('.swatch'),
+    s => s.classList.toggle('on', s.dataset.theme === theme.id));
+}
 
 /* ============================================================
    PWA
@@ -1384,9 +1833,13 @@ if ('serviceWorker' in navigator) {
    הפעלה
    ============================================================ */
 applyTheme(settings.theme);
+checkProgress(true);   // מזכה בשקט בהישגים שהושגו לפני שהמערכת נוספה
+buildThemes();
 reserveForHostChrome();
 layout();
 renderScore();
+renderStars();
+renderGoals('startGoals');
 needsDraw();
 document.addEventListener('pointerdown', () => audio.unlock(), { once:true });
 
@@ -1402,9 +1855,12 @@ window.__bp = {
   fitsAt: (id, r, c) => fitsAt(SHAPES[id], r, c),
   fillRow(r, keepFrom){
     for (let c = 0; c < N; c++) if (c < keepFrom) { board[idx(r,c)] = 0; pop[idx(r,c)] = 1; }
-    needsDraw();
+    refreshFits();
   },
-  setTray(i, shapeId){ tray[i] = { shape: SHAPES[shapeId], color:1, spawn:1 }; needsDraw(); },
+  setTray(i, shapeId){
+    tray[i] = { shape: SHAPES[shapeId], color:1, spawn:1, dead:false };
+    refreshFits();
+  },
   layout: () => ({ cell:L.cell, gap:L.gap, bx:L.bx, by:L.by, size:L.size,
                    trayY:L.trayY, trayH:L.trayH, tCell:L.tCell, lift:LIFT }),
   slotCenter(i){ const s = L.slots[i]; return { x:s.x + s.w/2, y:s.y + s.h/2 }; },
@@ -1422,7 +1878,18 @@ window.__bp = {
     ? { r:drag.preview.r, c:drag.preview.c, cells:drag.piece.shape.cells.length }
     : null,
   dragging: () => !!drag,
-  frames: () => frames
+  frames: () => frames,
+  forceRender: () => { render(); },
+  prog: () => ({
+    stars: prog.stars,
+    unlocked: Object.keys(prog.ach).length,
+    total: ACHIEVEMENTS.length,
+    goals: prog.goals.map(g => ({ id:g.id, val:g.val, at:goalProgress(g) })),
+    themesOpen: THEMES.filter(themeUnlocked).map(t => t.id)
+  }),
+  // מזייף התקדמות כדי לבדוק פתיחת הישגים ויעדים
+  bumpStats(patch){ Object.assign(stats, patch); saveStats(); checkProgress(); },
+  setGoal(i, id, val){ prog.goals[i] = { id, val, base:0 }; saveProg(); }
 };
 
 })();

@@ -218,7 +218,22 @@ try {
   }
   const elapsed = Date.now() - t0;
   const fps = ((await page.evaluate(() => window.__bp.frames())) - f0) / (elapsed / 1000);
-  check('הגרירה מציירת בקצב חלק (>40fps)', fps > 40, Math.round(fps) + 'fps');
+  check('הגרירה מציירת בקצב חלק (>50fps)', fps > 50, Math.round(fps) + 'fps');
+
+  // תקציב הפריים עצמו, בלי תלות בקצב שבו הבדיקה מזיזה את העכבר
+  const cost = await page.evaluate(() => {
+    const g = document.getElementById('stage').getContext('2d');
+    const t = [];
+    for (let i = 0; i < 60; i++) {
+      const a = performance.now();
+      window.__bp.forceRender();
+      g.getImageData(0, 0, 1, 1);
+      t.push(performance.now() - a);
+    }
+    t.sort((x, y) => x - y);
+    return t[t.length >> 1];
+  });
+  check('ציור פריים בתוך תקציב 16.7ms', cost < 16.7, cost.toFixed(1) + 'ms');
 
   await page.mouse.move(drop.x, drop.y, { steps: 6 });
   await page.waitForTimeout(60);
@@ -244,6 +259,7 @@ try {
   console.log('\n5. ניקוי שורה');
   await page.evaluate(() => {
     window.__bp.newGame();
+    window.__bp.fillRow(0, 1);      // בלוק בודד בשורה 0 — מונע «לוח נקי» ובונוס שלו
     window.__bp.fillRow(7, 7);      // ממלא עמודות 0..6 בשורה 7
     window.__bp.setTray(0, 0);      // חלק 1×1
   });
@@ -271,10 +287,25 @@ try {
   check('בונוס קומבו נוסף (1 + 10 + 5)', st.score === before2 + 16, 'ניקוד ' + st.score);
 
   // מהלך שלא מנקה — הקומבו מתאפס
-  await page.evaluate(() => { window.__bp.setTray(2, 0); window.__bp.place(2, 0, 0); });
+  await page.evaluate(() => { window.__bp.setTray(2, 0); window.__bp.place(2, 0, 1); });
   await page.waitForTimeout(150);
   st = await page.evaluate(() => window.__bp.state());
   check('הקומבו מתאפס במהלך בלי ניקוי', st.combo === 0, 'קומבו ' + st.combo);
+
+  /* ---------- 5b. לוח נקי ---------- */
+  console.log('\n5b. לוח נקי');
+  await page.evaluate(() => {
+    window.__bp.newGame();
+    window.__bp.fillRow(7, 7);
+    window.__bp.setTray(0, 0);
+  });
+  const perfBefore = await page.evaluate(() => window.__bp.state().score);
+  await page.evaluate(() => window.__bp.place(0, 7, 7));
+  await page.waitForTimeout(600);
+  st = await page.evaluate(() => window.__bp.state());
+  check('הלוח התרוקן לגמרי', st.board.every(v => v === -1));
+  check('בונוס לוח נקי של 300 (1 + 10 + 300)', st.score === perfBefore + 311,
+    'ניקוד ' + st.score + ' מול ' + (perfBefore + 311));
 
   /* ---------- 6. סוף משחק ושמירת שיא ---------- */
   console.log('\n6. סוף משחק ושיא');
@@ -306,10 +337,19 @@ try {
   console.log('\n7. הגדרות');
   await page.click('#btnSettings');
   await page.waitForTimeout(250);
-  check('4 ערכות צבע', (await page.locator('.swatch').count()) === 4);
+  check('8 ערכות צבע', (await page.locator('.swatch').count()) === 8);
+  // מספר הנעולות תלוי בכוכבים שנצברו עד כאן; הבדיקה המדויקת היא בסעיף 7c
+  const locked = await page.locator('.swatch.locked').count();
+  check('יש ערכות נעולות ופתוחות', locked > 0 && locked <= 4, 'נעולות: ' + locked);
   const swatchColors = await page.locator('.swatch i').evaluateAll(
     els => [...new Set(els.map(e => getComputedStyle(e).backgroundColor))].length);
   check('לכל ערכה צבעים משלה', swatchColors > 4, 'גוונים ייחודיים: ' + swatchColors);
+  const lockedId = await page.locator('.swatch.locked').first().getAttribute('data-theme');
+  await page.locator('.swatch.locked').first().click();
+  await page.waitForTimeout(150);
+  check('לחיצה על ערכה נעולה לא מחליפה ערכה',
+    (await page.evaluate(() => localStorage.getItem('bp.theme'))) !== lockedId,
+    'נלחצה ' + lockedId);
   const beforeTheme = await page.evaluate(() => {
     const L = window.__bp.layout();
     const g = document.getElementById('stage').getContext('2d');
@@ -359,6 +399,91 @@ try {
   const trayBack = await page.evaluate(() => window.__bp.layout());
   check('המגש חוזר למקומו כשה-UI נעלם',
     Math.abs(trayBack.trayY - trayBefore.trayY) < 2);
+
+  /* ---------- 7c. הישגים, יעדים וכוכבים ---------- */
+  console.log('\n7c. הישגים ויעדים');
+  await page.evaluate(() => {
+    localStorage.removeItem('bp.prog');
+    localStorage.removeItem('bp.stats');
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+
+  let pr = await page.evaluate(() => window.__bp.prog());
+  check('מתחילים בלי כוכבים ובלי הישגים', pr.stars === 0 && pr.unlocked === 0,
+    JSON.stringify(pr));
+  check('17 הישגים מוגדרים', pr.total === 17, 'בפועל ' + pr.total);
+  check('3 יעדים פעילים', pr.goals.length === 3, JSON.stringify(pr.goals));
+  check('רק 4 ערכות פתוחות בהתחלה', pr.themesOpen.length === 4,
+    pr.themesOpen.join(','));
+
+  // מזייפים התקדמות שפותחת בדיוק שני הישגים: 100 ו-500 נקודות (1★ כל אחד)
+  await page.evaluate(() => window.__bp.bumpStats({ best: 600 }));
+  await page.waitForTimeout(250);
+  pr = await page.evaluate(() => window.__bp.prog());
+  check('שני הישגי ניקוד נפתחו', pr.unlocked === 2, 'נפתחו ' + pr.unlocked);
+  check('הוענקו 2 כוכבים', pr.stars === 2, 'כוכבים ' + pr.stars);
+  check('כרטיס הפתיחה מוצג', await page.locator('#unlock').isVisible());
+  const cardKind  = (await page.locator('#unlockKind').textContent()).trim();
+  const cardTitle = (await page.locator('#unlockTitle').textContent()).trim();
+  const cardStars = (await page.locator('#unlockStars').textContent()).trim();
+  check('הכרטיס מציין שנפתח הישג', cardKind === 'הישג נפתח', cardKind);
+  check('הכרטיס מציג את שם ההישג', ['צעד ראשון', 'מתחמם'].includes(cardTitle), cardTitle);
+  check('הכרטיס מציג את הכוכבים', cardStars === '+1 ★', cardStars);
+  await page.screenshot({ path: path.join(SHOTS, '7-unlock.png') });
+
+  // מספיק כוכבים כדי לפתוח את הערכה הראשונה הנעולה (6★)
+  await page.evaluate(() => window.__bp.bumpStats({ best: 2600, lines: 300, maxCombo: 5 }));
+  await page.waitForTimeout(400);
+  pr = await page.evaluate(() => window.__bp.prog());
+  check('צבירת כוכבים פותחת ערכה חדשה', pr.themesOpen.length > 4,
+    pr.stars + '★ → ' + pr.themesOpen.join(','));
+
+  // יעד: להשלים יעד ניקוד ולוודא שהוא מוחלף באחר
+  const goalsBefore = pr.goals.map(g => g.id + ':' + g.val).join(',');
+  await page.evaluate(() => {
+    window.__bp.setGoal(0, 'g_blocks', 1);
+    window.__bp.bumpStats({ blocks: 50 });
+  });
+  await page.waitForTimeout(300);
+  pr = await page.evaluate(() => window.__bp.prog());
+  check('יעד שהושלם מוחלף ביעד חדש',
+    pr.goals.length === 3 && pr.goals.map(g => g.id + ':' + g.val).join(',') !== goalsBefore,
+    JSON.stringify(pr.goals));
+
+  // מסך ההישגים
+  await page.evaluate(() => { window.__bp.newGame(); });
+  await page.click('#btnMenu'); await page.waitForTimeout(200);
+  await page.click('#btnQuit');  await page.waitForTimeout(250);
+  await page.click('#btnAch');   await page.waitForTimeout(300);
+  check('מסך ההישגים מציג 17 שורות', (await page.locator('#achList .ach').count()) === 17);
+  check('הישגים שנפתחו מסומנים', (await page.locator('#achList .ach.done').count()) > 0);
+  check('מסך ההישגים מציג 3 יעדים', (await page.locator('#achGoals .goal').count()) === 3);
+  check('מונה ההישגים מעודכן',
+    /^\d+ \/ 17$/.test((await page.locator('#achCount').textContent()).trim()),
+    await page.locator('#achCount').textContent());
+  // בעברית RTL זוג מספרים מתהפך על המסך אם לא מבודדים אותו
+  const ltrOk = await page.evaluate(() => {
+    const sel = ['#achCount', '#achGoals .goal .num', '#achGoals .goal .st', '#unlockStars'];
+    return sel.every(s => {
+      const e = document.querySelector(s);
+      return e && getComputedStyle(e).direction === 'ltr';
+    });
+  });
+  check('מספרים ומונים מבודדים ל-LTR', ltrOk === true);
+  await page.screenshot({ path: path.join(SHOTS, '8-achievements.png') });
+  await page.click('#btnCloseAch'); await page.waitForTimeout(250);
+  check('סגירת הישגים חוזרת לתפריט',
+    !(await page.locator('#ovStart').evaluate(e => e.classList.contains('hidden'))));
+  check('היעדים מוצגים גם בתפריט הראשי',
+    (await page.locator('#startGoals .goal').count()) === 3);
+
+  // ההתקדמות שורדת רענון
+  const starsNow = (await page.evaluate(() => window.__bp.prog())).stars;
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+  check('ההתקדמות נשמרת אחרי רענון',
+    (await page.evaluate(() => window.__bp.prog())).stars === starsNow);
 
   /* ---------- 8. ריצת עומס: משחקים שלמים אוטומטית ---------- */
   console.log('\n8. ריצת עומס (5 משחקים מלאים)');
