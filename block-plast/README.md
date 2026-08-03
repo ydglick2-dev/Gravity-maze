@@ -29,7 +29,7 @@
 | קובץ | תפקיד |
 |---|---|
 | `index.html` | כל המשחק — HTML, CSS, קנבס ו-JS בקובץ אחד, ללא תלויות |
-| `sw.js` | Service Worker — מטמון `blockplast-v1`, מאפשר משחק אופליין |
+| `sw.js` | Service Worker — מטמון `blockplast-v2`, מאפשר משחק אופליין |
 | `manifest.webmanifest` | הגדרות ההתקנה כאפליקציה |
 | `_headers` | `no-cache` ל-`index.html`/`sw.js` כדי שעדכונים יגיעו |
 | `privacy.html` | הצהרת פרטיות |
