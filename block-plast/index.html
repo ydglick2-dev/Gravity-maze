@@ -651,8 +651,13 @@ const pop  = new Float32Array(N*N).fill(1);   // 0..1 — כניסת בלוק ל
 let bursts = [];      // בלוקים שמתנקים
 let particles = [];
 let rings = [];       // גלי הדף בניקוי
+let sweeps = [];      // פס אור שרץ לאורך קו שמתנקה
+let pops = [];        // מספרי ניקוד שעולים מהלוח
+let orbs = [];        // כדורי אור שנעים ברקע
 let shakeAmp = 0, shakeT = 0;
 let flashRows = [], flashCols = [], flashT = 0;
+let dangerLevel = 0;  // 0..1 — כמה הלוח מלא, לזוהר האזהרה
+let screenFlash = 0;  // הבזק על כל המסך בניקוי גדול
 
 /* ============================================================
    אלמנטים
@@ -700,15 +705,21 @@ function rr(x, y, w, h, r){
    ------------------------------------------------------------ */
 const sprites = { key:'', block:new Map(), empty:null, bg:null };
 
-function makeSprite(w, h, paint){
+function makeSprite(w, h, paint, scale){
+  const s = (scale || 1) * dpr;
   const c = document.createElement('canvas');
-  c.width  = Math.max(1, Math.ceil(w * dpr));
-  c.height = Math.max(1, Math.ceil(h * dpr));
+  c.width  = Math.max(1, Math.ceil(w * s));
+  c.height = Math.max(1, Math.ceil(h * s));
   const g = c.getContext('2d');
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.setTransform(s, 0, 0, s, 0, 0);
   paint(g);
   return c;
 }
+
+// נמדד: שכבת רקע בחצי רזולוציה דווקא מאיטה — העתקה 1:1 היא מסלול מהיר
+// בחומרה, ואילו העתקה עם שינוי קנה מידה משלמת על אינטרפולציה.
+// 1.0 → 5.8ms לפריים, 0.5 → 10.4ms. לא להקטין.
+const BG_SCALE = 1;
 
 // ציור הבלוק עצמו — רץ רק בבניית הספרייט
 function paintBlock(g, x, y, s, hex){
@@ -775,6 +786,32 @@ function buildSprites(){
     R(.5, .5, s-1, s-1, s*.23);     g.stroke();
   });
 
+  // כדור אור רך לרקע ולחלקיקים — נצבע פעם אחת לכל צבע בערכה
+  sprites.orb = theme.blocks.map(hex => {
+    const R = 96;
+    return makeSprite(R * 2, R * 2, g => {
+      const rad = g.createRadialGradient(R, R, 0, R, R, R);
+      rad.addColorStop(0,   rgba(hex, .95));
+      rad.addColorStop(.35, rgba(hex, .32));
+      rad.addColorStop(1,   rgba(hex, 0));
+      g.fillStyle = rad;
+      g.fillRect(0, 0, R*2, R*2);
+    });
+  });
+
+  // פס האור שרץ לאורך קו שמתנקה
+  sprites.sweep = makeSprite(L.cell * 3, L.cell, g => {
+    const w = L.cell * 3, h = L.cell;
+    const lin = g.createLinearGradient(0, 0, w, 0);
+    lin.addColorStop(0,   'rgba(255,255,255,0)');
+    lin.addColorStop(.45, 'rgba(255,255,255,.55)');
+    lin.addColorStop(.5,  'rgba(255,255,255,.95)');
+    lin.addColorStop(.55, 'rgba(255,255,255,.55)');
+    lin.addColorStop(1,   'rgba(255,255,255,0)');
+    g.fillStyle = lin;
+    g.fillRect(0, 0, w, h);
+  });
+
   // הרקע קבוע לחלוטין, כולל ההילה — מעבר צבע רדיאלי בכל פריים היה
   // הפריט היקר ביותר בציור.
   sprites.bg = makeSprite(L.w, L.h, g => {
@@ -792,23 +829,31 @@ function buildSprites(){
     gl.addColorStop(1,  rgba(theme.glow, 0));
     g.fillStyle = gl;
     g.fillRect(0, 0, L.w, L.h);
-  });
+  }, BG_SCALE);
+
+  // הקנבס שאליו מורכבים הרקע והכדורים יחד, באותה רזולוציה מופחתת
+  sprites.scene = makeSprite(L.w, L.h, () => {}, BG_SCALE);
+  sprites.sceneCtx = sprites.scene.getContext('2d');
+  sprites.sceneCtx.setTransform(dpr * BG_SCALE, 0, 0, dpr * BG_SCALE, 0, 0);
+  sceneAge = 99;
 }
 
-// בלולאה נשאר רק העתקת ספרייט, כולל קנה מידה לאנימציות
-function drawBlock(x, y, s, colorIdx, alpha, flash){
+// בלולאה נשאר רק העתקת ספרייט. h שונה מ-w נותן מתיחה/כיווץ בהנחה.
+function drawBlock(x, y, s, colorIdx, alpha, flash, h){
   if (alpha <= .003) return;
+  h = h === undefined ? s : h;
   const tag = Math.abs(s - L.tCell) < Math.abs(s - L.cell) ? 't' : 'b';
   const sp = sprites.block.get(tag + colorIdx);
   if (!sp) return;
-  const k = s / sp.size, full = (sp.size + sp.pad * 2) * k;
+  const kx = s / sp.size, ky = h / sp.size;
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.drawImage(sp.cv, x - sp.pad * k, y - sp.pad * k, full, full);
+  ctx.drawImage(sp.cv, x - sp.pad * kx, y - sp.pad * ky,
+                (sp.size + sp.pad * 2) * kx, (sp.size + sp.pad * 2) * ky);
   if (flash > 0) {
     ctx.globalAlpha = alpha * flash;
     ctx.fillStyle = '#fff';
-    rr(x, y, s, s, s * .235); ctx.fill();
+    rr(x, y, s, h, s * .235); ctx.fill();
   }
   ctx.restore();
 }
@@ -877,6 +922,7 @@ function layout(){
     h: L.trayH - 22
   }));
   buildSprites();
+  if (!orbs.length) buildOrbs();
   needsDraw();
 }
 
@@ -977,10 +1023,13 @@ let raf = 0, lastT = 0, timeMs = 0, dirty = true;
 
 function needsDraw(){ dirty = true; if (!raf) raf = requestAnimationFrame(frame); }
 
+// הרקע נע תמיד כשהמשחק על המסך, ולכן הלולאה נעצרת רק כששום שכבה לא פעילה
 function animating(){
   if (drag || particles.length || bursts.length || rings.length) return true;
-  if (shakeAmp > .3 || flashT > 0) return true;
+  if (sweeps.length || pops.length) return true;
+  if (shakeAmp > .3 || flashT > 0 || screenFlash > 0) return true;
   if (Math.abs(shownScore - score) > .5) return true;
+  if (running && orbs.length) return true;      // כדורי הרקע והברק על הלוח
   for (let i = 0; i < N*N; i++) if (pop[i] < 1) return true;
   for (let i = 0; i < 3; i++) if (tray[i] && tray[i].spawn < 1) return true;
   return false;
@@ -1021,11 +1070,32 @@ function update(dt){
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx * k; p.y += p.vy * k;
-    p.vy += .34 * k; p.vx *= Math.pow(.985, k);
+    p.vy += p.grav * k; p.vx *= Math.pow(.985, k);
     p.rot += p.vr * k;
     p.life -= p.decay * k;
-    if (p.life <= 0) particles.splice(i, 1);
+    if (p.life <= 0 || p.y > L.h + 40) particles.splice(i, 1);
   }
+  for (let i = sweeps.length - 1; i >= 0; i--) {
+    sweeps[i].t += dt;
+    if (sweeps[i].t > sweeps[i].dur) sweeps.splice(i, 1);
+  }
+  for (let i = pops.length - 1; i >= 0; i--) {
+    pops[i].t += dt;
+    if (pops[i].t > pops[i].dur) pops.splice(i, 1);
+  }
+  orbs.forEach(o => {
+    o.x += o.vx * k; o.y += o.vy * k;
+    if (o.y < -o.r) { o.y = L.h + o.r; o.x = Math.random() * L.w; }
+    if (o.x < -o.r) o.x = L.w + o.r;
+    if (o.x > L.w + o.r) o.x = -o.r;
+  });
+  if (screenFlash > 0) screenFlash = Math.max(0, screenFlash - .055 * k);
+
+  // רמת הסכנה נגזרת ממילוי הלוח ומתעדכנת בהחלקה
+  let filled = 0;
+  for (let i = 0; i < N*N; i++) if (board[i] !== -1) filled++;
+  const want = running ? Math.max(0, (filled / (N*N) - .55) / .35) : 0;
+  dangerLevel += (Math.min(1, want) - dangerLevel) * Math.min(1, .05 * k);
 
   if (flashT > 0) { flashT -= dt; if (flashT <= 0) { flashRows = []; flashCols = []; } }
   if (shakeAmp > .3) { shakeAmp *= Math.pow(.87, k); shakeT += dt; } else shakeAmp = 0;
@@ -1051,14 +1121,40 @@ function render(){
   drawTray();
   drawDragged();
   drawParticles();
+  drawPops();
 
   ctx.restore();
+  drawScreenFlash();
+}
+
+// הרקע וכדורי האור מורכבים יחד לקנבס אחד, כך שבלולאה יש העתקת מסך מלא
+// אחת בלבד — שתי העתקות מסך מלא כבר חורגות מהתקציב. הכדורים זזים כ-0.1px
+// לפריים, ולכן הרכבה מחדש כל 6 פריימים אינה נראית.
+let sceneAge = 99;
+
+function composeScene(){
+  const g = sprites.sceneCtx;
+  if (!g) return;
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.drawImage(sprites.bg, 0, 0, L.w, L.h);
+  g.globalCompositeOperation = 'lighter';
+  orbs.forEach(o => {
+    g.globalAlpha = o.a;
+    g.drawImage(sprites.orb[o.c], o.x - o.r, o.y - o.r, o.r * 2, o.r * 2);
+  });
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
 }
 
 function drawBackground(w, h){
-  if (sprites.bg) { ctx.drawImage(sprites.bg, 0, 0, w, h); return; }
-  ctx.fillStyle = theme.bg[1];
-  ctx.fillRect(0, 0, w, h);
+  if (!sprites.bg) { ctx.fillStyle = theme.bg[1]; ctx.fillRect(0, 0, w, h); return; }
+  if (!settings.fx || !orbs.length || !sprites.scene) {
+    ctx.drawImage(sprites.bg, 0, 0, w, h);
+    return;
+  }
+  if (++sceneAge >= 6) { composeScene(); sceneAge = 0; }
+  ctx.drawImage(sprites.scene, 0, 0, w, h);
 }
 
 function cellX(c){ return L.bx + L.gap + c * (L.cell + L.gap); }
@@ -1074,6 +1170,29 @@ function drawPanel(x, y, w, h, r){
 
 function drawBoard(){
   drawPanel(L.bx, L.by, L.size, L.size, L.size * .05);
+
+  // כשהלוח מתמלא, המסגרת מתחילה לפעום באדום
+  if (dangerLevel > .02) {
+    const pulse = .45 + .55 * Math.sin(timeMs * .0065);
+    const a = dangerLevel * pulse;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = '#ff4a2e';
+    // הטבעות מצוירות מחוץ לגבול הלוח ולא עליו, אחרת המיזוג המוסף
+    // מצטבר ללבן ומכסה את הבלוקים.
+    for (let i = 4; i >= 1; i--) {
+      const grow = L.cell * .16 * i;
+      ctx.globalAlpha = a * .21 / i;
+      ctx.lineWidth = L.cell * .2;
+      rr(L.bx - grow, L.by - grow, L.size + grow*2, L.size + grow*2,
+         L.size * .05 + grow); ctx.stroke();
+    }
+    ctx.globalAlpha = a * .75;
+    ctx.strokeStyle = '#ff7a55';
+    ctx.lineWidth = Math.max(1.5, L.cell * .07);
+    rr(L.bx, L.by, L.size, L.size, L.size * .05); ctx.stroke();
+    ctx.restore();
+  }
 
   for (let r = 0; r < N; r++)
     for (let c = 0; c < N; c++)
@@ -1097,11 +1216,37 @@ function drawBoard(){
       const i = r*N + c, v = board[i];
       if (v < 0) continue;
       const p = pop[i];
-      const s = p >= 1 ? L.cell : L.cell * easeBack(Math.max(0, p));
-      if (s <= 0) continue;
-      const off = (L.cell - s) / 2;
-      drawBlock(cellX(c) + off, cellY(r) + off, s, v, 1, 0);
+      if (p >= 1) { drawBlock(cellX(c), cellY(r), L.cell, v, 1, 0); continue; }
+      const e = easeBack(Math.max(0, p));
+      if (e <= 0) continue;
+      // מתיחה וכיווץ: הבלוק נוחת רחב ונמוך ואז מתייצב
+      const sq = Math.sin(Math.max(0, Math.min(1, p)) * Math.PI) * .22;
+      const w = L.cell * e * (1 + sq), h = L.cell * e * (1 - sq);
+      drawBlock(cellX(c) + (L.cell - w) / 2, cellY(r) + (L.cell - h), w, v, 1, 0, h);
     }
+  }
+
+  // פס אור שרץ לאורך קו שמתנקה, לפני שהבלוקים מתפוצצים
+  if (sweeps.length && sprites.sweep) {
+    ctx.save();
+    rr(L.bx, L.by, L.size, L.size, L.size * .05); ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+    const len = L.cell * 3;
+    sweeps.forEach(sw => {
+      const k = sw.t / sw.dur;
+      ctx.globalAlpha = Math.sin(Math.min(1, k) * Math.PI) * .9;
+      ctx.save();
+      if (sw.row !== undefined) {
+        ctx.translate(L.bx - len + (L.size + len * 2) * k, cellY(sw.row));
+      } else {
+        // אותו ספרייט מסובב ב-90°, כדי לרוץ מלמעלה למטה לאורך העמודה
+        ctx.translate(cellX(sw.col) + L.cell, L.by - len + (L.size + len * 2) * k);
+        ctx.rotate(Math.PI / 2);
+      }
+      ctx.drawImage(sprites.sweep, 0, 0, len, L.cell);
+      ctx.restore();
+    });
+    ctx.restore();
   }
 
   // בלוקים בתהליך ניקוי
@@ -1121,12 +1266,16 @@ function drawBoard(){
     rr(L.bx, L.by, L.size, L.size, L.size * .05);
     ctx.clip();
     rings.forEach(g => {
-      const p = g.t / g.dur;
+      // t שלילי הוא השהיה מדורגת — הגל עוד לא יצא לדרך
+      if (g.t < 0) return;
+      const p = Math.min(1, g.t / g.dur);
+      const radius = g.r0 + (g.r1 - g.r0) * (1 - Math.pow(1 - p, 2));
+      if (radius <= 0) return;
       ctx.globalAlpha = (1 - p) * .5;
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = Math.max(1.5, L.cell * .12 * (1 - p));
       ctx.beginPath();
-      ctx.arc(g.x, g.y, g.r0 + (g.r1 - g.r0) * (1 - Math.pow(1 - p, 2)), 0, Math.PI*2);
+      ctx.arc(g.x, g.y, radius, 0, Math.PI*2);
       ctx.stroke();
     });
     ctx.restore();
@@ -1216,9 +1365,17 @@ function drawDragged(){
 }
 
 function drawParticles(){
+  if (!particles.length) return;
+  ctx.save();
+  // רסיסי הניקוי מצוירים במיזוג מוסף כדי שייראו כאור, לא כריבועים
+  let addMode = false;
   particles.forEach(p => {
-    ctx.save();
+    if (p.add !== addMode) {
+      ctx.globalCompositeOperation = p.add ? 'lighter' : 'source-over';
+      addMode = p.add;
+    }
     ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+    ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(p.rot);
     ctx.fillStyle = p.col;
@@ -1226,6 +1383,47 @@ function drawParticles(){
     rr(-s/2, -s/2, s, s, s*.28); ctx.fill();
     ctx.restore();
   });
+  ctx.restore();
+}
+
+// מספרי ניקוד שעולים מהמקום שבו הקו התנקה
+function drawPops(){
+  if (!pops.length) return;
+  const fs = Math.max(20, L.cell * .78);
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  // הקנבס יורש RTL מהמסמך, ובלי זה «250+» היה מוצג הפוך
+  ctx.direction = 'ltr';
+  ctx.font = '900 ' + fs.toFixed(0) + 'px -apple-system,"Segoe UI",Rubik,Arial,sans-serif';
+  ctx.lineJoin = 'round';
+  pops.forEach(p => {
+    const k = p.t / p.dur;
+    const inK = Math.min(1, k * 5);
+    const scale = easeBack(inK) * (1 + Math.sin(inK * Math.PI) * .18);
+    ctx.save();
+    ctx.globalAlpha = k < .65 ? 1 : Math.max(0, 1 - (k - .65) / .35);
+    ctx.translate(p.x, p.y - k * L.cell * 1.9);
+    ctx.scale(scale, scale);
+    ctx.lineWidth = fs * .22;
+    ctx.strokeStyle = 'rgba(0,0,0,.6)';
+    ctx.strokeText(p.text, 0, 0);
+    ctx.fillStyle = p.hex;
+    ctx.fillText(p.text, 0, 0);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// הבזק לבן על כל המסך בניקוי גדול
+function drawScreenFlash(){
+  if (screenFlash <= 0) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = screenFlash * .30;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, L.w, L.h);
+  ctx.restore();
 }
 
 function easeBack(t){
@@ -1240,17 +1438,57 @@ function emit(x, y, hex, count){
   if (!settings.fx) return;
   for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2;
-    const sp = 1.6 + Math.random() * 4.4;
+    const sp = 1.6 + Math.random() * 5.2;
     particles.push({
-      x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 2.2,
-      life: 1, decay: .016 + Math.random()*.018,
-      size: L.cell * (.16 + Math.random()*.22),
-      rot: Math.random()*Math.PI, vr: (Math.random()-.5)*.3,
-      col: Math.random() < .25 ? '#ffffff' : hex
+      x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp - 2.4,
+      life: 1, decay: .015 + Math.random()*.018,
+      size: L.cell * (.16 + Math.random()*.24),
+      rot: Math.random()*Math.PI, vr: (Math.random()-.5)*.42,
+      col: Math.random() < .28 ? '#ffffff' : hex,
+      add: true, grav: .34
     });
   }
 }
+
+// קונפטי לחגיגת שיא חדש — נופל מלמעלה, בלי מיזוג מוסף
+function confetti(count){
+  if (!settings.fx) return;
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * L.w, y: -20 - Math.random() * 200,
+      vx: (Math.random()-.5) * 2.4, vy: 1.5 + Math.random() * 2.5,
+      life: 1, decay: .004 + Math.random()*.004,
+      size: 5 + Math.random() * 9,
+      rot: Math.random()*Math.PI, vr: (Math.random()-.5)*.5,
+      col: theme.blocks[(Math.random()*theme.blocks.length)|0],
+      add: false, grav: .015
+    });
+  }
+  needsDraw();
+}
+
+function popText(x, y, text, hex){
+  if (!settings.fx) return;
+  // הטקסט ממורכז סביב x, ולכן הוא נשמר במרחק בטוח מקצוות המסך
+  const margin = L.w * .22;
+  pops.push({ x: Math.max(margin, Math.min(L.w - margin, x)), y, text, hex, t:0, dur:1050 });
+}
+
 function shake(a){ if (settings.fx) { shakeAmp = Math.max(shakeAmp, a); needsDraw(); } }
+
+function buildOrbs(){
+  orbs = [];
+  if (!L.w) return;
+  for (let i = 0; i < 11; i++) {
+    orbs.push({
+      x: Math.random() * L.w, y: Math.random() * L.h,
+      r: L.w * (.09 + Math.random() * .17),
+      vx: (Math.random() - .5) * .10, vy: -(.04 + Math.random() * .09),
+      a: .05 + Math.random() * .07,
+      c: (Math.random() * theme.blocks.length) | 0
+    });
+  }
+}
 
 function toast(text, small){
   const d = document.createElement('div');
@@ -1333,7 +1571,8 @@ function undo(){
   tray  = snapshot.tray.map(p => p ? { shape:p.shape, color:p.color, spawn:1, dead:false } : null);
   score = snapshot.score; shownScore = score; combo = snapshot.combo;
   snapshot = null; undoBtn.disabled = true;
-  bursts = []; particles = []; rings = []; flashT = 0;
+  bursts = []; particles = []; rings = []; sweeps = []; pops = [];
+  flashT = 0; screenFlash = 0;
   pop.fill(1);
   refreshFits();
   audio.ui(); vibe(12);
@@ -1391,6 +1630,11 @@ function place(slot, r0, c0){
     const comboBonus = Math.round(lineScore * .5 * (combo - 1));
     score += lineScore + comboBonus;
 
+    // המספר עולה מהמקום שבו הקו התנקה, לא מסרגל הניקוד
+    const px = cols.length ? cellX(cols[0]) + L.cell/2 : L.bx + L.size/2;
+    const py = rows.length ? cellY(rows[0]) + L.cell/2 : L.by + L.size/2;
+    popText(px, py, '+' + (lineScore + comboBonus), combo > 1 ? '#ffd15e' : '#ffffff');
+
     clearLines(rows, cols);
     audio.clear(lines, combo);
     if (combo > 1) audio.combo(combo);
@@ -1405,8 +1649,18 @@ function place(slot, r0, c0){
       stats.perfects++;
       score += 300;
       audio.perfect();
-      shake(18);
-      setTimeout(() => toast('לוח נקי! +300'), 320);
+      shake(22);
+      screenFlash = 1;
+      confetti(70);
+      // זרזיף אור מכל פינות הלוח פנימה
+      if (settings.fx) {
+        for (let i = 0; i < 8; i++) {
+          rings.push({ x: L.bx + L.size/2, y: L.by + L.size/2,
+                       r0: L.cell*.3, r1: L.size*.9, t: -i*55, dur:620 });
+        }
+        popText(L.bx + L.size/2, L.by + L.size/2, '+300', '#8dffc0');
+      }
+      setTimeout(() => toast('לוח נקי!'), 320);
       vibe([40,30,40,30,40,30,90]);
     }
 
@@ -1435,13 +1689,22 @@ function clearLines(rows, cols){
   cols.forEach(c => { for (let r = 0; r < N; r++) targets.add(idx(r,c)); });
 
   flashRows = rows; flashCols = cols; flashT = 260;
+  const lines = rows.length + cols.length;
 
-  // גל הדף ממרכז כל קו
   if (settings.fx) {
-    rows.forEach(r => rings.push({ x: L.bx + L.size/2, y: cellY(r) + L.cell/2,
-                                   r0: L.cell*.4, r1: L.size*.62, t:0, dur:420 }));
-    cols.forEach(c => rings.push({ x: cellX(c) + L.cell/2, y: L.by + L.size/2,
-                                   r0: L.cell*.4, r1: L.size*.62, t:0, dur:420 }));
+    // גל הדף ממרכז כל קו, ופס אור שרץ לאורכו
+    rows.forEach(r => {
+      rings.push({ x: L.bx + L.size/2, y: cellY(r) + L.cell/2,
+                   r0: L.cell*.4, r1: L.size*.62, t:0, dur:420 });
+      sweeps.push({ row:r, t:0, dur:300 });
+    });
+    cols.forEach(c => {
+      rings.push({ x: cellX(c) + L.cell/2, y: L.by + L.size/2,
+                   r0: L.cell*.4, r1: L.size*.62, t:0, dur:420 });
+      sweeps.push({ col:c, t:0, dur:300 });
+    });
+    // ניקוי גדול מבזיק על כל המסך
+    if (lines >= 2) screenFlash = Math.min(1, .28 + lines * .16);
   }
 
   const cx = L.bx + L.size/2, cy = L.by + L.size/2;
@@ -1477,6 +1740,7 @@ function gameOver(){
     ? 'שברת את השיא שלך!'
     : 'השיא שלך: ' + stats.best.toLocaleString('he-IL') + ' נקודות.';
   $('btnContinue').style.display = usedContinue ? 'none' : '';
+  if (isBest && score > 0) confetti(90);
   renderScore();
   checkProgress();
   renderGoals('overGoals');
@@ -1509,7 +1773,8 @@ function newGame(){
   score = 0; shownScore = 0; combo = 0;
   over = false; running = true; usedContinue = false;
   snapshot = null; undoBtn.disabled = true;
-  particles = []; bursts = []; rings = []; flashT = 0; shakeAmp = 0;
+  particles = []; bursts = []; rings = []; sweeps = []; pops = [];
+  flashT = 0; shakeAmp = 0; screenFlash = 0; dangerLevel = 0;
   run = { lines:0, multis:0, maxCombo:0 };
   refillTray();
   renderCombo(); renderScore(); hideAll(); needsDraw();
@@ -1754,6 +2019,7 @@ function applyTheme(id){
   Array.prototype.forEach.call(document.querySelectorAll('.swatch'),
     s => s.classList.toggle('on', s.dataset.theme === theme.id));
   buildSprites();
+  buildOrbs();
   needsDraw();
 }
 
