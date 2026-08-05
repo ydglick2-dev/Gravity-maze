@@ -486,8 +486,164 @@ try {
   check('ההתקדמות נשמרת אחרי רענון',
     (await page.evaluate(() => window.__bp.prog())).stars === starsNow);
 
+  /* ---------- 7d. מצב אדמין ומצב אכזרי ---------- */
+  console.log('\n7d. אדמין ומצב אכזרי');
+  const CODE = 'plast5150';
+
+  // מכשיר רגיל — כך נראה המשחק לכל מי שפותח את הקישור
+  await page.evaluate(() => localStorage.removeItem('bp.admin'));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+  let adm = await page.evaluate(() => window.__bp.admin());
+  check('מכשיר רגיל אינו אדמין', adm.isAdmin === false, JSON.stringify(adm));
+  check('המצב האכזרי פעיל עליו', adm.cruelActive === true);
+  check('כפתור הפאנל מוסתר',
+    (await page.locator('#btnAdmin').evaluate(e => e.style.display)) === 'none');
+
+  // סף מוחלט על מספר המהלכים מתנודד: על לוח כמעט ריק אי אפשר לחסום שום חלק,
+  // ולכן המצב האכזרי מתחיל להשפיע רק כשהלוח מתמלא. מה שבאמת נבדק כאן הוא
+  // ההפרש בין משחק אכזרי למשחק הוגן, באותה ריצה.
+  const cmp = await page.evaluate(() => {
+    const bp = window.__bp;
+    function playOne(){
+      bp.newGame();
+      let moves = 0;
+      while (moves < 500) {
+        const st = bp.state();
+        if (st.over || !st.running) break;
+        let did = false;
+        outer:
+        for (let i = 0; i < 3; i++) {
+          if (st.tray[i] === null) continue;
+          for (let r = 0; r < 8 && !did; r++)
+            for (let c = 0; c < 8; c++)
+              if (bp.fitsAt(st.tray[i], r, c) && bp.place(i, r, c)) { did = true; moves++; break outer; }
+        }
+        if (!did) { bp.gameOver(); break; }
+      }
+      return { moves, score: bp.state().score, over: bp.state().over, fits: bp.trayFits() };
+    }
+    const runs = n => Array.from({ length: n }, playOne);
+    const cruelRuns = runs(5);
+    bp.setAdmin(true);
+    const fairRuns = runs(5);
+    bp.setAdmin(false);
+    const avg = a => a.reduce((s, x) => s + x.moves, 0) / a.length;
+    return { cruel: cruelRuns, fair: fairRuns, cruelAvg: avg(cruelRuns), fairAvg: avg(fairRuns) };
+  });
+  await page.waitForTimeout(400);
+  console.log('    אכזרי: ' + cmp.cruel.map(r => r.moves).join(', ') +
+              ' | הוגן: ' + cmp.fair.map(r => r.moves).join(', '));
+  check('המצב האכזרי מקצר את המשחק דרמטית', cmp.cruelAvg < cmp.fairAvg * .65,
+    Math.round(cmp.cruelAvg) + ' מול ' + Math.round(cmp.fairAvg) + ' מהלכים בממוצע');
+  check('כל משחק אכזרי נגמר', cmp.cruel.every(r => r.over === true));
+  check('כל משחק אכזרי נגמר כשאף חלק לא נכנס', cmp.cruel.every(r => r.fits === 0));
+  // חציון ולא סכום: בונוס «לוח נקי» בודד (300 נקודות) מטה סכום של חמישה משחקים
+  const med = a => { const s = a.map(r => r.score).sort((x, y) => x - y); return s[s.length >> 1]; };
+  check('הניקוד האכזרי נמוך משמעותית', med(cmp.cruel) < med(cmp.fair) * .85,
+    'חציון ' + med(cmp.cruel) + ' מול ' + med(cmp.fair));
+
+  // פתיחת אדמין דרך קישור
+  await page.goto(base + '/?admin=' + CODE, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+  adm = await page.evaluate(() => window.__bp.admin());
+  check('קישור עם קוד נכון פותח אדמין', adm.isAdmin === true);
+  check('המצב האכזרי כבוי לאדמין', adm.cruelActive === false);
+  check('הפרמטר נמחק מה-URL', !page.url().includes('admin='), page.url());
+  check('הדגל נשמר', (await page.evaluate(() => localStorage.getItem('bp.admin'))) === '1');
+  check('כפתור הפאנל מוצג',
+    (await page.locator('#btnAdmin').evaluate(e => e.style.display)) !== 'none');
+
+  // אצל אדמין הבטחת ההגינות חוזרת
+  const fair = await page.evaluate(() => {
+    const bp = window.__bp;
+    let worst = 3;
+    for (let g = 0; g < 30; g++) { bp.newGame(); worst = Math.min(worst, bp.trayFits()); }
+    return worst;
+  });
+  check('לאדמין תמיד יש חלק שנכנס', fair >= 1, 'מינימום ' + fair);
+
+  // קוד שגוי לא פותח כלום
+  await page.evaluate(() => localStorage.removeItem('bp.admin'));
+  await page.goto(base + '/?admin=wrong', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(250);
+  check('קוד שגוי אינו פותח אדמין',
+    (await page.evaluate(() => window.__bp.admin().isAdmin)) === false);
+  check('גם קוד שגוי נמחק מה-URL', !page.url().includes('admin='), page.url());
+
+  // מחווה סודית: 7 לחיצות על תגית הכוכבים
+  page.once('dialog', d => d.accept(CODE));
+  for (let i = 0; i < 7; i++) await page.locator('#ovStart .starPill').click();
+  await page.waitForTimeout(300);
+  check('7 לחיצות + קוד פותחות אדמין',
+    (await page.evaluate(() => window.__bp.admin().isAdmin)) === true);
+
+  /* ---------- 7e. הפאנל עצמו ---------- */
+  console.log('\n7e. פאנל האדמין');
+  await page.click('#btnAdmin');
+  await page.waitForTimeout(300);
+  check('הפאנל נפתח',
+    !(await page.locator('#ovAdmin').evaluate(e => e.classList.contains('hidden'))));
+  check('הפאנל מציין מה אחרים מקבלים',
+    (await page.locator('#admCruel').textContent()).includes('בלתי אפשרי'),
+    await page.locator('#admCruel').textContent());
+
+  // הוספת נקודות למשחק הנוכחי נבדקת דרך המסלול האמיתי:
+  // משחק → הפסקה → פאנל אדמין
+  await page.click('#btnCloseAdmin');
+  await page.waitForTimeout(200);
+  await page.click('#btnPlay');
+  await page.waitForTimeout(350);
+  await page.click('#btnMenu');
+  await page.waitForTimeout(250);
+  check('כפתור האדמין מופיע גם בהפסקה', await page.locator('#btnAdmin2').isVisible());
+  await page.click('#btnAdmin2');
+  await page.waitForTimeout(300);
+  await page.locator('#ovAdmin [data-pts="10000"]').click();
+  await page.waitForTimeout(300);
+  let stAdm = await page.evaluate(() => window.__bp.state());
+  check('הוספת נקודות עובדת', stAdm.score === 10000, 'ניקוד ' + stAdm.score);
+  check('השיא התעדכן', stAdm.best >= 10000, 'שיא ' + stAdm.best);
+
+  const starsBefore = (await page.evaluate(() => window.__bp.prog())).stars;
+  await page.locator('#ovAdmin [data-stars="100"]').click();
+  await page.waitForTimeout(400);
+  let prAdm = await page.evaluate(() => window.__bp.prog());
+  check('הוספת כוכבים עובדת', prAdm.stars === starsBefore + 100, 'כוכבים ' + prAdm.stars);
+  check('כל 8 הערכות נפתחו', prAdm.themesOpen.length === 8, prAdm.themesOpen.join(','));
+  check('אין יותר ערכות נעולות', (await page.locator('.swatch.locked').count()) === 0);
+  await page.screenshot({ path: path.join(SHOTS, '9-admin.png') });
+
+  // שדה חופשי
+  await page.fill('#admPtsIn', '250');
+  await page.click('#admPtsGo');
+  await page.waitForTimeout(250);
+  check('שדה נקודות חופשי עובד',
+    (await page.evaluate(() => window.__bp.state().score)) === 10250);
+
+  // תצוגה מקדימה מדליקה את המצב האכזרי אצל האדמין
+  await page.click('#admPreview');
+  await page.waitForTimeout(200);
+  check('תצוגה מקדימה מפעילה את המצב האכזרי',
+    (await page.evaluate(() => window.__bp.admin().cruelActive)) === true);
+  await page.click('#admPreview');
+  await page.waitForTimeout(200);
+  check('כיבוי תצוגה מקדימה מחזיר משחק הוגן',
+    (await page.evaluate(() => window.__bp.admin().cruelActive)) === false);
+
+  // ביטול אדמין
+  await page.click('#admOff');
+  await page.waitForTimeout(300);
+  check('ביטול אדמין עובד',
+    (await page.evaluate(() => window.__bp.admin().isAdmin)) === false);
+  check('הדגל נמחק מהאחסון',
+    (await page.evaluate(() => localStorage.getItem('bp.admin'))) === null);
+
   /* ---------- 8. ריצת עומס: משחקים שלמים אוטומטית ---------- */
   console.log('\n8. ריצת עומס (5 משחקים מלאים)');
+  // ריצת העומס בודקת את המשחק ההוגן, ולכן היא רצה כאדמין —
+  // אחרת המצב האכזרי היה חוסם כל משחק אחרי מעט מהלכים.
+  await page.evaluate(() => window.__bp.setAdmin(true));
   const soak = await page.evaluate(() => {
     const bp = window.__bp;
     const games = [];

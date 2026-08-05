@@ -213,6 +213,31 @@
   #unlockStars{font-size:14px;font-weight:900;color:#ffd15e;flex:0 0 auto;
                direction:ltr;unicode-bidi:isolate;}
 
+  /* ---------- פאנל אדמין ---------- */
+  #ovAdmin{justify-content:flex-start;gap:11px;
+    padding-top:calc(env(safe-area-inset-top,0px) + 22px);
+    padding-bottom:calc(env(safe-area-inset-bottom,0px) + 22px);}
+  .admBox{
+    width:100%;max-width:340px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:11px 13px;
+  }
+  .admRow{display:flex;gap:7px;margin-top:7px;}
+  .chip{
+    flex:1;border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:10px 6px;
+    background:rgba(255,255,255,.07);color:#e2e9fb;font:800 14px inherit;cursor:pointer;
+    font-family:inherit;direction:ltr;transition:transform .08s;
+  }
+  .chip:active{transform:scale(.93);}
+  .chip.go{flex:0 0 auto;padding:10px 18px;background:#ffb02e;color:#4a2c00;border-color:transparent;}
+  .admIn{
+    flex:1;min-width:0;border:1px solid rgba(255,255,255,.14);border-radius:11px;
+    padding:10px 12px;background:rgba(0,0,0,.28);color:#eef2ff;
+    font:700 15px inherit;font-family:inherit;direction:ltr;text-align:right;
+  }
+  .admIn::placeholder{color:#7c88ad;direction:rtl;}
+  .admNote{margin-top:9px;font-size:12px;color:#8592b8;}
+  .admNote b{color:#e2e9fb;}
+
   .themes{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
   .swatch.locked{cursor:default;position:relative;display:grid;place-items:center;
                  opacity:.55;border-color:rgba(255,255,255,.12);}
@@ -299,6 +324,7 @@
     <button class="btn sec" id="btnStats">סטטיסטיקות</button>
     <button class="btn sec" id="btnSettings">הגדרות</button>
   </div>
+  <button class="btn sec admOnly" id="btnAdmin" style="display:none">⚡ פאנל אדמין</button>
   <div class="foot">עובד גם ללא אינטרנט · <a href="privacy.html">פרטיות</a></div>
 </div>
 
@@ -335,6 +361,47 @@
   <button class="btn sec" id="btnCloseAch">סגור</button>
 </div>
 
+<div class="overlay hidden" id="ovAdmin" data-own>
+  <h2>⚡ פאנל אדמין</h2>
+  <p class="sub">המכשיר הזה מסומן כאדמין ומקבל משחק הוגן.
+    כל מי שפותח את הקישור מקבל <b id="admCruel">—</b>.</p>
+
+  <div class="admBox">
+    <div class="goalHead">נקודות</div>
+    <div class="admRow">
+      <button class="chip" data-pts="100">+100</button>
+      <button class="chip" data-pts="1000">+1,000</button>
+      <button class="chip" data-pts="10000">+10,000</button>
+    </div>
+    <div class="admRow">
+      <input class="admIn" id="admPtsIn" type="number" inputmode="numeric" placeholder="כמה נקודות">
+      <button class="chip go" id="admPtsGo">הוסף</button>
+    </div>
+    <div class="admNote">ניקוד נוכחי: <b class="ltr" id="admScore">0</b> · שיא: <b class="ltr" id="admBest">0</b></div>
+  </div>
+
+  <div class="admBox">
+    <div class="goalHead">כוכבים</div>
+    <div class="admRow">
+      <button class="chip" data-stars="5">+5</button>
+      <button class="chip" data-stars="25">+25</button>
+      <button class="chip" data-stars="100">+100</button>
+    </div>
+    <div class="admRow">
+      <input class="admIn" id="admStarIn" type="number" inputmode="numeric" placeholder="כמה כוכבים">
+      <button class="chip go" id="admStarGo">הוסף</button>
+    </div>
+    <div class="admNote">כוכבים: <b class="ltr starCount">0</b></div>
+  </div>
+
+  <div class="toggle" id="admPreview"><span>לשחק כמו כולם (תצוגה מקדימה)</span><i class="sw"></i></div>
+
+  <div class="row">
+    <button class="btn sec" id="admOff">בטל אדמין כאן</button>
+    <button class="btn sec" id="btnCloseAdmin">סגור</button>
+  </div>
+</div>
+
 <div class="overlay hidden" id="ovPause" data-own>
   <h2>הפסקה</h2>
   <button class="btn" id="btnResume">חזרה למשחק</button>
@@ -343,6 +410,7 @@
     <button class="btn sec" id="btnSettings2">הגדרות</button>
     <button class="btn sec" id="btnQuit">תפריט ראשי</button>
   </div>
+  <button class="btn sec admOnly" id="btnAdmin2" style="display:none">⚡ פאנל אדמין</button>
 </div>
 
 <div class="overlay hidden" id="ovSettings" data-own>
@@ -408,8 +476,53 @@ const store = (function(){
     set(k, v){ if(!ok) return; try{ localStorage.setItem(k, v); }catch(e){} },
     getJSON(k, d){ const v = this.get(k, null); if(v===null) return d;
       try{ const p = JSON.parse(v); return (p && typeof p==='object') ? p : d; }catch(e){ return d; } },
-    setJSON(k, v){ this.set(k, JSON.stringify(v)); }
+    setJSON(k, v){ this.set(k, JSON.stringify(v)); },
+    del(k){ if(!ok) return; try{ localStorage.removeItem(k); }catch(e){} }
   };
+})();
+
+/* ============================================================
+   מצב אדמין
+   ------------------------------------------------------------
+   המכשיר שמסומן כאדמין מקבל משחק הוגן ופאנל שליטה; כל השאר מקבלים
+   את מה שמוגדר ב-CRUEL. אין כאן שרת, ולכן ההבחנה נשמרת ב-localStorage
+   של המכשיר בלבד — וכל זה גלוי לחלוטין למי שפותח כלי מפתחים.
+   ============================================================ */
+const ADMIN_CODE = 'plast5150';   // ← החלף לקוד משלך
+
+// מה מקבל מי שאינו אדמין:
+//   'off'        — משחק רגיל והוגן
+//   'hard'       — בלי הבטחת ההגינות, ובעדיפות לחלקים גדולים
+//   'impossible' — המגש הבא נבחר כך שאף חלק בו לא נכנס
+const CRUEL = 'impossible';
+
+let isAdmin = store.get('bp.admin', '0') === '1';
+let previewCruel = false;         // תצוגה מקדימה מקומית, לא נשמרת
+
+// המצב האכזרי פעיל לכל מי שאינו אדמין, וגם לאדמין שביקש תצוגה מקדימה
+function cruelActive(){
+  if (CRUEL === 'off') return false;
+  return previewCruel || !isAdmin;
+}
+
+function setAdmin(on){
+  isAdmin = !!on;
+  if (isAdmin) store.set('bp.admin', '1');
+  else { store.del('bp.admin'); previewCruel = false; }
+}
+
+// פתיחה דרך קישור: ?admin=<קוד>. הפרמטר נמחק מיד מה-URL כדי שלא יישאר
+// בהיסטוריה ולא ישותף בטעות עם מי שהקישור מועבר אליו.
+(function unlockFromUrl(){
+  let code = null;
+  try { code = new URLSearchParams(location.search).get('admin'); } catch(e){}
+  if (code === null) return;
+  if (code === ADMIN_CODE) setAdmin(true);
+  try {
+    const u = new URL(location.href);
+    u.searchParams.delete('admin');
+    history.replaceState(null, '', u.pathname + u.search + u.hash);
+  } catch(e){}
 })();
 
 /* ============================================================
@@ -1546,7 +1659,10 @@ function refillTray(){
 
 // מגריל שלושה חלקים ומוודא שלפחות אחד מהם נכנס ללוח,
 // כדי שהמשחק לא ייגמר בגלל הגרלה גרועה ולא בגלל השחקן.
+// זו גם הנקודה היחידה שבה המצב האכזרי מתערב — שאר לוגיקת המשחק זהה לכולם.
 function drawTrio(){
+  if (cruelActive()) return CRUEL === 'hard' ? drawTrioHard() : drawTrioImpossible();
+
   for (let a = 0; a < 40; a++) {
     const cand = [0,1,2].map(() => newPiece(randomShape()));
     if (cand.some(p => fitsAnywhere(p.shape))) return cand;
@@ -1555,6 +1671,32 @@ function drawTrio(){
   const fitting = SHAPES.find(s => fitsAnywhere(s));
   if (fitting) cand[0] = newPiece(fitting);
   return cand;
+}
+
+// מחפש שלשה שאף חלק בה לא נכנס. על לוח ריק אין כזו, ולכן יש נפילה
+// אחורה להגרלה רגילה — אחרת המשחק היה נגמר עוד לפני המהלך הראשון.
+function drawTrioImpossible(){
+  for (let a = 0; a < 60; a++) {
+    const cand = [0,1,2].map(() => newPiece(randomShape()));
+    if (!cand.some(p => fitsAnywhere(p.shape))) return cand;
+  }
+  return drawTrioHard();
+}
+
+// בלי הבטחת ההגינות, ובהעדפה חזקה לחלקים הגדולים שהכי קשה למקם
+function drawTrioHard(){
+  const big = SHAPES.filter(s => s.size >= 4);
+  const pick = () => Math.random() < .8
+    ? newPiece(big[(Math.random() * big.length) | 0])
+    : newPiece(randomShape());
+  let worst = null, worstFits = 4;
+  for (let a = 0; a < 25; a++) {
+    const cand = [0,1,2].map(pick);
+    const fits = cand.filter(p => fitsAnywhere(p.shape)).length;
+    if (fits < worstFits) { worstFits = fits; worst = cand; }
+    if (worstFits === 0) break;
+  }
+  return worst || [0,1,2].map(pick);
 }
 
 function takeSnapshot(){
@@ -1885,7 +2027,7 @@ window.addEventListener('pointercancel', onUp);
 /* ============================================================
    שכבות ותפריטים
    ============================================================ */
-const OVERLAYS = ['ovStart','ovOver','ovPause','ovSettings','ovStats'];
+const OVERLAYS = ['ovStart','ovOver','ovPause','ovSettings','ovStats','ovAch','ovAdmin'];
 function show(id){ $(id).classList.remove('hidden'); }
 function hide(id){ $(id).classList.add('hidden'); }
 function hideAll(){ OVERLAYS.forEach(hide); }
@@ -1912,6 +2054,10 @@ $('btnSettings2').onclick     = () => { buildThemes(); openSub('ovSettings', 'ov
 $('btnCloseSettings').onclick = () => closeSub('ovSettings');
 $('btnStats').onclick         = () => { renderStats(); openSub('ovStats', 'ovStart'); };
 $('btnCloseStats').onclick    = () => closeSub('ovStats');
+$('btnAdmin').onclick         = () => { renderAdmin(); openSub('ovAdmin', 'ovStart'); };
+// גם מתוך המשחק, כי הוספת נקודות למשחק הנוכחי שימושית רק באמצע משחק
+$('btnAdmin2').onclick        = () => { renderAdmin(); openSub('ovAdmin', 'ovPause'); };
+$('btnCloseAdmin').onclick    = () => closeSub('ovAdmin');
 $('btnAch').onclick           = () => { renderAch(); openSub('ovAch', 'ovStart'); };
 $('btnAch2').onclick          = () => { renderAch(); openSub('ovAch', 'ovOver'); };
 $('btnCloseAch').onclick      = () => closeSub('ovAch');
@@ -1970,6 +2116,98 @@ function renderAch(){
 }
 
 function themeUnlocked(t){ return t.req <= prog.stars; }
+
+/* ---------- פאנל אדמין ---------- */
+const CRUEL_LABEL = { off:'משחק רגיל', hard:'משחק אכזרי', impossible:'משחק בלתי אפשרי' };
+
+function renderAdminVisibility(){
+  Array.prototype.forEach.call(document.querySelectorAll('.admOnly'),
+    e => { e.style.display = isAdmin ? '' : 'none'; });
+}
+
+function renderAdmin(){
+  $('admCruel').textContent = CRUEL_LABEL[CRUEL] || CRUEL;
+  $('admScore').textContent = Math.round(score).toLocaleString('he-IL');
+  $('admBest').textContent  = stats.best.toLocaleString('he-IL');
+  $('admPreview').classList.toggle('on', previewCruel);
+  renderStars();
+}
+
+function grantPoints(n){
+  n = Math.floor(Number(n));
+  if (!isFinite(n) || n === 0) return;
+  score = Math.max(0, score + n);
+  if (score > stats.best) stats.best = score;
+  saveStats();
+  checkProgress();
+  renderScore(); renderAdmin(); needsDraw();
+  audio.ui();
+}
+
+function grantStars(n){
+  n = Math.floor(Number(n));
+  if (!isFinite(n) || n === 0) return;
+  const before = prog.stars;
+  prog.stars = Math.max(0, prog.stars + n);
+  saveProg();
+  // ערכות שנפתחו בזכות הכוכבים האלה צריכות להופיע מיד
+  THEMES.forEach(t => {
+    if (t.req > before && t.req <= prog.stars)
+      queueUnlock({ ic:'🎨', kind:'ערכה נפתחה', t:t.name, stars:0 });
+  });
+  buildThemes();
+  renderStars(); renderAdmin();
+  audio.ui();
+}
+
+Array.prototype.forEach.call(document.querySelectorAll('#ovAdmin [data-pts]'),
+  b => { b.onclick = () => grantPoints(b.dataset.pts); });
+Array.prototype.forEach.call(document.querySelectorAll('#ovAdmin [data-stars]'),
+  b => { b.onclick = () => grantStars(b.dataset.stars); });
+
+$('admPtsGo').onclick  = () => { grantPoints($('admPtsIn').value); $('admPtsIn').value = ''; };
+$('admStarGo').onclick = () => { grantStars($('admStarIn').value); $('admStarIn').value = ''; };
+
+$('admPreview').onclick = () => {
+  previewCruel = !previewCruel;
+  $('admPreview').classList.toggle('on', previewCruel);
+  audio.ui();
+  toast(previewCruel ? 'משחק כמו כולם' : 'חזרת למשחק הוגן', true);
+};
+
+$('admOff').onclick = () => {
+  setAdmin(false);
+  renderAdminVisibility();
+  audio.ui();
+  closeSub('ovAdmin');
+  toast('אדמין בוטל כאן', true);
+};
+
+// מחווה סודית: 7 לחיצות על תגית הכוכבים תוך 3 שניות
+(function adminGesture(){
+  let taps = 0, first = 0;
+  Array.prototype.forEach.call(document.querySelectorAll('.starPill'), el => {
+    el.addEventListener('click', () => {
+      const now = performance.now();
+      if (now - first > 3000) { taps = 0; first = now; }
+      if (++taps < 7) return;
+      taps = 0;
+      if (isAdmin) { renderAdmin(); openSub('ovAdmin', 'ovStart'); return; }
+      let code = null;
+      try { code = window.prompt('קוד אדמין'); } catch(e){}
+      if (code === null) return;
+      if (code.trim() === ADMIN_CODE) {
+        setAdmin(true);
+        renderAdminVisibility();
+        toast('מצב אדמין הופעל', true);
+        audio.unlockJingle();
+      } else {
+        audio.bad();
+        toast('קוד שגוי', true);
+      }
+    });
+  });
+})();
 
 function renderStats(){
   $('stBest').textContent   = stats.best.toLocaleString('he-IL');
@@ -2101,6 +2339,7 @@ if ('serviceWorker' in navigator) {
 applyTheme(settings.theme);
 checkProgress(true);   // מזכה בשקט בהישגים שהושגו לפני שהמערכת נוספה
 buildThemes();
+renderAdminVisibility();
 reserveForHostChrome();
 layout();
 renderScore();
@@ -2155,6 +2394,10 @@ window.__bp = {
   }),
   // מזייף התקדמות כדי לבדוק פתיחת הישגים ויעדים
   bumpStats(patch){ Object.assign(stats, patch); saveStats(); checkProgress(); },
+  admin: () => ({ isAdmin, cruel: CRUEL, cruelActive: cruelActive(), preview: previewCruel }),
+  setAdmin(on){ setAdmin(on); renderAdminVisibility(); },
+  // כמה מחלקי המגש הנוכחי נכנסים בכלל ללוח
+  trayFits: () => tray.filter(p => p && !p.dead).length,
   setGoal(i, id, val){ prog.goals[i] = { id, val, base:0 }; saveProg(); }
 };
 
