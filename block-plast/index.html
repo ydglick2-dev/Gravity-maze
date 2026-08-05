@@ -511,19 +511,39 @@ function setAdmin(on){
   else { store.del('bp.admin'); previewCruel = false; }
 }
 
-// פתיחה דרך קישור: ?admin=<קוד>. הפרמטר נמחק מיד מה-URL כדי שלא יישאר
-// בהיסטוריה ולא ישותף בטעות עם מי שהקישור מועבר אליו.
-(function unlockFromUrl(){
+// פתיחה דרך קישור: גם ?admin=<קוד> וגם #admin=<קוד>.
+// ה-hash הוא הצורה האמינה: מארחים שמפנים את שורש האתר לתת-נתיב (NOVA מפנה
+// ל-/game/index.html?v=7) מחליפים את ה-query בשלהם והפרמטר נעלם, בעוד שה-hash
+// כלל אינו נשלח לשרת והדפדפן מעביר אותו ליעד ההפניה.
+// בכל מקרה הקוד נמחק מיד מה-URL, כדי שלא יישאר בהיסטוריה ולא ישותף בטעות.
+function unlockFromUrl(){
   let code = null;
-  try { code = new URLSearchParams(location.search).get('admin'); } catch(e){}
-  if (code === null) return;
-  if (code === ADMIN_CODE) setAdmin(true);
+  try {
+    const fromQuery = new URLSearchParams(location.search).get('admin');
+    const fromHash  = new URLSearchParams((location.hash || '').replace(/^#/, '')).get('admin');
+    code = fromQuery !== null ? fromQuery : fromHash;
+  } catch(e){}
+  if (code === null) return false;
+  const ok = code.trim() === ADMIN_CODE;
+  if (ok) setAdmin(true);
   try {
     const u = new URL(location.href);
     u.searchParams.delete('admin');
-    history.replaceState(null, '', u.pathname + u.search + u.hash);
+    const hs = new URLSearchParams(u.hash.replace(/^#/, ''));
+    hs.delete('admin');
+    const rest = hs.toString();
+    history.replaceState(null, '', u.pathname + u.search + (rest ? '#' + rest : ''));
   } catch(e){}
-})();
+  return ok;
+}
+unlockFromUrl();
+
+// שינוי hash בלבד אינו טוען את הדף מחדש, ולכן הדבקת קישור אדמין כשהמשחק
+// כבר פתוח לא הייתה מפעילה כלום בלי המאזין הזה.
+window.addEventListener('hashchange', () => {
+  if (!unlockFromUrl()) return;
+  if (typeof renderAdminVisibility === 'function') renderAdminVisibility();
+});
 
 /* ============================================================
    קבועים, צורות, ערכות

@@ -563,6 +563,31 @@ try {
   });
   check('לאדמין תמיד יש חלק שנכנס', fair >= 1, 'מינימום ' + fair);
 
+  // פתיחה דרך hash — הצורה שעובדת גם כשהמארח מחליף את ה-query בהפניה שלו
+  await page.evaluate(() => localStorage.removeItem('bp.admin'));
+  await page.goto(base + '/#admin=' + CODE, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+  check('hash עם קוד נכון פותח אדמין',
+    (await page.evaluate(() => window.__bp.admin().isAdmin)) === true);
+  check('ה-hash נמחק מה-URL', !page.url().includes('admin='), page.url());
+
+  // אותו דבר בטעינה מלאה ולא רק בשינוי fragment — זה המסלול האמיתי
+  // של מי שפותח קישור אדמין מאפס
+  await page.evaluate(() => localStorage.removeItem('bp.admin'));
+  await page.goto('about:blank');
+  await page.goto(base + '/#admin=' + CODE, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+  check('hash פותח אדמין גם בטעינה מלאה',
+    (await page.evaluate(() => window.__bp.admin().isAdmin)) === true);
+  check('גם שם ה-hash נמחק', !page.url().includes('admin='), page.url());
+
+  // hash אחר לא נפגע
+  await page.evaluate(() => localStorage.removeItem('bp.admin'));
+  await page.goto(base + '/#keep=1&admin=' + CODE, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+  check('hash אחר נשמר', page.url().includes('keep=1') && !page.url().includes('admin='),
+    page.url());
+
   // קוד שגוי לא פותח כלום
   await page.evaluate(() => localStorage.removeItem('bp.admin'));
   await page.goto(base + '/?admin=wrong', { waitUntil: 'networkidle' });

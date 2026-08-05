@@ -76,6 +76,23 @@ await verify('game/sw.js', GAME + '/sw.js', t => /blockplast-v\d+/.test(t));
 await verify('game/icon-512.png', GAME + '/icon-512.png');
 await verify('game/privacy.html', GAME + '/privacy.html', t => t.includes('מדיניות פרטיות'));
 
+/* ---------- קישור האדמין ---------- */
+// המארח מפנה את שורש האתר לתת-נתיב ומחליף את ה-query בשלו, ולכן ?admin=
+// על השורש נעלם. נבדק כאן מה באמת שורד, וההמלצה נגזרת מהתוצאה.
+const probe = await fetch(url + '?admin=PROBE', { redirect: 'manual' });
+const via = probe.headers.get('location') || '';
+const queryKept = via.includes('admin=PROBE') || (probe.status === 200);
+console.log('\nקישור אדמין:');
+if (queryKept) {
+  console.log('  ✓ שורש האתר שומר על ה-query');
+  console.log('  ' + url + '?admin=<הקוד>');
+} else {
+  console.log('  ! שורש האתר מפנה ל-' + (via || 'תת-נתיב') + ' ומוחק את ה-query');
+  console.log('  לכן משתמשים ב-hash, שאינו נשלח לשרת ושורד את ההפניה:');
+  console.log('  ' + url + '#admin=<הקוד>');
+  console.log('  לחלופין, ישירות: ' + GAME + '/index.html?admin=<הקוד>');
+}
+
 fs.rmSync(zipPath, { force: true });
 
 if (bad) { console.log('\n' + bad + ' בדיקות נכשלו ✗'); process.exit(1); }
