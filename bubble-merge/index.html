@@ -697,8 +697,10 @@ document.getElementById('muteBtn').onclick = e => {
 document.getElementById('bestEl').textContent = best;
 resize();
 
-/* התקנה כאפליקציה (PWA) — מניפסט מוטמע, בלי קבצים נוספים */
+/* התקנה כאפליקציה (PWA) — מניפסט מוטמע, בלי קבצים נוספים.
+   מדלגים כשהפלטפורמה המארחת כבר הזריקה מניפסט משלה. */
 try {
+  if (document.querySelector('link[rel="manifest"]')) throw 0;
   const mf = { name:'מיזוג בועות', short_name:'בועות', start_url:'.', display:'standalone',
                background_color:'#05070c', theme_color:'#0b0f16', orientation:'portrait' };
   const link = document.createElement('link');
