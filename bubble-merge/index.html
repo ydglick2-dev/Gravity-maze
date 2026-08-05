@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0f16">
+<title>מיזוג בועות</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
+      user-select:none; -webkit-user-select:none; }
+  html,body { height:100%; overflow:hidden; touch-action:none; overscroll-behavior:none;
+      background:#05070c; font-family:-apple-system,"Segoe UI",Arial,sans-serif; color:#e8ecf4; }
+  #cv { position:fixed; inset:0; display:block; }
+
+  #hud { position:fixed; top:env(safe-area-inset-top); left:0; right:0; z-index:5;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 14px;
+    font-weight:800; pointer-events:none; }
+  .stat { display:flex; flex-direction:column; align-items:center; line-height:1.15; }
+  .stat b { font-size:23px; color:#ffd257; text-shadow:0 0 14px rgba(255,184,77,.45); font-variant-numeric:tabular-nums; }
+  .stat small { font-size:10.5px; letter-spacing:2px; color:#8d99ab; font-weight:700; }
+  #muteBtn { pointer-events:auto; border:none; cursor:pointer; width:38px; height:38px; border-radius:12px;
+    font-size:17px; color:#dfe7f2; background:rgba(255,255,255,.08);
+    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18); }
+  #muteBtn:active { transform:scale(.92); }
+
+  .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:15px; background:rgba(4,6,12,.86); backdrop-filter:blur(14px);
+    text-align:center; padding:24px; z-index:20; transition:opacity .3s; }
+  .overlay.hidden { opacity:0; pointer-events:none; }
+  .overlay:not(.hidden) { animation:ovIn .22s ease; }
+  @keyframes ovIn { from { opacity:0; transform:scale(.985); } to { opacity:1; transform:none; } }
+  h1 { font-size:35px; font-weight:900; letter-spacing:1px;
+       background:linear-gradient(180deg,#ffe9b8,#ffb84d);
+       -webkit-background-clip:text; background-clip:text; color:transparent;
+       filter:drop-shadow(0 0 18px rgba(255,184,77,.45)); }
+  .float { animation:float 3.2s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+  .sub { font-size:14.5px; line-height:1.7; max-width:320px; color:#aeb8c8; }
+  .btn { border:none; border-radius:16px; padding:15px 40px; font-size:19px; font-weight:800;
+    color:#241505; background:linear-gradient(180deg,#ffdf9e,#ffab3d);
+    box-shadow:0 0 22px rgba(255,170,60,.4), 0 5px 0 #8a5f26, inset 0 1px 0 rgba(255,255,255,.6);
+    cursor:pointer; }
+  .btn.sec { color:#dfe7f2; background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
+    box-shadow:0 0 0 1.5px rgba(255,255,255,.22), 0 4px 14px rgba(0,0,0,.5);
+    font-size:16px; padding:12px 26px; }
+  .btn:active { transform:translateY(3px); }
+  .row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  #chain { display:flex; align-items:center; gap:5px; flex-wrap:wrap; justify-content:center; max-width:330px; }
+  #chain i { display:block; border-radius:50%; box-shadow:inset 0 -2px 4px rgba(0,0,0,.35), 0 0 8px rgba(255,255,255,.10); }
+  #chain span { color:#5f6b7d; font-size:11px; }
+  #finalScore { font-size:52px; font-weight:900; color:#ffd257;
+    text-shadow:0 0 22px rgba(255,184,77,.5); font-variant-numeric:tabular-nums; }
+  .newbest { font-size:14px; font-weight:800; letter-spacing:1px; color:#9ee85a; }
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+
+<div id="hud">
+  <div class="stat"><b id="scoreEl">0</b><small>ניקוד</small></div>
+  <button id="muteBtn" aria-label="שמע">🔊</button>
+  <div class="stat"><b id="bestEl">0</b><small>שיא</small></div>
+</div>
+
+<div class="overlay" id="startOv">
+  <div class="float" style="font-size:54px">🫧</div>
+  <h1>מיזוג בועות</h1>
+  <p class="sub">גררו כדי לכוון, שחררו כדי להפיל.<br>שתי בועות זהות שנוגעות — מתמזגות לבועה גדולה יותר.<br>אם הערימה עוברת את הקו האדום, נגמר.</p>
+  <div id="chain"></div>
+  <button class="btn" id="playBtn">התחלה</button>
+</div>
+
+<div class="overlay hidden" id="overOv">
+  <div style="font-size:46px">💥</div>
+  <h1>נגמר!</h1>
+  <div id="finalScore">0</div>
+  <div class="newbest" id="newBest" style="display:none">✨ שיא חדש! ✨</div>
+  <p class="sub" id="overSub"></p>
+  <div class="row">
+    <button class="btn" id="againBtn">שוב</button>
+    <button class="btn sec" id="menuBtn">תפריט</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   מיזוג בועות — אב-טיפוס
+   מנוע פיזיקה של עיגולים: אימפולסים + תיקון חדירה איטרטיבי
+   ============================================================ */
+
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+/* ---------------- דרגות הבועות ---------------- */
+/* rs = רדיוס יחסי לרוחב הלוח, pts = ניקוד על מיזוג לדרגה הזו */
+const TIERS = [
+  { c:'#ff6b6b', hi:'#ffc2c2', lo:'#b32f3f' },
+  { c:'#ffa14a', hi:'#ffd9ae', lo:'#b85c17' },
+  { c:'#ffd257', hi:'#fff0bb', lo:'#b8891a' },
+  { c:'#9ee85a', hi:'#e0ffc0', lo:'#4e9421' },
+  { c:'#45d97f', hi:'#c3ffdb', lo:'#1a8d4b' },
+  { c:'#3fd0d4', hi:'#c0fbfd', lo:'#12868a' },
+  { c:'#4aa8ff', hi:'#c8e4ff', lo:'#1560ad' },
+  { c:'#7a7bff', hi:'#d3d3ff', lo:'#3a3ab8' },
+  { c:'#b46bff', hi:'#e8d0ff', lo:'#6c2bb3' },
+  { c:'#ff6bd0', hi:'#ffd0ee', lo:'#b32382' },
+  { c:'#fff3c4', hi:'#ffffff', lo:'#e0a83c' }
+];
+const MAXT = TIERS.length - 1;
+const R0   = 0.042;   // רדיוס דרגה 0 ביחס לרוחב הלוח
+const RK   = 1.225;   // מכפיל רדיוס בין דרגות
+const rOf  = t => board.w * R0 * Math.pow(RK, t);
+const ptsOf= t => (t + 1) * (t + 2) / 2;      // 1,3,6,10,15,21,28,36,45,55
+const DROPPABLE = [0,0,0,0,1,1,1,2,2,3];      // ממה מגרילים בועה חדשה
+
+/* ---------------- פיזיקה ---------------- */
+const GRAV     = 3.1;    // ביחס לרוחב הלוח, לשנייה בריבוע
+const REST     = 0.08;   // אלסטיות בין בועות
+const WREST    = 0.18;   // אלסטיות מול הקירות
+const FRIC     = 0.06;   // חיכוך משיקי
+const AIRD     = 0.9975; // דעיכת מהירות
+const CORR     = 0.72;   // אחוז תיקון החדירה לאיטרציה
+const SUBSTEPS = 3;
+const ITERS    = 5;
+const DROP_CD  = 0.34;   // השהיה בין הפלות
+const DANGER_T = 1.9;    // שניות מעל הקו עד הפסד
+const SETTLE_T = 0.55;   // זמן חסינות לבועה שזה עתה נפלה
+
+/* ---------------- מצב ---------------- */
+let board   = { x:0, y:0, w:0, h:0, lineY:0, dropY:0 };
+let bubbles = [], particles = [], rings = [], pops = [];
+let pending = 0, nextT = 0, dropX = 0, aimX = 0;
+let score = 0, best = 0, combo = 0, comboT = 0;
+let running = false, cd = 0, shake = 0, dangerAmt = 0;
+let seedStars = [];
+
+try { best = parseInt(localStorage.getItem('bm_best') || '0', 10) || 0; } catch(e) {}
+
+/* ============================================================
+   אודיו — באותו סגנון של Gravity Maze
+   ============================================================ */
+let AC = null, master = null, muted = false, liveOsc = 0;
+function initAudio(){
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = .45; master.connect(AC.destination);
+  } catch(e) {}
+}
+function tone(f, dur, type, vol, slide){
+  if (!AC || muted || AC.state !== 'running' || liveOsc > 22) return;
+  try {
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    liveOsc++; o.onended = () => { liveOsc = Math.max(0, liveOsc - 1); };
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, slide), t + dur);
+    g.gain.setValueAtTime(vol || .3, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .02);
+  } catch(e) {}
+}
+const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {} };
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && AC && AC.state !== 'running') { try { AC.resume(); } catch(e) {} }
+});
+
+/* ============================================================
+   פריסה
+   ============================================================ */
+/* מדידת השוליים הבטוחים בראש המסך (מגרעת/נאץ') */
+const satProbe = document.createElement('div');
+satProbe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top);pointer-events:none;visibility:hidden';
+document.body.appendChild(satProbe);
+
+function layout(){
+  const vw = innerWidth, vh = innerHeight;
+  const top = 56 + (satProbe.offsetHeight || 0);
+  const availH = vh - top - 14;
+  // ממלאים את הגובה הפנוי, ומגבילים את היחס כדי שהלוח לא ייצא מוזר במסכים רחבים
+  let h = availH;
+  let w = Math.min(vw * 0.94, 460, h / 1.15);
+  h = Math.min(h, w * 1.8);
+
+  const old = board.w ? { x:board.x, y:board.y, w:board.w } : null;
+  board.w = w; board.h = h;
+  board.x = (vw - w) / 2;
+  board.y = top + (availH - h) / 2;
+  board.dropY = board.y + board.h * 0.075;
+  board.lineY = board.y + board.h * 0.145;
+
+  // שמירה על מצב המשחק כשהמסך משנה גודל
+  if (old && old.w !== w) {
+    const k = w / old.w;
+    for (const b of bubbles) {
+      b.x = board.x + (b.x - old.x) * k;
+      b.y = board.y + (b.y - old.y) * k;
+      b.r = rOf(b.t);
+      b.im = 1 / (b.r * b.r);
+    }
+  }
+  dropX = aimX = clampDrop(dropX || board.x + w / 2, pending);
+
+  seedStars = [];
+  for (let i = 0; i < 34; i++) {
+    seedStars.push({ x:Math.random(), y:Math.random(), r:Math.random() * 1.4 + .4, a:Math.random() * .4 + .12 });
+  }
+  drawChain();
+}
+function resize(){
+  const dpr = Math.min(devicePixelRatio || 1, 2.5);
+  cv.width  = Math.round(innerWidth  * dpr);
+  cv.height = Math.round(innerHeight * dpr);
+  cv.style.width  = innerWidth  + 'px';
+  cv.style.height = innerHeight + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  layout();
+}
+addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 120));
+
+const clampDrop = (x, t) => {
+  const r = rOf(t) + 2;
+  return Math.max(board.x + r, Math.min(board.x + board.w - r, x));
+};
+
+/* ============================================================
+   בועות
+   ============================================================ */
+function makeBubble(x, y, t, vx, vy){
+  const r = rOf(t);
+  return { x, y, t, r, vx:vx || 0, vy:vy || 0, im:1 / (r * r),
+           rot:0, age:0, over:0, pop:0, spawn:1, dead:false };
+}
+const rollTier = () => DROPPABLE[(Math.random() * DROPPABLE.length) | 0];
+
+function drop(){
+  if (!running || cd > 0) return;
+  const t = pending;
+  const b = makeBubble(clampDrop(dropX, t), board.dropY, t, 0, board.w * 0.35);
+  b.age = -SETTLE_T;          // חסינות מהפסד עד שמתייצבת
+  bubbles.push(b);
+  combo = 0; comboT = 0;      // הקומבו נספר פר-הפלה: רק שרשרת מיזוגים של אותה בועה
+  pending = nextT; nextT = rollTier();
+  cd = DROP_CD;
+  tone(300, .09, 'sine', .16, 190);
+  buzz(8);
+}
+
+/* ============================================================
+   סימולציה
+   ============================================================ */
+let pairs = [];
+function buildPairs(){
+  bubbles.sort((a, b) => a.x - b.x);
+  pairs.length = 0;
+  const n = bubbles.length;
+  if (!n) return;
+  let maxR = 0;
+  for (const b of bubbles) if (b.r > maxR) maxR = b.r;
+  for (let i = 0; i < n; i++) {
+    const a = bubbles[i], lim = a.x + a.r + maxR;
+    for (let j = i + 1; j < n; j++) {
+      const b = bubbles[j];
+      if (b.x - b.r > lim) break;
+      const rr = a.r + b.r;
+      if (Math.abs(a.y - b.y) > rr) continue;
+      pairs.push(a, b);
+    }
+  }
+}
+
+function solve(){
+  for (let k = 0; k < pairs.length; k += 2) {
+    const a = pairs[k], b = pairs[k + 1];
+    if (a.dead || b.dead) continue;
+    let dx = b.x - a.x, dy = b.y - a.y;
+    let d  = Math.hypot(dx, dy);
+    if (d === 0) { dx = (Math.random() - .5) * .1; dy = -.1; d = .1414; }
+    const overlap = a.r + b.r - d;
+    if (overlap <= 0) continue;
+
+    const nx = dx / d, ny = dy / d, im = a.im + b.im;
+
+    const corr = overlap * CORR / im;
+    a.x -= nx * corr * a.im; a.y -= ny * corr * a.im;
+    b.x += nx * corr * b.im; b.y += ny * corr * b.im;
+
+    const rvx = b.vx - a.vx, rvy = b.vy - a.vy;
+    const vn  = rvx * nx + rvy * ny;
+    if (vn < 0) {
+      const jn = -(1 + REST) * vn / im;
+      a.vx -= nx * jn * a.im; a.vy -= ny * jn * a.im;
+      b.vx += nx * jn * b.im; b.vy += ny * jn * b.im;
+      const tx = -ny, ty = nx;
+      const jt = -(rvx * tx + rvy * ty) * FRIC / im;
+      a.vx -= tx * jt * a.im; a.vy -= ty * jt * a.im;
+      b.vx += tx * jt * b.im; b.vy += ty * jt * b.im;
+      if (vn < -board.w * 0.9 && a.age > 0) tone(90 + Math.random() * 40, .05, 'sine', .05);
+    }
+  }
+}
+
+function walls(){
+  const L = board.x, R = board.x + board.w, B = board.y + board.h;
+  for (const b of bubbles) {
+    if (b.x - b.r < L) { b.x = L + b.r; if (b.vx < 0) { b.vx = -b.vx * WREST; b.vy *= .96; } }
+    if (b.x + b.r > R) { b.x = R - b.r; if (b.vx > 0) { b.vx = -b.vx * WREST; b.vy *= .96; } }
+    if (b.y + b.r > B) { b.y = B - b.r; if (b.vy > 0) { b.vy = -b.vy * WREST; b.vx *= .90; } }
+    // אין תקרה: הבועות חופשיות לעלות מעל הקו — וזה מה שמפסיד
+  }
+}
+
+function merges(){
+  for (let k = 0; k < pairs.length; k += 2) {
+    const a = pairs[k], b = pairs[k + 1];
+    if (a.dead || b.dead || a.t !== b.t) continue;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    if (dx * dx + dy * dy > (a.r + b.r) * (a.r + b.r)) continue;
+    a.dead = b.dead = true;
+    mergeAt(a, b);
+  }
+  if (bubbles.some(b => b.dead)) bubbles = bubbles.filter(b => !b.dead);
+}
+
+function mergeAt(a, b){
+  const t  = a.t;
+  const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+  const vx = (a.vx + b.vx) / 2, vy = (a.vy + b.vy) / 2;
+
+  comboT = 1.2;
+  combo++;
+  if (pops.length > 10) pops.splice(0, pops.length - 10);
+  const mult = 1 + Math.min(combo - 1, 8) * 0.25;
+  const gained = Math.round(ptsOf(t) * mult);
+  score += gained;
+  document.getElementById('scoreEl').textContent = score;
+
+  if (t >= MAXT) {                       // שתי בועות שיא — התפוצצות
+    score += 200;
+    document.getElementById('scoreEl').textContent = score;
+    burst(cx, cy, TIERS[MAXT].c, 46, rOf(MAXT) * .5);
+    rings.push({ x:cx, y:cy, r:rOf(MAXT) * .7, max:rOf(MAXT) * 3, c:TIERS[MAXT].c, life:1 });
+    shake = Math.max(shake, 16);
+    tone(880, .5, 'sine', .3, 220); tone(1320, .5, 'triangle', .16, 330);
+    buzz([18, 40, 18]);
+    pops.push({ x:cx, y:cy, txt:'+200', c:'#fff3c4', life:1.3, vy:-42, size:26 });
+    return;
+  }
+
+  const nb = makeBubble(cx, cy, t + 1, vx * .5, vy * .5);
+  nb.pop = 1; nb.age = 0.2;
+  bubbles.push(nb);
+
+  burst(cx, cy, TIERS[t].c, 8 + t * 2, nb.r * .35);
+  rings.push({ x:cx, y:cy, r:nb.r * .5, max:nb.r * 1.9, c:TIERS[t + 1].c, life:1 });
+  shake = Math.max(shake, 2 + t * 1.1);
+  tone(196 * Math.pow(1.2, t), .16, 'sine', .22, 300 * Math.pow(1.2, t));
+  buzz(6 + t * 2);
+  pops.push({ x:cx, y:cy - nb.r * .4, txt:'+' + gained, c:TIERS[t + 1].hi,
+              life:.95, vy:-52, size:14 + t * 1.6 });
+  if (combo > 1) {
+    pops.push({ x:cx, y:cy - nb.r * .95, txt:'קומבו ×' + combo, c:'#ffd257',
+                life:.95, vy:-62, size:15 });
+  }
+}
+
+function step(dt){
+  cd -= dt;
+  if (comboT > 0) { comboT -= dt; if (comboT <= 0) combo = 0; }
+
+  const g = GRAV * board.w;
+  for (let s = 0; s < SUBSTEPS; s++) {
+    const h = dt / SUBSTEPS;
+    for (const b of bubbles) {
+      b.vy += g * h;
+      b.vx *= AIRD; b.vy *= AIRD;
+      b.x  += b.vx * h; b.y += b.vy * h;
+      b.rot += b.vx * h / b.r;
+      b.age += h;
+      if (b.pop   > 0) b.pop   = Math.max(0, b.pop   - h * 4.5);
+      if (b.spawn > 0) b.spawn = Math.max(0, b.spawn - h * 6);
+    }
+    buildPairs();
+    for (let i = 0; i < ITERS; i++) { solve(); walls(); }
+    merges();
+  }
+
+  // סכנה: בועה מיושבת שחוצה את הקו
+  let worst = 0;
+  for (const b of bubbles) {
+    if (b.age > 0 && b.y - b.r < board.lineY) {
+      b.over += dt;
+      if (b.over > worst) worst = b.over;
+    } else if (b.over > 0) {
+      b.over = Math.max(0, b.over - dt * 2.2);
+    }
+  }
+  dangerAmt += (Math.min(1, worst / DANGER_T) - dangerAmt) * Math.min(1, dt * 6);
+  if (worst >= DANGER_T) gameOver();
+
+  // אפקטים
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += g * .35 * dt;
+    p.vx *= .985; p.life -= dt * p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = rings.length - 1; i >= 0; i--) {
+    const r = rings[i];
+    r.r += (r.max - r.r) * Math.min(1, dt * 9);
+    r.life -= dt * 2.4;
+    if (r.life <= 0) rings.splice(i, 1);
+  }
+  for (let i = pops.length - 1; i >= 0; i--) {
+    const p = pops[i];
+    p.y += p.vy * dt; p.vy *= .93; p.life -= dt * 1.15;
+    if (p.life <= 0) pops.splice(i, 1);
+  }
+  if (shake > 0) shake = Math.max(0, shake - dt * 42);
+
+  aimX += (clampDrop(dropX, pending) - aimX) * Math.min(1, dt * 18);
+}
+
+function burst(x, y, color, n, spread){
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = (0.5 + Math.random()) * board.w * 1.15;
+    particles.push({ x:x + Math.cos(a) * spread, y:y + Math.sin(a) * spread,
+                     vx:Math.cos(a) * sp, vy:Math.sin(a) * sp - board.w * .2,
+                     r:board.w * (.006 + Math.random() * .012), c:color,
+                     life:1, decay:1.5 + Math.random() });
+  }
+}
+
+/* ============================================================
+   ציור
+   ============================================================ */
+function drawBubble(b){
+  const scale = 1 + b.pop * .26 - b.spawn * .18;
+  const r = b.r * scale;
+  const T = TIERS[b.t];
+
+  if (b.t >= 6) { ctx.save(); ctx.shadowColor = T.c; ctx.shadowBlur = 12 + b.t * 2; }
+  const g = ctx.createRadialGradient(b.x - r * .34, b.y - r * .40, r * .06, b.x, b.y, r);
+  g.addColorStop(0, T.hi); g.addColorStop(.52, T.c); g.addColorStop(1, T.lo);
+  ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, 6.2832);
+  ctx.fillStyle = g; ctx.fill();
+  if (b.t >= 6) ctx.restore();
+
+  ctx.lineWidth = Math.max(1, r * .045);
+  ctx.strokeStyle = 'rgba(255,255,255,.28)';
+  ctx.stroke();
+
+  // סימן מסתובב — נותן תחושת גלגול
+  ctx.save();
+  ctx.translate(b.x, b.y); ctx.rotate(b.rot);
+  ctx.strokeStyle = 'rgba(0,0,0,.16)';
+  ctx.lineWidth = Math.max(1, r * .09);
+  ctx.beginPath(); ctx.arc(0, 0, r * .58, .5, 1.9); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, r * .58, 3.64, 5.04); ctx.stroke();
+  ctx.restore();
+
+  // ברק
+  ctx.save();
+  ctx.translate(b.x - r * .33, b.y - r * .38); ctx.rotate(-.6);
+  ctx.beginPath(); ctx.ellipse(0, 0, r * .30, r * .17, 0, 0, 6.2832);
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fill();
+  ctx.restore();
+}
+
+function draw(t){
+  ctx.clearRect(0, 0, innerWidth, innerHeight);
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+
+  const { x, y, w, h } = board, rad = w * .05;
+
+  // רקע הלוח
+  ctx.save();
+  roundRect(x, y, w, h, rad);
+  ctx.clip();
+  const bg = ctx.createLinearGradient(0, y, 0, y + h);
+  bg.addColorStop(0, '#0a1020'); bg.addColorStop(1, '#070a12');
+  ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+  for (const s of seedStars) {
+    ctx.globalAlpha = s.a * (.6 + .4 * Math.sin(t * 1.4 + s.x * 30));
+    ctx.fillStyle = '#cfe4ff';
+    ctx.beginPath(); ctx.arc(x + s.x * w, y + s.y * h, s.r, 0, 6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // קו הסכנה
+  const dang = dangerAmt;
+  ctx.setLineDash([9, 8]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = `rgba(255,${Math.round(120 - dang * 90)},${Math.round(100 - dang * 70)},${.34 + dang * .55 + Math.sin(t * 7) * dang * .2})`;
+  ctx.beginPath(); ctx.moveTo(x, board.lineY); ctx.lineTo(x + w, board.lineY); ctx.stroke();
+  ctx.setLineDash([]);
+  if (dang > .02) {
+    const dg = ctx.createLinearGradient(0, board.lineY, 0, board.lineY + h * .18);
+    dg.addColorStop(0, `rgba(255,60,60,${.20 * dang})`);
+    dg.addColorStop(1, 'rgba(255,60,60,0)');
+    ctx.fillStyle = dg; ctx.fillRect(x, board.lineY, w, h * .18);
+  }
+
+  // קו כיוון
+  if (running && cd <= 0) {
+    const pr = rOf(pending);
+    ctx.setLineDash([5, 9]);
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = TIERS[pending].c + '66';
+    ctx.beginPath(); ctx.moveTo(aimX, board.dropY + pr); ctx.lineTo(aimX, y + h); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  for (const b of bubbles) drawBubble(b);
+
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.c;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (const r of rings) {
+    ctx.globalAlpha = Math.max(0, r.life) * .55;
+    ctx.strokeStyle = r.c; ctx.lineWidth = Math.max(1.5, w * .012 * r.life);
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.2832); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // הבועה הממתינה
+  if (running) {
+    const pr = rOf(pending);
+    const bob = Math.sin(t * 3) * pr * .06;
+    drawBubble({ x:aimX, y:board.dropY + bob, t:pending, r:pr,
+                 rot:t * .6, pop:cd > 0 ? 0 : .06 * Math.sin(t * 6) + .06, spawn:Math.max(0, cd / DROP_CD * .35) });
+  }
+
+  for (const p of pops) {
+    ctx.globalAlpha = Math.min(1, p.life * 1.6);
+    ctx.font = `900 ${p.size}px -apple-system,"Segoe UI",Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,.55)';
+    ctx.fillText(p.txt, p.x + 1.5, p.y + 1.5);
+    ctx.fillStyle = p.c;
+    ctx.fillText(p.txt, p.x, p.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();  // clip
+
+  // מסגרת
+  roundRect(x, y, w, h, rad);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = `rgba(255,255,255,${.14 + dang * .1})`;
+  ctx.stroke();
+  if (dang > .35) {
+    ctx.save(); ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 18 * dang;
+    ctx.strokeStyle = `rgba(255,68,68,${(dang - .35) * .9})`;
+    ctx.stroke(); ctx.restore();
+  }
+
+  // "הבא"
+  const nr = Math.max(9, rOf(nextT) * .45);
+  const bx = x + w - nr - 12, by = y + 14 + nr;
+  ctx.font = '700 10px -apple-system,"Segoe UI",Arial';
+  ctx.textAlign = 'center'; ctx.fillStyle = '#6f7d92';
+  ctx.fillText('הבא', bx, by - nr - 5);
+  drawBubble({ x:bx, y:by, t:nextT, r:nr, rot:t * .4, pop:0, spawn:0 });
+
+  ctx.restore();  // shake
+}
+
+function roundRect(x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* ============================================================
+   לולאה
+   ============================================================ */
+let last = 0;
+function frame(ts){
+  const t = ts / 1000;
+  let dt = last ? Math.min(.034, t - last) : .016;
+  last = t;
+  if (running) step(dt);
+  draw(t);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ============================================================
+   קלט
+   ============================================================ */
+let aiming = false;
+function pointAt(e){
+  const p = e.touches ? e.touches[0] : e;
+  dropX = p.clientX;
+}
+cv.addEventListener('pointerdown', e => {
+  if (!running) return;
+  aiming = true; pointAt(e);
+  try { cv.setPointerCapture(e.pointerId); } catch(err) {}
+});
+cv.addEventListener('pointermove', e => { if (aiming) pointAt(e); });
+cv.addEventListener('pointerup', e => {
+  if (!running || !aiming) return;
+  aiming = false; pointAt(e); drop();
+});
+cv.addEventListener('pointercancel', () => { aiming = false; });
+addEventListener('keydown', e => {
+  if (!running) return;
+  if (e.key === 'ArrowLeft')  dropX -= board.w * .05;
+  if (e.key === 'ArrowRight') dropX += board.w * .05;
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); drop(); }
+  dropX = clampDrop(dropX, pending);
+});
+
+/* ============================================================
+   זרימת משחק
+   ============================================================ */
+function startGame(){
+  initAudio();
+  bubbles = []; particles = []; rings = []; pops = [];
+  score = 0; combo = 0; comboT = 0; cd = 0; shake = 0; dangerAmt = 0;
+  pending = rollTier(); nextT = rollTier();
+  dropX = aimX = board.x + board.w / 2;
+  document.getElementById('scoreEl').textContent = '0';
+  document.getElementById('bestEl').textContent  = best;
+  document.getElementById('startOv').classList.add('hidden');
+  document.getElementById('overOv').classList.add('hidden');
+  running = true;
+}
+
+function gameOver(){
+  if (!running) return;
+  running = false;
+  shake = 14;
+  tone(320, .7, 'sawtooth', .18, 60);
+  buzz([30, 60, 30, 60, 90]);
+  for (const b of bubbles) burst(b.x, b.y, TIERS[b.t].c, 4, b.r * .4);
+
+  const isBest = score > best;
+  if (isBest) {
+    best = score;
+    try { localStorage.setItem('bm_best', String(best)); } catch(e) {}
+  }
+  document.getElementById('bestEl').textContent   = best;
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('newBest').style.display  = isBest ? '' : 'none';
+  let top = 0;
+  for (const b of bubbles) if (b.t > top) top = b.t;
+  document.getElementById('overSub').textContent =
+    'הבועה הגדולה שהגעת אליה: דרגה ' + (top + 1) + ' מתוך ' + TIERS.length;
+  setTimeout(() => document.getElementById('overOv').classList.remove('hidden'), 620);
+}
+
+function drawChain(){
+  const el = document.getElementById('chain');
+  if (!el) return;
+  el.innerHTML = '';
+  TIERS.forEach((T, i) => {
+    const d = Math.round(9 + i * 2.1);
+    const b = document.createElement('i');
+    b.style.width = b.style.height = d + 'px';
+    b.style.background = `radial-gradient(circle at 32% 30%, ${T.hi}, ${T.c} 55%, ${T.lo})`;
+    el.appendChild(b);
+    if (i < TIERS.length - 1) {
+      const s = document.createElement('span');
+      s.textContent = '‹';
+      el.appendChild(s);
+    }
+  });
+}
+
+document.getElementById('playBtn').onclick  = startGame;
+document.getElementById('againBtn').onclick = startGame;
+document.getElementById('menuBtn').onclick  = () => {
+  document.getElementById('overOv').classList.add('hidden');
+  document.getElementById('startOv').classList.remove('hidden');
+};
+document.getElementById('muteBtn').onclick = e => {
+  muted = !muted;
+  e.currentTarget.textContent = muted ? '🔇' : '🔊';
+  if (!muted) initAudio();
+};
+
+document.getElementById('bestEl').textContent = best;
+resize();
+
+/* התקנה כאפליקציה (PWA) — מניפסט מוטמע, בלי קבצים נוספים */
+try {
+  const mf = { name:'מיזוג בועות', short_name:'בועות', start_url:'.', display:'standalone',
+               background_color:'#05070c', theme_color:'#0b0f16', orientation:'portrait' };
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = URL.createObjectURL(new Blob([JSON.stringify(mf)], { type:'application/json' }));
+  document.head.appendChild(link);
+} catch(e) {}
+</script>
+</body>
+</html>
