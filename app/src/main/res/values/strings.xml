@@ -87,4 +87,10 @@
     <string name="overlay_service_channel">Glassify overlays</string>
     <string name="overlay_service_title">Glassify is running</string>
     <string name="overlay_service_text">Keeping the Dynamic Island and Notification Centre available.</string>
+
+    <!-- Safe mode -->
+    <string name="safe_mode_title">Glassify stopped</string>
+    <string name="safe_mode_body">The last start failed, so the home screen was skipped to stop it restarting in a loop. Send this to the developer, or try again.</string>
+    <string name="safe_mode_share">Share</string>
+    <string name="safe_mode_retry">Try again</string>
 </resources>

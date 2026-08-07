@@ -53,8 +53,32 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: LauncherViewModel by viewModels()
 
+    /** Set when the previous run crashed on startup; suppresses all normal work. */
+    private var safeMode = false
+
+    private val stableHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // A home screen that fails during startup is relaunched by the system at
+        // once, so a fault here becomes an inescapable loop. Repeated fast
+        // restarts first drop the glass effects and, if that still fails, land
+        // on a screen showing why instead of restarting again.
+        val recovery = CrashReporter.beginRun(this)
+        if (recovery == CrashReporter.Recovery.SAFE) {
+            safeMode = true
+            SafeModeView.show(
+                this,
+                CrashReporter.lastCrash(this) ?: CrashReporter.describeSilentFailure(),
+            )
+            return
+        }
+
+        // Nothing has gone wrong for long enough to call this launch healthy, so
+        // the failure counter is reset and the next crash starts from zero.
+        stableHandler.postDelayed({ CrashReporter.markStable(this) }, STABLE_AFTER_MS)
+
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -66,20 +90,29 @@ class MainActivity : ComponentActivity() {
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
-        setContent { GlassifyApp(viewModel) }
+        setContent { GlassifyApp(viewModel, degraded = recovery == CrashReporter.Recovery.PLAIN) }
+    }
+
+    override fun onDestroy() {
+        stableHandler.removeCallbacksAndMessages(null)
+        super.onDestroy()
     }
 
     override fun onResume() {
         super.onResume()
+        if (safeMode) return
         viewModel.seedDockIfEmpty()
         OverlayService.syncWithPermissions(this)
     }
 }
 
+/** How long a launch has to survive before it counts as healthy. */
+private const val STABLE_AFTER_MS = 12_000L
+
 private enum class Screen { HOME, LIBRARY, SEARCH, SETTINGS }
 
 @Composable
-private fun GlassifyApp(viewModel: LauncherViewModel) {
+private fun GlassifyApp(viewModel: LauncherViewModel, degraded: Boolean) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val layout by viewModel.layout.collectAsStateWithLifecycle()
     val apps by viewModel.apps.collectAsStateWithLifecycle()
@@ -112,10 +145,12 @@ private fun GlassifyApp(viewModel: LauncherViewModel) {
         }
     }
 
-    GlassTheme(
-        dark = settings.darkTheme,
-        tier = settings.resolveTier(deviceMax),
-    ) {
+    // After repeated fast restarts the glass is dropped entirely: it is the
+    // part of the app most dependent on GPU behaviour, and a plain home screen
+    // beats a crash loop.
+    val tier = if (degraded) GlassTier.FLAT else settings.resolveTier(deviceMax)
+
+    GlassTheme(dark = settings.darkTheme, tier = tier) {
         if (!settings.setupComplete) {
             SetupWizard(onFinished = { screen = Screen.HOME })
             return@GlassTheme

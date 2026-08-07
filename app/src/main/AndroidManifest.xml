@@ -32,6 +32,7 @@
     </queries>
 
     <application
+        android:name=".GlassifyApplication"
         android:allowBackup="true"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"

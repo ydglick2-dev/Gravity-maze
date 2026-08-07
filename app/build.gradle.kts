@@ -26,8 +26,8 @@ android {
         applicationId = "com.glassify.launcher"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
         resourceConfigurations += listOf("en", "iw")
     }
 
@@ -44,8 +44,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Off for the 1.1 diagnostic build. The 1.0 release crash-looped on
+            // device and could not be reproduced off it, so R8 is removed as a
+            // variable and crash traces stay readable instead of obfuscated.
+            // Turn both back on once the cause is known.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (hasReleaseKey) {
                 signingConfigs.getByName("release")
@@ -71,6 +75,8 @@ android {
 
     buildFeatures {
         compose = true
+        // The crash reporter stamps the build into its report.
+        buildConfig = true
     }
 
     packaging {
@@ -112,4 +118,9 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // Renders the real composables on the JVM. No emulator is available here,
+    // so this is the only way to exercise the UI at all.
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }

@@ -174,11 +174,23 @@ fun Modifier.liquidGlass(
     return this
         .onGloballyPositioned { position = it.positionInRoot() }
         .drawBehind {
+            // Draw-time failures are uniquely dangerous here. A throw inside a
+            // draw pass repeats on every frame, and on a home screen the system
+            // relaunches after each one — the app crash-loops about once a
+            // second with no way in. Layer recording, RenderEffect chaining and
+            // shader execution all depend on GPU and platform behaviour we
+            // cannot exercise off-device, so the whole path degrades to the
+            // painted rim instead of taking the launcher down.
+            if (GlassRenderer.failed) {
+                return@drawBehind
+            }
+
             val local = position - backdrop.rootPosition()
             val blurPx = with(density) { spec.blur.toPx() }
             val cornerPx = with(density) { cornerRadius.toPx() }
             val thicknessPx = with(density) { spec.thickness.toPx() }
 
+            try {
             when {
                 shader != null && backdrop.layer != null ->
                     drawRefractedGlass(
@@ -218,12 +230,39 @@ fun Modifier.liquidGlass(
                         tintAmount = spec.tintAmount,
                     )
             }
+            } catch (e: Throwable) {
+                GlassRenderer.disable(e)
+            }
         }
-        // The painted rim is the fallback for the tiers without a shader. When a
-        // shader ran it already drew its own rim and specular, so painting more
-        // on top would only flatten it.
-        .drawGlassRim(shape, painted = shader == null, tint, spec)
+        // The painted rim is the fallback for the tiers without a shader, and
+        // for every tier once the renderer has given up.
+        .drawGlassRim(shape, painted = shader == null || GlassRenderer.failed, tint, spec)
         .clip(shape)
+}
+
+/**
+ * One-way switch that turns the hardware glass path off for the rest of the
+ * process once it has thrown.
+ *
+ * Deliberately global rather than per-panel: whatever breaks the dock will break
+ * every other pane too, and retrying it on each of them would just multiply the
+ * failure across the frame.
+ */
+internal object GlassRenderer {
+
+    // Compose state rather than a plain flag: the fallback is chosen during
+    // composition, so flipping this has to invalidate it. A plain boolean would
+    // leave every panel drawing nothing at all until something else happened to
+    // recompose.
+    private val failedState = mutableStateOf(false)
+
+    val failed: Boolean get() = failedState.value
+
+    fun disable(cause: Throwable) {
+        if (failedState.value) return
+        failedState.value = true
+        Log.e(TAG, "Glass rendering failed; falling back to the painted style", cause)
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)

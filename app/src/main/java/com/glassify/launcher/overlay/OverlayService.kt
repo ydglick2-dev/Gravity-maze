@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
+import android.util.Log
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -210,6 +211,7 @@ class OverlayService : Service() {
     }
 
     companion object {
+        private const val TAG = "OverlayService"
         private const val CHANNEL_ID = "glassify-overlays"
         private const val NOTIFICATION_ID = 1001
         private const val TRIGGER_TRAVEL_PX = 40f
@@ -228,7 +230,7 @@ class OverlayService : Service() {
         fun syncWithPermissions(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
             if (canDrawOverlays(context)) {
-                context.startForegroundService(intent)
+                start(context, intent)
             } else {
                 context.stopService(intent)
             }
@@ -236,9 +238,30 @@ class OverlayService : Service() {
 
         fun openNotifications(context: Context) {
             if (!canDrawOverlays(context)) return
-            context.startForegroundService(
-                Intent(context, OverlayService::class.java).setAction(ACTION_OPEN_NOTIFICATIONS)
+            start(
+                context,
+                Intent(context, OverlayService::class.java).setAction(ACTION_OPEN_NOTIFICATIONS),
             )
+        }
+
+        /**
+         * Starts the service, tolerating the platform refusing.
+         *
+         * Since Android 12 a foreground service cannot be started while the app
+         * is in the background, and the refusal is an exception rather than a
+         * return value. Two of our call sites are exactly that case: the
+         * `MY_PACKAGE_REPLACED` broadcast, which arrives immediately after
+         * install with no exemption, and `BOOT_COMPLETED` on devices that
+         * dispatch it later than the exemption window. Neither is worth taking
+         * the process down for — the overlays come back the next time the
+         * launcher is opened.
+         */
+        private fun start(context: Context, intent: Intent) {
+            try {
+                context.startForegroundService(intent)
+            } catch (e: Exception) {
+                Log.w(TAG, "Not allowed to start the overlay service right now", e)
+            }
         }
     }
 }
