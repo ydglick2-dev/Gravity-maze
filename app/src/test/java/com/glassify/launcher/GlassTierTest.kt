@@ -46,8 +46,11 @@ class GlassTierTest {
     }
 
     @Test
-    fun `items per page follows the grid`() {
-        assertEquals(24, GlassifySettings(columns = 4, rows = 6).itemsPerPage)
-        assertEquals(20, GlassifySettings(columns = 5, rows = 4).itemsPerPage)
+    fun `the dock keeps the order the user picked`() {
+        // Order is the arrangement, so it has to survive being stored and read
+        // back — a set would silently reorder it.
+        val settings = GlassifySettings(dockKeys = listOf("c/c", "a/a", "b/b"))
+
+        assertEquals(listOf("c/c", "a/a", "b/b"), settings.dockKeys)
     }
 }

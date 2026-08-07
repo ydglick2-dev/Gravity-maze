@@ -117,6 +117,65 @@ object OverlayWindows {
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         }
 
+    /**
+     * The dock: full width at the bottom, sized to its content.
+     *
+     * `FLAG_BLUR_BEHIND` is the whole effect here. We cannot read the pixels of
+     * the launcher underneath, but the compositor can blur them for us, which is
+     * what makes this glass rather than a tinted strip.
+     */
+    fun dock(bottomOffsetPx: Int): WindowManager.LayoutParams =
+        blurredPanel(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL
+            y = bottomOffsetPx
+        }
+
+    /** The clock panel: sized to its content, near the top. */
+    fun clock(topOffsetPx: Int): WindowManager.LayoutParams =
+        blurredPanel(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
+            y = topOffsetPx
+        }
+
+    /**
+     * A window that floats over other apps with the system blurring behind it.
+     *
+     * Not focusable, so it never takes the keyboard or the back gesture from the
+     * app underneath, but still touchable so its own contents work.
+     */
+    private fun blurredPanel(width: Int, height: Int): WindowManager.LayoutParams =
+        WindowManager.LayoutParams(
+            width,
+            height,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                blurBehindRadius = DEFAULT_BLUR_PX
+            }
+            layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+        }
+
+    /**
+     * Blur radius for the floating panels, in pixels.
+     *
+     * Fixed rather than density-scaled on purpose: the blur is a property of the
+     * image, not of the layout, so the same radius looks the same on every
+     * screen while a scaled one would smear more on a dense panel.
+     */
+    private const val DEFAULT_BLUR_PX = 60
+
     /** The invisible strip that catches a downward swipe from the top-left. */
     fun trigger(heightPx: Int, widthPx: Int): WindowManager.LayoutParams =
         WindowManager.LayoutParams(

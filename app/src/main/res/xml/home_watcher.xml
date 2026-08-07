@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Scoped as narrowly as the platform allows.
+
+  Only window-state changes are requested, and `canRetrieveWindowContent` is
+  absent, so the service is told which app came to the front and nothing else —
+  no view tree, no text, nothing the user types. That is all the dock needs in
+  order to know whether it is over the home screen.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:description="@string/home_watcher_description"
+    android:notificationTimeout="100"
+    android:summary="@string/home_watcher_summary" />

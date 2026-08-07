@@ -204,6 +204,13 @@ class IslandController(
         publish()
     }
 
+    /** The app the Island is currently about, so tapping it can open that app. */
+    fun currentPackage(): String? = when (val current = _state.value) {
+        is IslandState.Media -> current.packageName
+        is IslandState.Alert -> current.notification.packageName
+        else -> null
+    }
+
     /** Media transport, wired to whichever session the Island is showing. */
     fun togglePlayback() {
         val target = controllers.firstOrNull { it.packageName == media?.packageName } ?: return

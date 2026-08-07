@@ -91,4 +91,22 @@
     <string name="safe_mode_body">ההפעלה הקודמת נכשלה, ולכן דילגנו על מסך הבית כדי לעצור את לולאת הקריסות. שלח את הפירוט הזה למפתח, או נסה שוב.</string>
     <string name="safe_mode_share">שיתוף</string>
     <string name="safe_mode_retry">נסה שוב</string>
+
+    <!-- Control panel -->
+    <string name="panel_subtitle">שכבת זכוכית מעל מסך הבית הקיים שלך.</string>
+    <string name="panel_layers">שכבות</string>
+    <string name="panel_dock">דוק זכוכית</string>
+    <string name="panel_dock_offset">גובה הדוק</string>
+    <string name="panel_clock">שעון זכוכית</string>
+    <string name="panel_clock_offset">גובה השעון</string>
+    <string name="panel_dock_apps">אפליקציות בדוק</string>
+    <string name="panel_dock_apps_hint">בחר עד ארבע אפליקציות. המספר מציין את המיקום; הקשה נוספת מסירה.</string>
+    <string name="panel_last_crash">השגיאה האחרונה</string>
+    <string name="panel_clear_crash">נקה</string>
+
+    <string name="setup_home_watcher_title">זיהוי מסך הבית</string>
+    <string name="setup_home_watcher_body">מאפשר לדוק ולשעון להופיע רק על מסך הבית, במקום מעל כל אפליקציה. ‏Glassify מקבל רק את שם האפליקציה שעלתה לחזית — הוא לא יכול לקרוא תוכן מסך או מה שאתה מקליד.</string>
+
+    <string name="home_watcher_description">מאפשר ל‑Glassify להציג את דוק ושון הזכוכית רק על מסך הבית. הוא קורא איזו אפליקציה בחזית ותו לא.</string>
+    <string name="home_watcher_summary">מציג את שכבת הזכוכית רק על מסך הבית</string>
 </resources>

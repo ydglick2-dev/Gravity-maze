@@ -122,7 +122,6 @@ fun NotificationCenter(
     }
 }
 
-/** Oversized clock and date, the way iOS heads its notification list. */
 /**
  * The active locale, read through the configuration so a language change
  * recomposes instead of leaving stale text on screen.
@@ -135,6 +134,7 @@ private fun rememberLocale(): Locale {
     }
 }
 
+/** Oversized clock and date, the way iOS heads its notification list. */
 @Composable
 private fun ClockHeader() {
     val locale = rememberLocale()
@@ -184,12 +184,7 @@ private fun NotificationCard(
             .liquidGlass(
                 shape = GlassShapes.card,
                 cornerRadius = 22.dp,
-                spec = GlassSpec(
-                    blur = 20.dp,
-                    refraction = 7.dp,
-                    tintAmount = 0.24f,
-                    surfaceAlpha = 0.62f,
-                ),
+                spec = GlassSpec(surfaceAlpha = 0.62f),
             )
             .pointerInput(notification.key) {
                 detectHorizontalDragGestures(
