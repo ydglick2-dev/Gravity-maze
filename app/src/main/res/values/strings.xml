@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Glassify</string>
+
+    <!-- Home screen -->
+    <string name="done">Done</string>
+    <string name="settings">Settings</string>
+    <string name="search_hint">Search</string>
+    <string name="search_web">Search the web for “%1$s”</string>
+    <string name="app_library">App Library</string>
+    <string name="no_results">No results</string>
+    <string name="folder_name_hint">Folder name</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- App Library categories -->
+    <string name="category_social">Social</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_creativity">Creativity</string>
+    <string name="category_productivity">Productivity</string>
+    <string name="category_utilities">Utilities</string>
+    <string name="category_information">Information</string>
+    <string name="category_travel">Travel</string>
+    <string name="category_shopping">Shopping</string>
+    <string name="category_finance">Finance</string>
+    <string name="category_health">Health</string>
+    <string name="category_games">Games</string>
+    <string name="category_other">Other</string>
+
+    <!-- Notification centre -->
+    <string name="notification_center">Notification Centre</string>
+    <string name="no_notifications">No New Notifications</string>
+    <string name="clear_all">Clear All</string>
+
+    <!-- Setup wizard -->
+    <string name="setup_welcome_title">Glassify</string>
+    <string name="setup_welcome_body">A liquid-glass home screen for your phone. Four quick steps and you are done.</string>
+    <string name="setup_continue">Continue</string>
+    <string name="setup_skip">Skip</string>
+    <string name="setup_finish">Start</string>
+    <string name="setup_grant">Grant</string>
+    <string name="setup_granted">Granted</string>
+
+    <string name="setup_home_title">Set as home screen</string>
+    <string name="setup_home_body">Pick Glassify as the default so that pressing Home opens it. You can switch back to your old launcher at any time in Android settings.</string>
+
+    <string name="setup_notifications_title">Notification access</string>
+    <string name="setup_notifications_body">Needed for the Notification Centre and for the Dynamic Island to show what is playing. Notifications are read on the device and never leave it.</string>
+
+    <string name="setup_overlay_title">Draw over other apps</string>
+    <string name="setup_overlay_body">Lets the Dynamic Island and the Notification Centre appear on top of whatever you are using.</string>
+
+    <string name="setup_battery_title">Keep it running</string>
+    <string name="setup_battery_body">One UI aggressively sleeps background apps. Without this exemption the Dynamic Island stops appearing after a few minutes.</string>
+    <string name="setup_battery_hint">Also open Settings ▸ Battery ▸ Background usage limits and add Glassify to “Never sleeping apps”.</string>
+
+    <string name="setup_wallpaper_title">Choose a wallpaper</string>
+    <string name="setup_wallpaper_body">The glass refracts whatever is behind it, so Glassify draws the wallpaper itself. Pick one of yours or use a built-in.</string>
+    <string name="setup_wallpaper_pick">Choose a photo</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_glass">Glass</string>
+    <string name="settings_blur">Blur</string>
+    <string name="settings_refraction">Refraction</string>
+    <string name="settings_quality">Quality</string>
+    <string name="settings_quality_full">Full — refraction and highlights</string>
+    <string name="settings_quality_blur">Blur only — saves power</string>
+    <string name="settings_quality_flat">Flat — no blur</string>
+    <string name="settings_grid">Grid</string>
+    <string name="settings_columns">Columns</string>
+    <string name="settings_rows">Rows</string>
+    <string name="settings_labels">Show app names</string>
+    <string name="settings_dark">Dark appearance</string>
+    <string name="settings_overlays">Overlays</string>
+    <string name="settings_island">Dynamic Island</string>
+    <string name="settings_island_offset">Island position</string>
+    <string name="settings_notification_center">Notification Centre</string>
+    <string name="settings_edge_trigger">Swipe down from the top-left</string>
+    <string name="settings_edge_trigger_note">May conflict with your phone’s own quick-panel gesture. Turn it off to open the Notification Centre from the home screen only.</string>
+    <string name="settings_wallpaper">Wallpaper</string>
+    <string name="settings_permissions">Permissions</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_body">Glassify is an independent home screen. It is not affiliated with, endorsed by, or connected to Apple Inc. App icons are reshaped from the artwork each app already provides.</string>
+    <string name="settings_licenses">Inter and Heebo are used under the SIL Open Font License 1.1.</string>
+
+    <!-- Overlay service -->
+    <string name="overlay_service_channel">Glassify overlays</string>
+    <string name="overlay_service_title">Glassify is running</string>
+    <string name="overlay_service_text">Keeping the Dynamic Island and Notification Centre available.</string>
+</resources>

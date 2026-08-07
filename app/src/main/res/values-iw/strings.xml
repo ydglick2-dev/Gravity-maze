@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home screen -->
+    <string name="done">סיום</string>
+    <string name="settings">הגדרות</string>
+    <string name="search_hint">חיפוש</string>
+    <string name="search_web">חיפוש באינטרנט: „%1$s”</string>
+    <string name="app_library">ספריית האפליקציות</string>
+    <string name="no_results">אין תוצאות</string>
+    <string name="folder_name_hint">שם התיקייה</string>
+    <string name="cancel">ביטול</string>
+
+    <!-- App Library categories -->
+    <string name="category_social">חברתי</string>
+    <string name="category_entertainment">בידור</string>
+    <string name="category_creativity">יצירה</string>
+    <string name="category_productivity">פרודוקטיביות</string>
+    <string name="category_utilities">כלים</string>
+    <string name="category_information">מידע</string>
+    <string name="category_travel">נסיעות</string>
+    <string name="category_shopping">קניות</string>
+    <string name="category_finance">פיננסים</string>
+    <string name="category_health">בריאות</string>
+    <string name="category_games">משחקים</string>
+    <string name="category_other">אחר</string>
+
+    <!-- Notification centre -->
+    <string name="notification_center">מרכז ההתראות</string>
+    <string name="no_notifications">אין התראות חדשות</string>
+    <string name="clear_all">נקה הכל</string>
+
+    <!-- Setup wizard -->
+    <string name="setup_welcome_title">Glassify</string>
+    <string name="setup_welcome_body">מסך בית מזכוכית נוזלית לטלפון שלך. ארבעה צעדים קצרים וסיימנו.</string>
+    <string name="setup_continue">המשך</string>
+    <string name="setup_skip">דלג</string>
+    <string name="setup_finish">התחל</string>
+    <string name="setup_grant">אישור</string>
+    <string name="setup_granted">אושר</string>
+
+    <string name="setup_home_title">הגדרה כמסך הבית</string>
+    <string name="setup_home_body">בחר ב‑Glassify כברירת מחדל, כדי שלחיצה על „בית” תפתח אותו. אפשר לחזור ללאנצ׳ר הקודם בכל רגע דרך הגדרות אנדרואיד.</string>
+
+    <string name="setup_notifications_title">גישה להתראות</string>
+    <string name="setup_notifications_body">נדרשת למרכז ההתראות וכדי שה‑Dynamic Island יציג מה מתנגן. ההתראות נקראות במכשיר בלבד ולא יוצאות ממנו.</string>
+
+    <string name="setup_overlay_title">הצגה מעל אפליקציות אחרות</string>
+    <string name="setup_overlay_body">מאפשרת ל‑Dynamic Island ולמרכז ההתראות להופיע מעל כל אפליקציה שפתוחה.</string>
+
+    <string name="setup_battery_title">שהכל ימשיך לרוץ</string>
+    <string name="setup_battery_body">‏One UI מרדים אפליקציות רקע באגרסיביות. בלי הפטור הזה ה‑Dynamic Island יפסיק להופיע אחרי כמה דקות.</string>
+    <string name="setup_battery_hint">בנוסף, פתח הגדרות ◂ סוללה ◂ הגבלות שימוש ברקע, והוסף את Glassify ל„אפליקציות שלא יורדמו”.</string>
+
+    <string name="setup_wallpaper_title">בחירת טפט</string>
+    <string name="setup_wallpaper_body">הזכוכית שוברת את מה שמאחוריה, ולכן Glassify מצייר את הטפט בעצמו. בחר תמונה משלך או אחד מהמובנים.</string>
+    <string name="setup_wallpaper_pick">בחירת תמונה</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">מראה</string>
+    <string name="settings_glass">זכוכית</string>
+    <string name="settings_blur">טשטוש</string>
+    <string name="settings_refraction">שבירת אור</string>
+    <string name="settings_quality">איכות</string>
+    <string name="settings_quality_full">מלאה — שבירת אור ונצנוץ</string>
+    <string name="settings_quality_blur">טשטוש בלבד — חוסך בסוללה</string>
+    <string name="settings_quality_flat">שטוחה — בלי טשטוש</string>
+    <string name="settings_grid">רשת</string>
+    <string name="settings_columns">עמודות</string>
+    <string name="settings_rows">שורות</string>
+    <string name="settings_labels">הצגת שמות אפליקציות</string>
+    <string name="settings_dark">מראה כהה</string>
+    <string name="settings_overlays">שכבות‑על</string>
+    <string name="settings_island">Dynamic Island</string>
+    <string name="settings_island_offset">מיקום ה‑Island</string>
+    <string name="settings_notification_center">מרכז ההתראות</string>
+    <string name="settings_edge_trigger">החלקה מטה מהפינה השמאלית‑עליונה</string>
+    <string name="settings_edge_trigger_note">עלולה להתנגש עם מחוות לוח ההגדרות המהירות של הטלפון. כבה אותה כדי לפתוח את מרכז ההתראות ממסך הבית בלבד.</string>
+    <string name="settings_wallpaper">טפט</string>
+    <string name="settings_permissions">הרשאות</string>
+    <string name="settings_about">אודות</string>
+    <string name="settings_about_body">‏Glassify הוא מסך בית עצמאי. אין לו קשר ל‑Apple Inc.‎, והיא לא מאשרת או מקושרת אליו. האייקונים מעוצבים מחדש מתוך הגרפיקה שכל אפליקציה מספקת בעצמה.</string>
+    <string name="settings_licenses">הגופנים Inter ו‑Heebo בשימוש תחת רישיון SIL Open Font License 1.1.</string>
+
+    <!-- Overlay service -->
+    <string name="overlay_service_channel">שכבות‑העל של Glassify</string>
+    <string name="overlay_service_title">‏Glassify פעיל</string>
+    <string name="overlay_service_text">שומר על ה‑Dynamic Island ומרכז ההתראות זמינים.</string>
+</resources>
