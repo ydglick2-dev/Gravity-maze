@@ -120,4 +120,12 @@
     <string name="panel_add_stop_icon_hint">כפתור כיבוי בלחיצה אחת, למקרה שהשכבות מפריעות. הוא נמצא גם ברשימת האפליקציות.</string>
     <string name="panel_add_stop_icon_unsupported">הלאנצ׳ר שלך לא מאפשר לאפליקציות להוסיף אייקונים. גרור את „נעל” מרשימת האפליקציות במקום.</string>
     <string name="panel_opacity">אטימות %</string>
+    <string name="setup_restricted_hint">אנדרואיד מאפיר את ההרשאה הזו לאפליקציות שהותקנו מקובץ ולא מחנות. כדי לפתוח: פרטי האפליקציה ◂ ⋮ (מימין למעלה) ◂ „אפשר הגדרות מוגבלות”, ואז לחזור לכאן.</string>
+    <string name="setup_open_app_info">פתח את פרטי האפליקציה של Glassify</string>
+    <string name="setup_open_app_info_hint">ואז ⋮ מימין למעלה ◂ „אפשר הגדרות מוגבלות”.</string>
+    <string name="panel_diagnostics">אבחון</string>
+    <string name="panel_diag_shader">שיידר הזכוכית פעיל</string>
+    <string name="panel_diag_blur">טשטוש מערכת זמין</string>
+    <string name="panel_diag_blur_off">אנדרואיד כיבה את טשטוש החלונות, ולכן אין לפאנלים מה לטשטש. הוא נכבה במצב חיסכון בסוללה, וגם ב„אפשרויות מפתח ◂ השבת טשטוש חלונות”. עד שהוא יחזור, העלה את האטימות כדי שהפאנלים יישארו נראים.</string>
+    <string name="clock_hidden">השעון הוסתר. אפשר להחזיר אותו ב‑Glassify.</string>
 </resources>

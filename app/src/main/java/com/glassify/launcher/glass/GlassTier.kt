@@ -46,3 +46,13 @@ enum class GlassTier {
 
 /** Resolved tier for the current composition: min(device capability, user preference). */
 val LocalGlassTier = compositionLocalOf { GlassTier.BLUR }
+
+/**
+ * Whether the compositor is actually blurring behind our windows.
+ *
+ * A runtime value, not a capability: Android turns cross-window blur off in
+ * battery saver and via a developer option, and when it does, a pane tuned to
+ * let the blur carry the effect has nothing left to show. Panels compensate by
+ * taking on more body.
+ */
+val LocalBlurAvailable = compositionLocalOf { true }

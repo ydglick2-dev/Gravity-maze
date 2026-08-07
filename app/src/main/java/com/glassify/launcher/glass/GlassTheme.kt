@@ -147,10 +147,12 @@ fun GlassTheme(
 ) {
     val context = LocalContext.current
     val resolvedTier = tier ?: GlassTier.deviceMax(context)
+    val blurAvailable = GlassTier.crossWindowBlurEnabled(context)
     CompositionLocalProvider(
         LocalGlassColors provides GlassColors(dark),
         LocalGlassTypography provides GlassTypography(),
         LocalGlassTier provides resolvedTier,
+        LocalBlurAvailable provides blurAvailable,
         content = content,
     )
 }

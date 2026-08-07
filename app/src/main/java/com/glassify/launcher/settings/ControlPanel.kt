@@ -61,6 +61,7 @@ import com.glassify.launcher.glass.GlassShapes
 import com.glassify.launcher.glass.GlassSpec
 import com.glassify.launcher.glass.GlassTheme
 import com.glassify.launcher.glass.GlassTier
+import com.glassify.launcher.glass.GlassRenderer
 import com.glassify.launcher.glass.liquidGlass
 import com.glassify.launcher.notifications.NotificationRepository
 import com.glassify.launcher.overlay.HomeWatcher
@@ -177,11 +178,35 @@ fun ControlPanel() {
                 PermissionRow(
                     title = stringResource(R.string.setup_home_watcher_title),
                     body = stringResource(R.string.setup_home_watcher_body),
+                    // Android greys this out for apps installed from a file
+                    // rather than a store, and says only "restricted setting"
+                    // with no route to the switch that unlocks it. Anyone
+                    // sideloading this will hit it, so the way out is spelled
+                    // out here rather than left to be discovered.
+                    footnote = if (hasHomeWatcher) {
+                        null
+                    } else {
+                        stringResource(R.string.setup_restricted_hint)
+                    },
                     granted = hasHomeWatcher,
                     onGrant = {
                         context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     },
                 )
+                if (!hasHomeWatcher) {
+                    TapRow(
+                        label = stringResource(R.string.setup_open_app_info),
+                        body = stringResource(R.string.setup_open_app_info_hint),
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.parse("package:${'$'}{context.packageName}"),
+                                )
+                            )
+                        },
+                    )
+                }
                 PermissionRow(
                     title = stringResource(R.string.setup_notifications_title),
                     body = stringResource(R.string.setup_notifications_body),
@@ -311,6 +336,29 @@ fun ControlPanel() {
                         update { s -> s.copy(tierOverride = tier.takeIf { it != deviceMax }) }
                     },
                 )
+            }
+        }
+
+        item {
+            Group(stringResource(R.string.panel_diagnostics)) {
+                val blurEnabled = remember(permissionEpoch) {
+                    GlassTier.crossWindowBlurEnabled(context)
+                }
+                StatusRow(
+                    label = stringResource(R.string.panel_diag_shader),
+                    ok = GlassTier.deviceMax(context) == GlassTier.FULL && !GlassRenderer.hasFailed,
+                )
+                StatusRow(
+                    label = stringResource(R.string.panel_diag_blur),
+                    ok = blurEnabled,
+                )
+                if (!blurEnabled) {
+                    Text(
+                        text = stringResource(R.string.panel_diag_blur_off),
+                        style = GlassTheme.type.footnote,
+                        color = GlassTheme.colors.warning,
+                    )
+                }
             }
         }
 
@@ -565,6 +613,27 @@ private fun pinStopShortcut(context: Context) {
         .build()
 
     manager.requestPinShortcut(shortcut, null)
+}
+
+/** A plain yes/no readout. The point is to make a device answer for itself. */
+@Composable
+private fun StatusRow(label: String, ok: Boolean) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = GlassTheme.type.body,
+            color = GlassTheme.colors.onGlass,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = if (ok) "✓" else "✕",
+            style = GlassTheme.type.title,
+            color = if (ok) GlassTheme.colors.positive else GlassTheme.colors.destructive,
+        )
+    }
 }
 
 @Composable

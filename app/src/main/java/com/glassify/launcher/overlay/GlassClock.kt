@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.text.format.DateFormat
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -39,9 +41,18 @@ import java.util.Locale
  * Deliberately the one piece of information a home screen always wants, on the
  * one surface that shows off the material: a wide, mostly empty pane where the
  * blur behind it has room to read as glass. Small busy panels hide the effect.
+ *
+ * Long-pressing it turns it off. An overlay has no close button and no way to be
+ * dismissed by the app underneath, so without a gesture on the thing itself, the
+ * only way to get rid of a panel sitting where you did not want it is to go and
+ * find the setting.
  */
 @Composable
-fun GlassClock(opacity: Float, modifier: Modifier = Modifier) {
+fun GlassClock(
+    opacity: Float,
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val time by rememberClock()
     val battery by rememberBatteryLevel()
     val configuration = LocalConfiguration.current
@@ -59,6 +70,9 @@ fun GlassClock(opacity: Float, modifier: Modifier = Modifier) {
                 cornerRadius = 34.dp,
                 spec = GlassSpec(thickness = 18.dp, specular = 0.7f, surfaceAlpha = opacity),
             )
+            .pointerInput(onLongPress) {
+                detectTapGestures(onLongPress = { onLongPress() })
+            }
             .padding(horizontal = 26.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),

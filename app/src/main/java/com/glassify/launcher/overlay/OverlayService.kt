@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -93,8 +94,9 @@ class OverlayService : Service() {
             combine(
                 prefs.settings,
                 HomeWatcher.onHomeScreen,
-            ) { settings, onHome -> settings to onHome }
-                .collect { (settings, onHome) -> sync(settings, onHome) }
+                ForegroundAppTracker.inOurApp,
+            ) { settings, onHome, inOurApp -> Triple(settings, onHome, inOurApp) }
+                .collect { (settings, onHome, inOurApp) -> sync(settings, onHome, inOurApp) }
         }
     }
 
@@ -113,7 +115,7 @@ class OverlayService : Service() {
         super.onDestroy()
     }
 
-    private fun sync(settings: GlassifySettings, onHomeScreen: Boolean) {
+    private fun sync(settings: GlassifySettings, onHomeScreen: Boolean, inOurApp: Boolean) {
         current = settings
 
         // The off switch is enforced here rather than only where the service is
@@ -132,8 +134,10 @@ class OverlayService : Service() {
 
         // Without the accessibility service there is no way to tell the home
         // screen from anything else, so the home-only pieces show everywhere
-        // rather than never — the user chose to have them.
-        val homeVisible = onHomeScreen || !HomeWatcher.isEnabled(this)
+        // rather than never — the user chose to have them. Everywhere still
+        // excludes our own control panel, which needs no permission to detect
+        // and where a floating clock would land on the settings being changed.
+        val homeVisible = (onHomeScreen || !HomeWatcher.isEnabled(this)) && !inOurApp
 
         syncIsland(settings)
         syncDock(settings, homeVisible)
@@ -195,7 +199,10 @@ class OverlayService : Service() {
         val topPx = (settings.clockTopOffsetDp * resources.displayMetrics.density).toInt()
         clockHost.show(OverlayWindows.clock(topPx, settings.blurRadiusPx)) {
             GlassTheme(dark = settings.darkTheme, tier = tier(settings)) {
-                GlassClock(opacity = settings.glassOpacity)
+                GlassClock(
+                    opacity = settings.glassOpacity,
+                    onLongPress = { hideClock() },
+                )
             }
         }
     }
@@ -233,6 +240,18 @@ class OverlayService : Service() {
                     }
             )
         }
+    }
+
+    /**
+     * Turns the clock off from a long press on the clock itself.
+     *
+     * Writes the preference rather than just dismissing the window: the settings
+     * collector is what decides whether the clock exists, so anything short of
+     * changing them would put it straight back on the next emission.
+     */
+    private fun hideClock() {
+        Toast.makeText(this, R.string.clock_hidden, Toast.LENGTH_SHORT).show()
+        scope.launch { prefs.update { it.copy(clockEnabled = false) } }
     }
 
     private fun openPanel() {

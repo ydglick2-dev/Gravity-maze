@@ -122,4 +122,12 @@
     <string name="panel_add_stop_icon_hint">A one-tap off switch, for when the overlays are in the way. It is also in your app list.</string>
     <string name="panel_add_stop_icon_unsupported">Your launcher will not let apps add icons. Drag “Lock” out of the app list instead.</string>
     <string name="panel_opacity">Opacity %</string>
+    <string name="setup_restricted_hint">Android greys this out for apps installed from a file rather than a store. To unlock it: App info ▸ ⋮ (top right) ▸ Allow restricted settings, then come back here.</string>
+    <string name="setup_open_app_info">Open Glassify\'s app info</string>
+    <string name="setup_open_app_info_hint">Then ⋮ at the top right ▸ Allow restricted settings.</string>
+    <string name="panel_diagnostics">Diagnostics</string>
+    <string name="panel_diag_shader">Glass shader running</string>
+    <string name="panel_diag_blur">System blur available</string>
+    <string name="panel_diag_blur_off">Android has turned window blur off, so the panels have nothing to blur. It is disabled by battery saver, and by Developer options ▸ Disable window blurs. Until it is back on, raise Opacity so the panels stay visible.</string>
+    <string name="clock_hidden">Clock hidden. Turn it back on in Glassify.</string>
 </resources>

@@ -84,6 +84,16 @@ fun Modifier.liquidGlass(
     val light = tiltLight ?: rememberTiltLight(enabled = tier == GlassTier.FULL)
     val tint = if (spec.tint != Color.Unspecified) spec.tint else colors.glassTint
 
+    // With no blur behind it, a 14% pane is very nearly invisible — the low
+    // opacity is only affordable because the blur is doing the separating. When
+    // the system withdraws it, the pane has to carry itself.
+    val blurAvailable = LocalBlurAvailable.current
+    val surfaceAlpha = if (blurAvailable) {
+        spec.surfaceAlpha
+    } else {
+        (spec.surfaceAlpha + NO_BLUR_COMPENSATION).coerceAtMost(0.6f)
+    }
+
     val shadersAvailable = tier == GlassTier.FULL &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
@@ -113,7 +123,7 @@ fun Modifier.liquidGlass(
             spotColor = Color.Black,
         )
         .clip(shape)
-        .then(if (painted) Modifier.paintedGlass(tint, spec) else Modifier)
+        .then(if (painted) Modifier.paintedGlass(tint, surfaceAlpha) else Modifier)
         .drawBehind {
             if (painted) return@drawBehind
 
@@ -125,7 +135,7 @@ fun Modifier.liquidGlass(
                     cornerPx = cornerRadius.toPx(),
                     thicknessPx = spec.thickness.toPx(),
                     specular = spec.specular,
-                    surfaceAlpha = spec.surfaceAlpha,
+                    surfaceAlpha = surfaceAlpha,
                     grain = spec.grain,
                     tint = tint,
                     light = light.value,
@@ -168,11 +178,11 @@ private fun DrawScope.drawSurfaceGlass(
  * specular and no Fresnel to define the surface, opacity is the only thing left
  * that says something is there.
  */
-private fun Modifier.paintedGlass(tint: Color, spec: GlassSpec): Modifier = background(
+private fun Modifier.paintedGlass(tint: Color, surfaceAlpha: Float): Modifier = background(
     Brush.verticalGradient(
         listOf(
             Color.White.copy(alpha = 0.16f),
-            tint.copy(alpha = (spec.surfaceAlpha + 0.35f).coerceAtMost(0.6f)),
+            tint.copy(alpha = (surfaceAlpha + 0.35f).coerceAtMost(0.6f)),
         )
     )
 )
@@ -186,11 +196,14 @@ private fun Modifier.paintedGlass(tint: Color, spec: GlassSpec): Modifier = back
  * Compose state so flipping it invalidates the compositions that chose their
  * style from it.
  */
-internal object GlassRenderer {
+object GlassRenderer {
 
     private val failedState = mutableStateOf(false)
 
-    val failed: Boolean get() = failedState.value
+    internal val failed: Boolean get() = failedState.value
+
+    /** Exposed so the control panel can report the real state of the device. */
+    val hasFailed: Boolean get() = failedState.value
 
     fun disable(cause: Throwable) {
         if (failedState.value) return
@@ -200,3 +213,6 @@ internal object GlassRenderer {
 }
 
 private const val TAG = "LiquidGlass"
+
+/** Extra opacity granted to a pane that has no blur behind it to lean on. */
+private const val NO_BLUR_COMPENSATION = 0.22f

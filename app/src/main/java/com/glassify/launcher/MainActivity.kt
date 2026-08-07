@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.glassify.launcher.glass.GlassTheme
 import com.glassify.launcher.glass.GlassTier
@@ -51,10 +53,25 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             GlassTheme(dark = true, tier = tierFor(recovery)) {
+                // A gradient rather than flat black. The glass panels in this
+                // screen have nothing behind them to blur — an activity window
+                // cannot blur its own content — so without some tonal variation
+                // underneath, the rim and specular have nothing to catch and the
+                // panels read as grey rectangles. This is also the first thing
+                // anyone sees of the material.
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(Color(0xFF0B0B0F))
+                        .background(
+                            Brush.linearGradient(
+                                0f to Color(0xFF06070C),
+                                0.4f to Color(0xFF141A33),
+                                0.75f to Color(0xFF2A1B44),
+                                1f to Color(0xFF07080E),
+                                start = Offset(0f, 0f),
+                                end = Offset(900f, 2400f),
+                            )
+                        )
                 ) {
                     ControlPanel()
                 }
