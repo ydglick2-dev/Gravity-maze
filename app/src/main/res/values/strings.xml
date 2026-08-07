@@ -121,4 +121,5 @@
     <string name="panel_add_stop_icon">Add the Lock icon to the home screen</string>
     <string name="panel_add_stop_icon_hint">A one-tap off switch, for when the overlays are in the way. It is also in your app list.</string>
     <string name="panel_add_stop_icon_unsupported">Your launcher will not let apps add icons. Drag “Lock” out of the app list instead.</string>
+    <string name="panel_opacity">Opacity %</string>
 </resources>

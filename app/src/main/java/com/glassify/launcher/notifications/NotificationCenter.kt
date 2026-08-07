@@ -184,7 +184,7 @@ private fun NotificationCard(
             .liquidGlass(
                 shape = GlassShapes.card,
                 cornerRadius = 22.dp,
-                spec = GlassSpec(surfaceAlpha = 0.62f),
+                spec = GlassSpec(surfaceAlpha = 0.22f, elevation = 10.dp),
             )
             .pointerInput(notification.key) {
                 detectHorizontalDragGestures(

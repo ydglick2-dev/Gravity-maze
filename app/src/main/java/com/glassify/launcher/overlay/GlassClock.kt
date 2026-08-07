@@ -41,7 +41,7 @@ import java.util.Locale
  * blur behind it has room to read as glass. Small busy panels hide the effect.
  */
 @Composable
-fun GlassClock(modifier: Modifier = Modifier) {
+fun GlassClock(opacity: Float, modifier: Modifier = Modifier) {
     val time by rememberClock()
     val battery by rememberBatteryLevel()
     val configuration = LocalConfiguration.current
@@ -57,7 +57,7 @@ fun GlassClock(modifier: Modifier = Modifier) {
             .liquidGlass(
                 shape = GlassShapes.panel,
                 cornerRadius = 34.dp,
-                spec = GlassSpec(thickness = 16.dp, specular = 0.6f, surfaceAlpha = 0.42f),
+                spec = GlassSpec(thickness = 18.dp, specular = 0.7f, surfaceAlpha = opacity),
             )
             .padding(horizontal = 26.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

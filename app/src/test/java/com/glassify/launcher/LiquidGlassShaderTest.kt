@@ -1,8 +1,6 @@
 package com.glassify.launcher
 
-import android.graphics.LinearGradient
 import android.graphics.RuntimeShader
-import android.graphics.Shader
 import com.glassify.launcher.glass.LiquidGlassShaderPrograms
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,8 +13,7 @@ import org.robolectric.annotation.GraphicsMode
  *
  * This is the most valuable test in the project. A shader program is compiled at
  * *runtime*, so a single type error sails through the Kotlin build untouched and
- * then throws on the first frame that draws a pane of glass — which is the home
- * screen's first frame, on a launcher the user cannot escape by pressing Home.
+ * then throws on the first frame that draws a pane of glass.
  *
  * `@GraphicsMode(NATIVE)` is what gives this teeth. Without it Robolectric stubs
  * `RuntimeShader` and every program, valid or not, constructs happily; with it
@@ -34,111 +31,42 @@ import org.robolectric.annotation.GraphicsMode
 class LiquidGlassShaderTest {
 
     /**
-     * Compiles the refracting program and sets every uniform the renderer sets.
+     * Compiles the program and sets every uniform the renderer sets.
      *
      * The uniform half matters as much as the compile: naming one differently in
      * Kotlin than in the shader throws only when that line runs, and a uniform
-     * left unused by the program is silently optimised out and then rejected.
-     * These are the exact calls `drawRefractedGlass` makes.
+     * the program never reads is optimised out and then rejected on assignment.
      */
     @Test
-    fun `the refracting program compiles and accepts its uniforms`() {
-        val shader = RuntimeShader(portableSource(LiquidGlassShaderPrograms.REFRACTING))
-        setSharedUniforms(shader)
-        shader.setFloatUniform("uRefraction", 9f)
-        shader.setFloatUniform("uAberration", 0.16f)
-        shader.setInputShader("content", stubBackdrop())
-    }
-
-    /** The same, for the overlay program and the calls `drawSurfaceGlass` makes. */
-    @Test
-    fun `the surface-only program compiles and accepts its uniforms`() {
-        val shader = RuntimeShader(LiquidGlassShaderPrograms.SURFACE_ONLY)
-        setSharedUniforms(shader)
-        shader.setFloatUniform("uBaseAlpha", 0.72f)
+    fun `the glass program compiles and accepts its uniforms`() {
+        setSharedUniforms(RuntimeShader(LiquidGlassShaderPrograms.SURFACE_ONLY))
     }
 
     @Test
-    fun `the programs tolerate a degenerate panel`() {
-        // A panel can be laid out at zero size for a frame, and a corner radius
-        // larger than the panel is normal for the pill shapes, which pass 999dp.
+    fun `the program tolerates a degenerate panel`() {
+        // A panel can be laid out at zero size for a frame, a corner radius
+        // larger than the panel is normal for the pill shapes (999dp), and a
+        // zero bevel would divide by zero if the shader did not guard it.
         val shader = RuntimeShader(LiquidGlassShaderPrograms.SURFACE_ONLY)
         shader.setFloatUniform("uSize", 0f, 0f)
-        shader.setFloatUniform("uPad", 0f, 0f)
         shader.setFloatUniform("uCorner", 9999f)
         shader.setFloatUniform("uThickness", 0f)
         shader.setFloatUniform("uSpecular", 0f)
-        shader.setFloatUniform("uTintAmount", 0f)
+        shader.setFloatUniform("uBaseAlpha", 0f)
+        shader.setFloatUniform("uGrain", 0f)
         shader.setFloatUniform("uLight", 0f, 0f)
         shader.setColorUniform("uTintColor", 0)
-        shader.setFloatUniform("uBaseAlpha", 0f)
     }
 
+    /** Exactly the calls `drawSurfaceGlass` makes, in the same order. */
     private fun setSharedUniforms(shader: RuntimeShader) {
         shader.setFloatUniform("uSize", 128f, 64f)
-        shader.setFloatUniform("uPad", 8f, 8f)
         shader.setFloatUniform("uCorner", 16f)
-        shader.setFloatUniform("uThickness", 10f)
-        shader.setFloatUniform("uSpecular", 0.5f)
-        shader.setFloatUniform("uTintAmount", 0.18f)
+        shader.setFloatUniform("uThickness", 14f)
+        shader.setFloatUniform("uSpecular", 0.6f)
+        shader.setFloatUniform("uBaseAlpha", 0.16f)
+        shader.setFloatUniform("uGrain", 0.022f)
         shader.setFloatUniform("uLight", -0.35f, -0.85f)
         shader.setColorUniform("uTintColor", 0xFF10131A.toInt())
-    }
-
-    /** Stands in for the blurred backdrop the effect chain normally supplies. */
-    private fun stubBackdrop(): Shader = LinearGradient(
-        0f, 0f, 128f, 64f,
-        0xFF204080.toInt(), 0xFF80C0FF.toInt(),
-        Shader.TileMode.CLAMP,
-    )
-
-    /**
-     * Rewrites `content.eval(expr)` into `sample(content, expr)`.
-     *
-     * Skia renamed this call: `sample()` is the old spelling and `.eval()` the
-     * current one, and the Skia this test environment links against is old
-     * enough to only know the former, while every device the app targets
-     * (Android 13+, where RuntimeShader exists at all) only knows the latter.
-     *
-     * The production shader keeps the correct spelling for the device; the
-     * translation happens here so the *rest* of the program — the SDF, the
-     * optics, the precision rules, the uniform set, which is where the mistakes
-     * actually are — still gets compiled by a real SkSL compiler. Only the shape
-     * of three call sites goes unchecked.
-     */
-    private fun portableSource(source: String): String {
-        val builder = StringBuilder(source.length)
-        var index = 0
-        while (true) {
-            val call = source.indexOf(EVAL_CALL, index)
-            if (call < 0) {
-                builder.append(source, index, source.length)
-                return builder.toString()
-            }
-
-            builder.append(source, index, call)
-
-            // Walk to the matching close paren so nested calls survive intact.
-            val argStart = call + EVAL_CALL.length
-            var depth = 1
-            var cursor = argStart
-            while (cursor < source.length && depth > 0) {
-                when (source[cursor]) {
-                    '(' -> depth++
-                    ')' -> depth--
-                }
-                cursor++
-            }
-            check(depth == 0) { "unbalanced parentheses after ${EVAL_CALL} at $call" }
-
-            builder.append("sample(content, ")
-                .append(source, argStart, cursor - 1)
-                .append(')')
-            index = cursor
-        }
-    }
-
-    private companion object {
-        const val EVAL_CALL = "content.eval("
     }
 }

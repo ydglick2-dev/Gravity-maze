@@ -61,6 +61,15 @@ class OverlayService : Service() {
     private lateinit var triggerHost: OverlayHost
     private lateinit var panelHost: OverlayHost
 
+    /**
+     * The most recent settings.
+     *
+     * The notification panel is opened from a gesture and from an intent, both
+     * of which are outside the settings collector, so the current values have to
+     * be reachable synchronously.
+     */
+    private var current: GlassifySettings = GlassifySettings()
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -105,6 +114,8 @@ class OverlayService : Service() {
     }
 
     private fun sync(settings: GlassifySettings, onHomeScreen: Boolean) {
+        current = settings
+
         // The off switch is enforced here rather than only where the service is
         // started. START_STICKY, the boot receiver and the app's own resume can
         // all bring the service back up, and a paused user should not have to
@@ -159,7 +170,7 @@ class OverlayService : Service() {
         if (dockHost.isShowing) return
 
         val bottomPx = (settings.dockBottomOffsetDp * resources.displayMetrics.density).toInt()
-        dockHost.show(OverlayWindows.dock(bottomPx)) {
+        dockHost.show(OverlayWindows.dock(bottomPx, settings.blurRadiusPx)) {
             GlassTheme(dark = settings.darkTheme, tier = tier(settings)) {
                 val installed by apps.apps.collectAsState()
                 val chosen = settings.dockKeys.mapNotNull { key ->
@@ -167,6 +178,7 @@ class OverlayService : Service() {
                 }
                 GlassDock(
                     apps = chosen,
+                    opacity = settings.glassOpacity,
                     onLaunch = { app, bounds -> apps.launch(app, bounds) },
                 )
             }
@@ -181,9 +193,9 @@ class OverlayService : Service() {
         if (clockHost.isShowing) return
 
         val topPx = (settings.clockTopOffsetDp * resources.displayMetrics.density).toInt()
-        clockHost.show(OverlayWindows.clock(topPx)) {
+        clockHost.show(OverlayWindows.clock(topPx, settings.blurRadiusPx)) {
             GlassTheme(dark = settings.darkTheme, tier = tier(settings)) {
-                GlassClock()
+                GlassClock(opacity = settings.glassOpacity)
             }
         }
     }
@@ -226,8 +238,7 @@ class OverlayService : Service() {
     private fun openPanel() {
         if (panelHost.isShowing || !canDrawOverlays(this)) return
 
-        val blurRadius = (34 * resources.displayMetrics.density).toInt()
-        panelHost.show(OverlayWindows.panel(blurRadius)) {
+        panelHost.show(OverlayWindows.panel(current.blurRadiusPx)) {
             GlassTheme(dark = true, tier = GlassTier.deviceMax(this)) {
                 val notifications by NotificationRepository.notifications.collectAsState()
                 NotificationCenter(

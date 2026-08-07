@@ -47,6 +47,7 @@ import kotlin.math.roundToInt
 @Composable
 fun GlassDock(
     apps: List<LaunchableApp>,
+    opacity: Float,
     onLaunch: (LaunchableApp, Rect?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -58,7 +59,7 @@ fun GlassDock(
             .liquidGlass(
                 shape = GlassShapes.dock,
                 cornerRadius = 32.dp,
-                spec = GlassSpec(thickness = 14.dp, specular = 0.62f, surfaceAlpha = 0.55f),
+                spec = GlassSpec(thickness = 16.dp, specular = 0.7f, surfaceAlpha = opacity),
             )
             .padding(horizontal = 10.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,

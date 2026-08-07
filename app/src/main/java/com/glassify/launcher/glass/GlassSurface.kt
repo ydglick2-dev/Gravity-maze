@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -46,11 +47,21 @@ import androidx.compose.ui.unit.dp
 @Immutable
 data class GlassSpec(
     /** Depth of the bevel, in dp. Wider reads as thicker glass. */
-    val thickness: Dp = 12.dp,
+    val thickness: Dp = 14.dp,
     /** Strength of the tilt-driven highlight. */
-    val specular: Float = 0.55f,
-    /** Overall opacity of the glass sheet. */
-    val surfaceAlpha: Float = 0.72f,
+    val specular: Float = 0.6f,
+    /**
+     * Opacity of the flat interior, before the rim adds its own.
+     *
+     * Low on purpose. Seeing through the panel is the whole point of the
+     * material, and every increment here trades that away for nothing — the
+     * sense of a surface comes from the rim, not from the fill.
+     */
+    val surfaceAlpha: Float = 0.16f,
+    /** Noise amplitude. Kills the banding a large blur leaves behind. */
+    val grain: Float = 0.022f,
+    /** Drop shadow under the panel, which is what makes it read as floating. */
+    val elevation: Dp = 16.dp,
     val tint: Color = Color.Unspecified,
 )
 
@@ -91,6 +102,16 @@ fun Modifier.liquidGlass(
     val painted = shader == null || GlassRenderer.failed
 
     return this
+        // Shadow first, so it falls outside the shape rather than being clipped
+        // by it. Glass that sits flat against its background stops reading as a
+        // separate object however good the surface is.
+        .shadow(
+            elevation = spec.elevation,
+            shape = shape,
+            clip = false,
+            ambientColor = Color.Black,
+            spotColor = Color.Black,
+        )
         .clip(shape)
         .then(if (painted) Modifier.paintedGlass(tint, spec) else Modifier)
         .drawBehind {
@@ -105,6 +126,7 @@ fun Modifier.liquidGlass(
                     thicknessPx = spec.thickness.toPx(),
                     specular = spec.specular,
                     surfaceAlpha = spec.surfaceAlpha,
+                    grain = spec.grain,
                     tint = tint,
                     light = light.value,
                 )
@@ -112,7 +134,6 @@ fun Modifier.liquidGlass(
                 GlassRenderer.disable(e)
             }
         }
-        .drawBehind { drawRimHighlights() }
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -122,57 +143,39 @@ private fun DrawScope.drawSurfaceGlass(
     thicknessPx: Float,
     specular: Float,
     surfaceAlpha: Float,
+    grain: Float,
     tint: Color,
     light: Offset,
 ) {
     if (size.width <= 0f || size.height <= 0f) return
 
     shader.setFloatUniform("uSize", size.width, size.height)
-    shader.setFloatUniform("uPad", 0f, 0f)
     shader.setFloatUniform("uCorner", cornerPx)
     shader.setFloatUniform("uThickness", thicknessPx)
     shader.setFloatUniform("uSpecular", specular)
     shader.setFloatUniform("uBaseAlpha", surfaceAlpha)
-    shader.setFloatUniform("uTintAmount", 1f)
+    shader.setFloatUniform("uGrain", grain)
     shader.setFloatUniform("uLight", light.x, light.y)
     shader.setColorUniform("uTintColor", tint.toArgb())
 
     drawRect(brush = ShaderBrush(shader))
 }
 
-/** The fallback sheet for tiers with no shader. */
+/**
+ * The fallback sheet for tiers with no shader.
+ *
+ * Carries more tint than the shader path, and deliberately so: with no rim, no
+ * specular and no Fresnel to define the surface, opacity is the only thing left
+ * that says something is there.
+ */
 private fun Modifier.paintedGlass(tint: Color, spec: GlassSpec): Modifier = background(
     Brush.verticalGradient(
         listOf(
-            tint.copy(alpha = spec.surfaceAlpha),
-            tint.copy(alpha = spec.surfaceAlpha * 0.88f),
+            Color.White.copy(alpha = 0.16f),
+            tint.copy(alpha = (spec.surfaceAlpha + 0.35f).coerceAtMost(0.6f)),
         )
     )
 )
-
-/**
- * A light hairline along the top edge and a darker one along the bottom.
- *
- * Two one-pixel lines that do a disproportionate amount of the work: they are
- * what stops a translucent rectangle from reading as a translucent rectangle.
- */
-private fun DrawScope.drawRimHighlights() {
-    val stroke = 1.dp.toPx()
-    drawRect(
-        brush = Brush.verticalGradient(
-            0f to Color.White.copy(alpha = 0.34f),
-            1f to Color.Transparent,
-        ),
-        size = Size(size.width, stroke),
-    )
-    drawRect(
-        brush = Brush.verticalGradient(
-            listOf(Color.Transparent, Color.White.copy(alpha = 0.12f)),
-        ),
-        topLeft = Offset(0f, size.height - stroke),
-        size = Size(size.width, stroke),
-    )
-}
 
 /**
  * One-way switch that turns the shader path off for the rest of the process once

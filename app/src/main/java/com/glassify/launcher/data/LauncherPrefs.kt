@@ -21,6 +21,8 @@ class LauncherPrefs(private val context: Context) {
 
     private fun Preferences.toSettings() = GlassifySettings(
         tierOverride = this[TIER]?.let { runCatching { GlassTier.valueOf(it) }.getOrNull() },
+        blurRadiusPx = this[BLUR_RADIUS] ?: 80,
+        glassOpacityPercent = this[GLASS_OPACITY] ?: 14,
         islandEnabled = this[ISLAND] ?: true,
         islandTopOffsetDp = this[ISLAND_OFFSET] ?: 0,
         dockEnabled = this[DOCK] ?: true,
@@ -40,6 +42,8 @@ class LauncherPrefs(private val context: Context) {
             val next = block(prefs.toSettings())
 
             next.tierOverride?.let { prefs[TIER] = it.name } ?: prefs.remove(TIER)
+            prefs[BLUR_RADIUS] = next.blurRadiusPx
+            prefs[GLASS_OPACITY] = next.glassOpacityPercent
             prefs[ISLAND] = next.islandEnabled
             prefs[ISLAND_OFFSET] = next.islandTopOffsetDp
             prefs[DOCK] = next.dockEnabled
@@ -57,6 +61,8 @@ class LauncherPrefs(private val context: Context) {
 
     private companion object {
         val TIER = stringPreferencesKey("tier")
+        val BLUR_RADIUS = intPreferencesKey("blur_radius")
+        val GLASS_OPACITY = intPreferencesKey("glass_opacity")
         val ISLAND = booleanPreferencesKey("island")
         val ISLAND_OFFSET = intPreferencesKey("island_offset")
         val DOCK = booleanPreferencesKey("dock")
@@ -80,6 +86,23 @@ class LauncherPrefs(private val context: Context) {
 data class GlassifySettings(
     /** Forces a lower glass tier than the device could manage, to save power. */
     val tierOverride: GlassTier? = null,
+
+    /**
+     * How far the compositor blurs behind the panels, in pixels.
+     *
+     * Not density-scaled: the blur is a property of the image rather than of the
+     * layout, so the same radius looks the same on any screen where a scaled one
+     * would smear more on a dense panel.
+     */
+    val blurRadiusPx: Int = 80,
+
+    /**
+     * Opacity of the glass interior, as a percentage.
+     *
+     * Exposed because the right amount is a matter of taste and of wallpaper: a
+     * busy photo needs more body behind text than a plain gradient does.
+     */
+    val glassOpacityPercent: Int = 14,
 
     val islandEnabled: Boolean = true,
     /** Nudges the Island to line up with this particular phone's camera cutout. */
@@ -107,6 +130,8 @@ data class GlassifySettings(
 
     val setupComplete: Boolean = false,
 ) {
+    val glassOpacity: Float get() = glassOpacityPercent / 100f
+
     fun resolveTier(deviceMax: GlassTier): GlassTier {
         val override = tierOverride ?: return deviceMax
         // An override may only ever lower the tier, never claim capability the

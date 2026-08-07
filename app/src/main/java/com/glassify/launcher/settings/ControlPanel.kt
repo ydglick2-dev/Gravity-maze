@@ -282,6 +282,27 @@ fun ControlPanel() {
 
         item {
             Group(stringResource(R.string.settings_glass)) {
+                // The two dials that actually change how the material reads.
+                // Blur is how much of the background survives; opacity is how
+                // much body the pane itself has. The right pair depends on the
+                // wallpaper underneath, which is why they are exposed at all.
+                StepperRow(
+                    label = stringResource(R.string.settings_blur),
+                    value = settings.blurRadiusPx,
+                    range = 0..150,
+                    step = 10,
+                    onChange = { update { s -> s.copy(blurRadiusPx = it) } },
+                )
+                StepperRow(
+                    label = stringResource(R.string.panel_opacity),
+                    value = settings.glassOpacityPercent,
+                    range = 4..60,
+                    step = 2,
+                    onChange = { update { s -> s.copy(glassOpacityPercent = it) } },
+                )
+
+                Divider()
+
                 val deviceMax = remember { GlassTier.deviceMax(context) }
                 QualityPicker(
                     current = settings.resolveTier(deviceMax),
@@ -450,7 +471,7 @@ private fun Group(title: String, content: @Composable () -> Unit) {
                 .liquidGlass(
                     shape = GlassShapes.panel,
                     cornerRadius = 28.dp,
-                    spec = GlassSpec(surfaceAlpha = 0.10f),
+                    spec = GlassSpec(surfaceAlpha = 0.14f, elevation = 8.dp),
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
