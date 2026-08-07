@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -95,6 +96,13 @@ fun ControlPanel() {
         scope.launch { prefs.update(block) }
     }
 
+    // Starting the service is driven from the settings rather than from the
+    // activity's lifecycle, so that resuming this screen while paused does not
+    // start what the user just switched off.
+    androidx.compose.runtime.LaunchedEffect(settings.overlaysPaused, hasOverlay) {
+        if (!settings.overlaysPaused && hasOverlay) OverlayService.syncWithPermissions(context)
+    }
+
     LazyColumn(
         Modifier.fillMaxSize().systemBarsPadding(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
@@ -111,6 +119,42 @@ fun ControlPanel() {
                     text = stringResource(R.string.panel_subtitle),
                     style = GlassTheme.type.callout,
                     color = GlassTheme.colors.onGlassSecondary,
+                )
+            }
+        }
+
+        item {
+            // First, because a user who has just tapped the off switch opens
+            // this screen looking for exactly one thing.
+            Group(
+                if (settings.overlaysPaused) {
+                    stringResource(R.string.panel_paused_title)
+                } else {
+                    stringResource(R.string.panel_running)
+                }
+            ) {
+                SwitchRow(
+                    label = stringResource(R.string.panel_running),
+                    checked = !settings.overlaysPaused,
+                    onChange = { on ->
+                        update { s -> s.copy(overlaysPaused = !on) }
+                        if (on) OverlayService.syncWithPermissions(context)
+                    },
+                )
+                if (settings.overlaysPaused) {
+                    Text(
+                        text = stringResource(R.string.panel_paused_body),
+                        style = GlassTheme.type.footnote,
+                        color = GlassTheme.colors.onGlassSecondary,
+                    )
+                }
+
+                Divider()
+
+                TapRow(
+                    label = stringResource(R.string.panel_add_stop_icon),
+                    body = stringResource(R.string.panel_add_stop_icon_hint),
+                    onClick = { pinStopShortcut(context) },
                 )
             }
         }
@@ -457,6 +501,49 @@ private fun PermissionRow(
             )
         }
     }
+}
+
+@Composable
+private fun TapRow(label: String, body: String, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .pointerInput(onClick) { detectTapGestures { onClick() } }
+            .padding(vertical = 8.dp),
+    ) {
+        Text(text = label, style = GlassTheme.type.body, color = GlassTheme.colors.accent)
+        Text(
+            text = body,
+            style = GlassTheme.type.footnote,
+            color = GlassTheme.colors.onGlassSecondary,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+    }
+}
+
+/**
+ * Asks the launcher to place the off switch on the home screen.
+ *
+ * Only a request: the launcher decides, and some refuse outright, which is why
+ * the activity is also an ordinary entry in the app list as a fallback.
+ */
+private fun pinStopShortcut(context: Context) {
+    val manager = context.getSystemService(android.content.pm.ShortcutManager::class.java)
+    if (manager == null || !manager.isRequestPinShortcutSupported) {
+        Toast.makeText(context, R.string.panel_add_stop_icon_unsupported, Toast.LENGTH_LONG).show()
+        return
+    }
+
+    val shortcut = android.content.pm.ShortcutInfo.Builder(context, "glassify-stop")
+        .setShortLabel(context.getString(R.string.stop_label))
+        .setIcon(android.graphics.drawable.Icon.createWithResource(context, R.mipmap.ic_stop))
+        .setIntent(
+            Intent(context, com.glassify.launcher.StopActivity::class.java)
+                .setAction(Intent.ACTION_MAIN)
+        )
+        .build()
+
+    manager.requestPinShortcut(shortcut, null)
 }
 
 @Composable

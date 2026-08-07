@@ -105,6 +105,15 @@ class OverlayService : Service() {
     }
 
     private fun sync(settings: GlassifySettings, onHomeScreen: Boolean) {
+        // The off switch is enforced here rather than only where the service is
+        // started. START_STICKY, the boot receiver and the app's own resume can
+        // all bring the service back up, and a paused user should not have to
+        // out-argue three of them.
+        if (settings.overlaysPaused) {
+            stopSelf()
+            return
+        }
+
         if (!canDrawOverlays(this)) {
             listOf(islandHost, dockHost, clockHost, triggerHost).forEach { it.dismiss() }
             return

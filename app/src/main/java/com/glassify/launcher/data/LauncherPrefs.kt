@@ -31,6 +31,7 @@ class LauncherPrefs(private val context: Context) {
         notificationCenterEnabled = this[NOTIFICATION_CENTER] ?: false,
         edgeTriggerEnabled = this[EDGE_TRIGGER] ?: false,
         darkTheme = this[DARK] ?: true,
+        overlaysPaused = this[PAUSED] ?: false,
         setupComplete = this[SETUP_DONE] ?: false,
     )
 
@@ -49,6 +50,7 @@ class LauncherPrefs(private val context: Context) {
             prefs[NOTIFICATION_CENTER] = next.notificationCenterEnabled
             prefs[EDGE_TRIGGER] = next.edgeTriggerEnabled
             prefs[DARK] = next.darkTheme
+            prefs[PAUSED] = next.overlaysPaused
             prefs[SETUP_DONE] = next.setupComplete
         }
     }
@@ -70,6 +72,7 @@ class LauncherPrefs(private val context: Context) {
         val NOTIFICATION_CENTER = booleanPreferencesKey("notification_center")
         val EDGE_TRIGGER = booleanPreferencesKey("edge_trigger")
         val DARK = booleanPreferencesKey("dark")
+        val PAUSED = booleanPreferencesKey("overlays_paused")
         val SETUP_DONE = booleanPreferencesKey("setup_done")
     }
 }
@@ -95,6 +98,13 @@ data class GlassifySettings(
     val edgeTriggerEnabled: Boolean = false,
 
     val darkTheme: Boolean = true,
+
+    /**
+     * Set by the home screen off switch. Persistent on purpose: an off switch
+     * that the next reboot undoes is not an off switch.
+     */
+    val overlaysPaused: Boolean = false,
+
     val setupComplete: Boolean = false,
 ) {
     fun resolveTier(deviceMax: GlassTier): GlassTier {

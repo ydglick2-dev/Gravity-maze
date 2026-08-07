@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.glassify.launcher.glass.GlassTheme
 import com.glassify.launcher.glass.GlassTier
-import com.glassify.launcher.overlay.OverlayService
 import com.glassify.launcher.settings.ControlPanel
 
 /**
@@ -20,7 +19,8 @@ import com.glassify.launcher.settings.ControlPanel
  * Glassify is no longer a launcher — it does not replace the home screen, it
  * floats a glass layer over whichever one the phone already has. So this is an
  * ordinary activity: permissions, what to show, and where. All the visible work
- * happens in [OverlayService].
+ * happens in the overlay service, which the control panel starts and stops from
+ * the settings themselves rather than from this activity's lifecycle.
  */
 class MainActivity : ComponentActivity() {
 
@@ -60,12 +60,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (safeMode) return
-        OverlayService.syncWithPermissions(this)
     }
 
     override fun onDestroy() {

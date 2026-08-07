@@ -26,8 +26,8 @@ android {
         applicationId = "com.glassify.launcher"
         minSdk = 31
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
         resourceConfigurations += listOf("en", "iw")
     }
 

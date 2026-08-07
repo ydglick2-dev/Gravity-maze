@@ -6,4 +6,11 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowShowWallpaper">false</item>
     </style>
+
+    <!-- For StopActivity, which does its work and finishes without drawing. -->
+    <style name="Theme.Glassify.Invisible" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

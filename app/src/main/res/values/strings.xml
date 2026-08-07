@@ -111,4 +111,14 @@
 
     <string name="home_watcher_description">Lets Glassify show its glass dock and clock on the home screen only. It reads which app is in the foreground and nothing else.</string>
     <string name="home_watcher_summary">Shows the glass layer on the home screen only</string>
+
+    <!-- Off switch -->
+    <string name="stop_label">Lock</string>
+    <string name="stop_confirmation">Glassify turned off</string>
+    <string name="panel_paused_title">Glassify is off</string>
+    <string name="panel_paused_body">The Lock icon on your home screen turned everything off. Switch this back on to bring the glass layer back.</string>
+    <string name="panel_running">Glass layer on</string>
+    <string name="panel_add_stop_icon">Add the Lock icon to the home screen</string>
+    <string name="panel_add_stop_icon_hint">A one-tap off switch, for when the overlays are in the way. It is also in your app list.</string>
+    <string name="panel_add_stop_icon_unsupported">Your launcher will not let apps add icons. Drag “Lock” out of the app list instead.</string>
 </resources>

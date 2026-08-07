@@ -109,4 +109,14 @@
 
     <string name="home_watcher_description">מאפשר ל‑Glassify להציג את דוק ושון הזכוכית רק על מסך הבית. הוא קורא איזו אפליקציה בחזית ותו לא.</string>
     <string name="home_watcher_summary">מציג את שכבת הזכוכית רק על מסך הבית</string>
+
+    <!-- Off switch -->
+    <string name="stop_label">נעל</string>
+    <string name="stop_confirmation">‏Glassify כובה</string>
+    <string name="panel_paused_title">‏Glassify כבוי</string>
+    <string name="panel_paused_body">האייקון „נעל” במסך הבית כיבה הכל. הדלק את המתג הזה כדי להחזיר את שכבת הזכוכית.</string>
+    <string name="panel_running">שכבת הזכוכית פעילה</string>
+    <string name="panel_add_stop_icon">הוסף את האייקון „נעל” למסך הבית</string>
+    <string name="panel_add_stop_icon_hint">כפתור כיבוי בלחיצה אחת, למקרה שהשכבות מפריעות. הוא נמצא גם ברשימת האפליקציות.</string>
+    <string name="panel_add_stop_icon_unsupported">הלאנצ׳ר שלך לא מאפשר לאפליקציות להוסיף אייקונים. גרור את „נעל” מרשימת האפליקציות במקום.</string>
 </resources>

@@ -57,6 +57,27 @@
             </intent-filter>
         </activity>
 
+        <!--
+          The off switch, as its own home screen icon. Its whole point is being
+          reachable in one tap when the overlays are in the way, so it is a
+          launcher entry with no interface: it stops everything and finishes.
+        -->
+        <activity
+            android:name=".StopActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_stop"
+            android:label="@string/stop_label"
+            android:noHistory="true"
+            android:roundIcon="@mipmap/ic_stop"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Glassify.Invisible">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".overlay.OverlayService"
             android:exported="false"
