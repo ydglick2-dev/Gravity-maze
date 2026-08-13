@@ -39,15 +39,15 @@ S.ST = { RUN, JUMP, ROLL, JETPACK, STUMBLE, DEAD };
 /* ------------------------------------------------------- catalogue data */
 
 const CHARS = [
-  { id: 'dash',  name: 'Dash',   price: 0,     skin: 0xE8B58A, shirt: 0x2FA8E0, pants: 0x2B3350, hair: 0x2A1E18, cap: 1, bonus: 1.00 },
-  { id: 'nova',  name: 'Nova',   price: 800,   skin: 0xD9A374, shirt: 0xFF5F9E, pants: 0x3B2E55, hair: 0x4A2B1E, cap: 0, bonus: 1.02 },
-  { id: 'rook',  name: 'Rook',   price: 1800,  skin: 0x8D6242, shirt: 0x3ECF8E, pants: 0x24343F, hair: 0x1A1310, cap: 1, bonus: 1.03 },
-  { id: 'vex',   name: 'Vex',    price: 3500,  skin: 0xF0D2B4, shirt: 0x9B5CFF, pants: 0x2A2440, hair: 0xE04FA0, cap: 0, bonus: 1.04 },
-  { id: 'bolt',  name: 'Bolt',   price: 6000,  skin: 0xB9C4D0, shirt: 0x556070, pants: 0x39424E, hair: 0x7A8698, cap: 1, bonus: 1.06 },
-  { id: 'ember', name: 'Ember',  price: 9000,  skin: 0xE8A87C, shirt: 0xFF6B35, pants: 0x4A2018, hair: 0xFFB03A, cap: 0, bonus: 1.08 },
-  { id: 'frost', name: 'Frost',  price: 12000, skin: 0xDCEAF5, shirt: 0x7AE0FF, pants: 0x2E4A5E, hair: 0xBFE8FF, cap: 1, bonus: 1.10 },
-  { id: 'shade', name: 'Shade',  price: 0, keys: 3, skin: 0x5A5560, shirt: 0x1E1B24, pants: 0x14121A, hair: 0x38333F, cap: 1, bonus: 1.06 },
-  { id: 'aurum', name: 'Aurum',  price: 0, keys: 5, skin: 0xFFE1A8, shirt: 0xFFD257, pants: 0x8A6A1E, hair: 0xFFF0C0, cap: 0, bonus: 1.12 }
+  { id: 'dash',  name: 'Dash',   price: 0,     skin: 0xF0BE92, shirt: 0x2FC4F0, pants: 0x2B3F70, hair: 0xF0402F, bag: 0xF0A32F, shoe: 0xF24A3D, cap: 1, bonus: 1.00 },
+  { id: 'nova',  name: 'Nova',   price: 800,   skin: 0xE8AE7E, shirt: 0xFF5FA8, pants: 0x4B2E75, hair: 0x6B2BC4, bag: 0x3ECF8E, shoe: 0xFFFFFF, cap: 0, bonus: 1.02 },
+  { id: 'rook',  name: 'Rook',   price: 1800,  skin: 0x9C6B45, shirt: 0x3ECF6E, pants: 0x24435F, hair: 0x1A1310, bag: 0xF0C93A, shoe: 0x2B3350, cap: 1, bonus: 1.03 },
+  { id: 'vex',   name: 'Vex',    price: 3500,  skin: 0xF7D9BC, shirt: 0xA45CFF, pants: 0x32245A, hair: 0xFF4FC0, bag: 0x7AE0FF, shoe: 0xFF4FC0, cap: 0, bonus: 1.04 },
+  { id: 'bolt',  name: 'Bolt',   price: 6000,  skin: 0xC6D2E0, shirt: 0x4C7CE0, pants: 0x39424E, hair: 0x8FA0B8, bag: 0xE85C3D, shoe: 0xFFD257, cap: 1, bonus: 1.06 },
+  { id: 'ember', name: 'Ember',  price: 9000,  skin: 0xF0B48A, shirt: 0xFF7035, pants: 0x5A2418, hair: 0xFFC23A, bag: 0x2B3350, shoe: 0xFFC23A, cap: 0, bonus: 1.08 },
+  { id: 'frost', name: 'Frost',  price: 12000, skin: 0xE6F2FA, shirt: 0x7AE0FF, pants: 0x2E5C7E, hair: 0xC8EEFF, bag: 0xFFFFFF, shoe: 0x4C9CE0, cap: 1, bonus: 1.10 },
+  { id: 'shade', name: 'Shade',  price: 0, keys: 3, skin: 0x6A6472, shirt: 0x24202E, pants: 0x14121A, hair: 0x8F3ED8, bag: 0x8F3ED8, shoe: 0x24202E, cap: 1, bonus: 1.06 },
+  { id: 'aurum', name: 'Aurum',  price: 0, keys: 5, skin: 0xFFE1A8, shirt: 0xFFD257, pants: 0xA6801E, hair: 0xFFF0C0, bag: 0xFFB300, shoe: 0xFFF0C0, cap: 0, bonus: 1.12 }
 ];
 
 const BOARDS = [
@@ -69,6 +69,11 @@ S.boardById = id => BOARDS.find(b => b.id === id) || BOARDS[0];
 // r128 has no CapsuleGeometry, so the whole body is boxes plus a sphere head.
 // The pivot sits at the feet (y = 0), which makes root.position.y the ground
 // contact directly — no offset maths anywhere else.
+//
+// Proportions are deliberately stylised rather than anatomical: an oversized head
+// at roughly a quarter of total height, short chunky limbs and a wide torso. That
+// silhouette is what makes a runner read as a runner at gameplay distance, where
+// a realistically-proportioned figure just looks like a stick.
 function buildRig() {
   const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
   const root = new THREE.Group();
@@ -90,33 +95,48 @@ function buildRig() {
     return g;
   };
 
-  const mSkin = matFor(0xE8B58A), mShirt = matFor(0x2FA8E0), mPants = matFor(0x2B3350), mHair = matFor(0x2A1E18);
+  const mSkin = matFor(0xE8B58A), mShirt = matFor(0x2FA8E0),
+        mPants = matFor(0x2B3350), mHair = matFor(0x2A1E18),
+        mShoe = matFor(0xF24A3D), mDark = matFor(0x1a1a20);
 
-  P.torso  = put(B(0.46, 0.52, 0.26), mShirt, 0, 1.18, 0);
-  P.pelvis = put(B(0.42, 0.20, 0.24), mPants, 0, 0.86, 0);
+  P.torso  = put(B(0.54, 0.46, 0.32), mShirt, 0, 1.00, 0);
+  P.pelvis = put(B(0.46, 0.18, 0.30), mPants, 0, 0.72, 0);
+  // Backpack — a strong part of the runner silhouette from behind, which is the
+  // camera's angle for the entire game.
+  P.pack   = put(B(0.40, 0.40, 0.16), matFor(0xE8663D), 0, 1.02, -0.23);
+  P.strapL = put(B(0.07, 0.30, 0.04), mDark, -0.17, 1.06, 0.16);
+  P.strapR = put(B(0.07, 0.30, 0.04), mDark,  0.17, 1.06, 0.16);
 
   for (const s of [-1, 1]) {
     const tag = s < 0 ? 'L' : 'R';
-    const hip = joint(s * 0.13, 0.86, 0);
+    const hip = joint(s * 0.14, 0.70, 0);
     P['hip' + tag] = hip;
-    P['thigh' + tag] = put(B(0.17, 0.42, 0.18), mPants, 0, -0.21, 0, hip);
-    const knee = joint(0, -0.42, 0, hip);
+    P['thigh' + tag] = put(B(0.21, 0.34, 0.21), mPants, 0, -0.17, 0, hip);
+    const knee = joint(0, -0.34, 0, hip);
     P['knee' + tag] = knee;
-    P['shin' + tag] = put(B(0.15, 0.40, 0.16), mSkin, 0, -0.20, 0, knee);
-    P['foot' + tag] = put(B(0.17, 0.10, 0.28), matFor(0x24262c), 0, -0.42, 0.05, knee);
+    P['shin' + tag] = put(B(0.18, 0.30, 0.18), mPants, 0, -0.15, 0, knee);
+    P['foot' + tag] = put(B(0.21, 0.13, 0.32), mShoe, 0, -0.34, 0.06, knee);
 
-    const sho = joint(s * 0.30, 1.42, 0);
+    const sho = joint(s * 0.34, 1.16, 0);
     P['sho' + tag] = sho;
-    P['upArm' + tag] = put(B(0.14, 0.36, 0.14), mShirt, 0, -0.18, 0, sho);
-    const elb = joint(0, -0.36, 0, sho);
+    P['upArm' + tag] = put(B(0.17, 0.30, 0.17), mShirt, 0, -0.15, 0, sho);
+    const elb = joint(0, -0.30, 0, sho);
     P['elb' + tag] = elb;
-    P['foreArm' + tag] = put(B(0.12, 0.34, 0.12), mSkin, 0, -0.17, 0, elb);
+    P['foreArm' + tag] = put(B(0.15, 0.28, 0.15), mSkin, 0, -0.14, 0, elb);
+    P['hand' + tag]    = put(B(0.17, 0.15, 0.17), mSkin, 0, -0.30, 0, elb);
   }
 
-  const neck = joint(0, 1.56, 0);
+  const neck = joint(0, 1.26, 0);
   P.neck = neck;
-  P.head = put(new THREE.SphereGeometry(0.19, 10, 8), mSkin, 0, 0.17, 0, neck);
-  P.hair = put(B(0.40, 0.10, 0.40), mHair, 0, 0.32, 0, neck);
+  P.head = put(new THREE.SphereGeometry(0.30, 14, 12), mSkin, 0, 0.28, 0, neck);
+  // Cap: crown plus a forward brim. The crown must sit high enough to cover the
+  // top of the 0.30-radius head (0.58), or the skull pokes through it.
+  P.hair = put(B(0.60, 0.22, 0.60), mHair, 0, 0.52, 0, neck);
+  P.brim = put(B(0.54, 0.07, 0.26), mHair, 0, 0.43, 0.31, neck);
+  // A face costs four boxes and does more for readability than anything else here.
+  P.eyeL = put(B(0.07, 0.11, 0.05), mDark, -0.11, 0.30, 0.27, neck);
+  P.eyeR = put(B(0.07, 0.11, 0.05), mDark,  0.11, 0.30, 0.27, neck);
+  P.mouth = put(B(0.14, 0.04, 0.04), mDark, 0, 0.16, 0.28, neck);
 
   // Board, hidden unless the hoverboard is active.
   const board = new THREE.Group();
@@ -130,36 +150,54 @@ function buildRig() {
   board.visible = false;
   root.add(board);
 
-  // Jetpack, hidden unless flying.
-  const pack = new THREE.Group();
-  const tank = new THREE.Mesh(B(0.34, 0.42, 0.18), matFor(0x9aa3ad));
-  tank.position.set(0, 1.22, -0.22);
-  pack.add(tank);
-  pack.visible = false;
-  body.add(pack);
+  // Jetpack, hidden unless flying. Named `jet` so it never collides with the
+  // always-visible backpack above.
+  const jet = new THREE.Group();
+  const tank = new THREE.Mesh(B(0.40, 0.46, 0.20), matFor(0x9aa3ad));
+  tank.position.set(0, 1.04, -0.30);
+  jet.add(tank);
+  for (const s of [-1, 1]) {
+    const noz = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.16, 8), matFor(0x565e68));
+    noz.position.set(s * 0.13, 0.76, -0.30);
+    jet.add(noz);
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.42, 8),
+      new THREE.MeshBasicMaterial({ color: 0x7ae0ff, transparent: true, opacity: 0.9, fog: false }));
+    flame.position.set(s * 0.13, 0.50, -0.30);
+    flame.rotation.x = Math.PI;
+    jet.add(flame);
+    P['flame' + (s < 0 ? 'L' : 'R')] = flame;
+  }
+  jet.visible = false;
+  body.add(jet);
 
   P.body = body;
   P.board = board;
   P.deck = deck;
   P.under = under;
-  P.pack = pack;
+  P.jet = jet;
   P.root = root;
   return P;
 }
 
 function applyCharPalette(P, ch) {
-  const mSkin = matFor(ch.skin), mShirt = matFor(ch.shirt), mPants = matFor(ch.pants), mHair = matFor(ch.hair);
+  const mSkin = matFor(ch.skin), mShirt = matFor(ch.shirt),
+        mPants = matFor(ch.pants), mHair = matFor(ch.hair);
   P.torso.material = mShirt;
   P.pelvis.material = mPants;
   P.head.material = mSkin;
   P.hair.material = mHair;
-  P.hair.visible = true;
-  P.hair.scale.set(1, ch.cap ? 1 : 0.7, 1);
+  P.brim.material = mHair;
+  // `cap` picks a peaked cap versus a low hair block; the brim only fits the cap.
+  P.hair.scale.set(1, ch.cap ? 1 : 0.55, 1);
+  P.brim.visible = !!ch.cap;
+  P.pack.material = matFor(ch.bag || 0xE8663D);
   for (const t of ['L', 'R']) {
     P['thigh' + t].material = mPants;
-    P['shin' + t].material = mSkin;
+    P['shin' + t].material = mPants;
     P['upArm' + t].material = mShirt;
     P['foreArm' + t].material = mSkin;
+    P['hand' + t].material = mSkin;
+    P['foot' + t].material = matFor(ch.shoe || 0xF24A3D);
   }
 }
 
@@ -212,7 +250,7 @@ function reset() {
     rig.root.position.set(0, 0, 0);
     rig.root.rotation.set(0, 0, 0);
     rig.board.visible = false;
-    rig.pack.visible = false;
+    rig.jet.visible = false;
     rig.root.visible = true;
     setOpacity(1);
   }
@@ -627,7 +665,13 @@ function animate(dt, speed) {
   b.neck.rotation.y = clamp(P.laneVx * 0.03, -0.2, 0.2);
 
   b.board.visible = board;
-  b.pack.visible = (P.state === JETPACK);
+  b.jet.visible = (P.state === JETPACK);
+  b.pack.visible = (P.state !== JETPACK);        // backpack swaps out for the jetpack
+  if (P.state === JETPACK) {
+    const f = 0.7 + Math.abs(Math.sin(performance.now() * 0.018)) * 0.6;
+    b.flameL.scale.set(1, f, 1);
+    b.flameR.scale.set(1, f, 1);
+  }
   if (board) b.board.position.y = 0.07;
 }
 

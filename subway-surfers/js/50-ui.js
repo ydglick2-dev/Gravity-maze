@@ -285,14 +285,14 @@ const BAND_TOP = 92, BAND_H = 168;
 function initPreview() {
   prevScene = new THREE.Scene();
   prevCam = new THREE.PerspectiveCamera(35, 1, 0.1, 20);
-  prevCam.position.set(0, 0, 4.1);         // leaves headroom inside the band
+  prevCam.position.set(0, 0, 4.8);         // headroom for the cap as the rig turns
   prevCam.lookAt(0, 0, 0);
   prevScene.add(new THREE.HemisphereLight(0xcfe4ff, 0x40404a, 1.0));
   const rim = new THREE.DirectionalLight(0xffffff, 0.9);
   rim.position.set(2, 4, 3);
   prevScene.add(rim);
   prevRig = S.buildRig();
-  prevRig.root.position.y = -0.9;          // centres the 1.75 m body on the camera axis
+  prevRig.root.position.y = -0.95;         // centres the ~1.9 m body on the camera axis
   prevScene.add(prevRig.root);
 }
 

@@ -82,10 +82,13 @@ function probeTier() {
 
 S.TIER = probeTier();
 
+// Invariant: fogF must stay below `ahead`, so a chunk is fully fogged out at the
+// moment it spawns and pop-in is never visible. Keep fog far out — an aggressive
+// near plane turns the whole middle distance into flat haze.
 S.QUALITY = {
-  high: { dpr: 2.0,  aa: true,  shadow: 1024, ahead: 180, fogN: 45, fogF: 115, bldg: 28, parts: 120, detail: true },
-  med:  { dpr: 1.5,  aa: true,  shadow: 512,  ahead: 150, fogN: 40, fogF: 95,  bldg: 18, parts: 60,  detail: true },
-  low:  { dpr: 1.0,  aa: false, shadow: 0,    ahead: 120, fogN: 35, fogF: 75,  bldg: 8,  parts: 0,   detail: false }
+  high: { dpr: 2.0,  aa: true,  shadow: 1024, ahead: 210, fogN: 95, fogF: 195, bldg: 28, parts: 120, detail: true },
+  med:  { dpr: 1.5,  aa: true,  shadow: 512,  ahead: 180, fogN: 80, fogF: 165, bldg: 18, parts: 60,  detail: true },
+  low:  { dpr: 1.0,  aa: false, shadow: 0,    ahead: 140, fogN: 60, fogF: 130, bldg: 8,  parts: 0,   detail: false }
 };
 
 // Resolved at boot; the settings screen may override the auto-detected tier.

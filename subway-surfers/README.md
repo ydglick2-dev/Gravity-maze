@@ -34,6 +34,9 @@ Swipes fire the moment the threshold is crossed during `touchmove` rather than o
 
 ## What's in it
 
+- **Look** — a rail yard with ballast, sleepers and steel rails, brightly liveried
+  trains, retaining walls, lamp posts, a cloud sky and six themes that cross-fade
+  every 800 m.
 - **Power-ups** — coin magnet, score multiplier (x2, x4 when stacked), jetpack,
   super sneakers, and a hoverboard that absorbs one crash instead of ending the run.
 - **Shop** — 9 characters, 6 boards, and 4 upgradable power-up durations (5 levels each).
@@ -81,6 +84,19 @@ a *ground* route and roofs are a bonus.
 (`y += v·dt + ½·g·dt²`), not semi-implicit Euler. Euler loses `½·g·dt²` of height per
 step, which at 30fps drops the base jump from 2.18 m to 1.93 m — below the 2.00 m train
 roof — silently making roofs unreachable on slow devices.
+
+**The art is tuned for readability at speed, not realism.** The character is
+deliberately stylised — an oversized head at about a quarter of total height, short
+chunky limbs, a wide torso, a cap and a backpack — because that silhouette still
+reads as a running figure at gameplay distance, where anatomical proportions just
+look like a stick. Contrast lives in the textures rather than in material tints: a
+near-white track texture tinted brown would collapse the rails and sleepers into one
+flat colour, so the texture carries the real values and the theme only tints them.
+
+**Draw calls are kept near 90.** A single textured plane spans all three lanes (its
+texture repeats three times across) instead of one mesh per lane; the retaining wall
+bakes its coping stone into the texture instead of using a second mesh; lamp posts
+spawn on alternate chunks. Together those cut the budget from 136 to 93.
 
 **Nothing is allocated in the hot loop.** Props come from typed pools, coins are a
 per-chunk `InstancedMesh`, and vectors/matrices are module-level scratch. Coin spin

@@ -32,14 +32,32 @@ const ROOF_TALL = 3.20;                // freight roof
 
 Object.assign(S, { CHUNK_LEN, SLOT_LEN, ROWS, LANE_X, COIN_CAP, ROOF_Y, ROOF_TALL });
 
-/* Themes swap every 800 m with a 2 s cross-lerp. */
+/* Themes swap every 800 m with a 2 s cross-lerp. Colours are deliberately
+   high-chroma: the genre reads as a bright toy world, and desaturated palettes
+   make the same geometry look like a grey industrial estate. */
 const THEMES = [
-  { name: 'Day',    sky: 0x9fc6e8, gnd: 0x6d7a66, rail: 0x4a4f56, bldg: [0xc9b9a4, 0xb4a894, 0xd8cbb6, 0x9fae9a, 0xc2a58e, 0xa9b4bd], hemi: 0xbcd8ff, sun: 0xfff2d6, sunI: 0.95 },
-  { name: 'Sunset', sky: 0xf0a071, gnd: 0x6a5a4e, rail: 0x53483f, bldg: [0xd9906a, 0xb87a5e, 0xe0a883, 0x8f6d5c, 0xc98e6f, 0xa07a66], hemi: 0xffd0a8, sun: 0xffc890, sunI: 1.05 },
-  { name: 'Night',  sky: 0x141a2e, gnd: 0x232a3a, rail: 0x2c3446, bldg: [0x2b3350, 0x3a4468, 0x232a45, 0x46527a, 0x2f3a5c, 0x1f2740], hemi: 0x4a5a90, sun: 0x9fb4ff, sunI: 0.55 },
-  { name: 'Rain',   sky: 0x8c98a4, gnd: 0x50564f, rail: 0x424750, bldg: [0x8e97a0, 0x7b848d, 0x9aa3ac, 0x6f7880, 0x868f98, 0x757e87], hemi: 0xa8b6c4, sun: 0xd0d8e0, sunI: 0.7 },
-  { name: 'Snow',   sky: 0xdfeaf5, gnd: 0xe4ecf2, rail: 0x8d97a2, bldg: [0xc4ced8, 0xd6dfe8, 0xb2bcc6, 0xe2e9f0, 0xc9d3dc, 0xbac4ce], hemi: 0xffffff, sun: 0xeaf2ff, sunI: 1.0 },
-  { name: 'Tunnel', sky: 0x2a2320, gnd: 0x3a332e, rail: 0x2e2925, bldg: [0x4a423a, 0x3d362f, 0x554c42, 0x413a33, 0x4f463d, 0x362f29], hemi: 0x6a5a4a, sun: 0xffcf8a, sunI: 0.7 }
+  { name: 'Day',    sky: 0x62C8F5, gnd: 0x5FBF52, ball: 0x9A8A73, rail: 0xEDE7DC, wall: 0xE86A4A,
+    bldg: [0xF0C93A, 0xE86A4A, 0x4FC3F0, 0x8FD44A, 0xF0904A, 0xC98FE0], hemi: 0xCFF0FF, sun: 0xFFF6DC, sunI: 1.05 },
+  { name: 'Sunset', sky: 0xFF9A5C, gnd: 0x8A6B4A, ball: 0x9A7355, rail: 0xF0D8B8, wall: 0xD4503C,
+    bldg: [0xFFB05C, 0xE0603C, 0xC97AE0, 0xFFD070, 0xA05070, 0xE08A50], hemi: 0xFFD8B0, sun: 0xFFC070, sunI: 1.15 },
+  { name: 'Night',  sky: 0x1B2352, gnd: 0x2B3A5C, ball: 0x2E3550, rail: 0x8FA0D0, wall: 0x8F3ED8,
+    bldg: [0x3A4A8C, 0x5A3ED8, 0x2E3A70, 0x7A4FE0, 0x3E5AA8, 0x9F5FE0], hemi: 0x6A7AD0, sun: 0xBFD0FF, sunI: 0.75 },
+  { name: 'Rain',   sky: 0x8FA8BC, gnd: 0x5A7A5C, ball: 0x7A8085, rail: 0xC8D0D8, wall: 0x4A8FB0,
+    bldg: [0x9FB4C4, 0x7A94A8, 0xB0C4D4, 0x6A8494, 0x8FA8BC, 0xA0B8C8], hemi: 0xC4D8E8, sun: 0xE0EAF2, sunI: 0.85 },
+  { name: 'Snow',   sky: 0xC4E4F5, gnd: 0xF0F6FA, ball: 0xD8E4EC, rail: 0xEAF2FA, wall: 0x5FA8D4,
+    bldg: [0xE0EAF2, 0xC4D8E8, 0xF2F8FC, 0xAFC8DC, 0xD4E4F0, 0xBCD4E4], hemi: 0xFFFFFF, sun: 0xF0F8FF, sunI: 1.15 },
+  { name: 'Tunnel', sky: 0x3A2A24, gnd: 0x4A3A30, ball: 0x54453A, rail: 0xC8A882, wall: 0xE0902F,
+    bldg: [0x6A5340, 0x54433A, 0x7A6048, 0x5A4838, 0x6E5842, 0x483A2E], hemi: 0x9A7A5A, sun: 0xFFD48A, sunI: 0.9 }
+];
+
+// Train liveries. Bright, varied cars are the single biggest visual cue of the genre.
+const TRAIN_COLORS = [
+  { body: 0xF0C93A, roof: 0xD4A81E, nose: 0xE0402F },
+  { body: 0x4FC3F0, roof: 0x2E9AC4, nose: 0xF0C93A },
+  { body: 0xE86A4A, roof: 0xC44E30, nose: 0xFFF0D0 },
+  { body: 0x8FD44A, roof: 0x6AAE2E, nose: 0xE0402F },
+  { body: 0xF2F2F4, roof: 0xC8CCD4, nose: 0xE0402F },
+  { body: 0xC98FE0, roof: 0xA066C0, nose: 0xFFD257 }
 ];
 
 /* ------------------------------------------------------------- scratch */
@@ -89,21 +107,47 @@ const texWindows = cvTex(128, 64, (g, w, h) => {
 });
 
 // Ballast, sleepers and two steel rails — repeated along the length of each lane.
+// Contrast lives in the texture, not in the material tint: a near-white base with
+// near-white rails would collapse to a single flat colour once tinted.
 const texTrack = cvTex(64, 64, (g, w, h) => {
-  g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
-  g.fillStyle = 'rgba(0,0,0,.30)';                       // sleepers
-  for (let y = 4; y < h; y += 16) g.fillRect(2, y, w - 4, 8);
-  g.fillStyle = 'rgba(255,255,255,.75)';                 // rails
-  g.fillRect(13, 0, 5, h);
-  g.fillRect(w - 18, 0, 5, h);
+  g.fillStyle = '#8d8578'; g.fillRect(0, 0, w, h);       // ballast
+  g.fillStyle = '#4a3a2a';                               // wooden sleepers
+  for (let y = 4; y < h; y += 16) g.fillRect(2, y, w - 4, 9);
+  g.fillStyle = '#20242a';                               // rail shadow
+  g.fillRect(12, 0, 8, h);
+  g.fillRect(w - 20, 0, 8, h);
+  g.fillStyle = '#e8ecf0';                               // polished rail head
+  g.fillRect(14, 0, 4, h);
+  g.fillRect(w - 18, 0, 4, h);
 });
 texTrack.wrapS = texTrack.wrapT = THREE.RepeatWrapping;
-texTrack.repeat.set(1, 6);
+texTrack.repeat.set(3, 6);   // one plane spans all three lanes
 
 const _trackMats = new Map();
 function trackMat(hex) {
   let m = _trackMats.get(hex);
   if (!m) { m = new THREE.MeshLambertMaterial({ color: hex, map: texTrack }); _trackMats.set(hex, m); }
+  return m;
+}
+
+// Concrete panels with a pale coping stone along the top edge, so the wall needs
+// only one mesh instead of a wall plus a separate cap.
+const texWall = cvTex(64, 64, (g, w, h) => {
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+  g.fillStyle = 'rgba(0,0,0,.16)';
+  for (let y = 10; y < h; y += 14) g.fillRect(0, y, w, 2);
+  g.fillStyle = 'rgba(255,255,255,.85)';                 // coping along the top
+  g.fillRect(0, 0, w, 7);
+  g.fillStyle = 'rgba(0,0,0,.10)';
+  g.fillRect(0, 7, w, 2);
+});
+texWall.wrapS = texWall.wrapT = THREE.RepeatWrapping;
+texWall.repeat.set(6, 1);
+
+const _wallMats = new Map();
+function wallMat(hex) {
+  let m = _wallMats.get(hex);
+  if (!m) { m = new THREE.MeshLambertMaterial({ color: hex, map: texWall }); _wallMats.set(hex, m); }
   return m;
 }
 
@@ -154,12 +198,32 @@ function mkTrain(tall) {
     g.add(win);
   }
 
-  const nose = new THREE.Mesh(new THREE.BoxGeometry(1.7, h * 0.8, 0.6), matFor(0xe45c4a));
+  const nose = new THREE.Mesh(new THREE.BoxGeometry(1.74, h * 0.8, 0.6), matFor(0xe45c4a));
   nose.position.set(0, h * 0.42, 7.6);
   g.add(nose);
 
-  g.userData = { hx: 0.95, hy: h / 2, cy: h / 2, hz: 7.5, top: h + 0.10, kind: 'SOLID' };
+  // Skirt and bogies: without something dark at the bottom the car looks like it
+  // is floating rather than sitting on the rails.
+  const skirt = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.26, 14.6), matFor(0x2E3440));
+  skirt.position.y = 0.13;
+  g.add(skirt);
+  for (const z of [-5.2, 5.2]) {
+    const bogie = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 2.2), matFor(0x1E242E));
+    bogie.position.set(0, 0.18, z);
+    g.add(bogie);
+  }
+
+  g.userData = { hx: 0.95, hy: h / 2, cy: h / 2, hz: 7.5, top: h + 0.10, kind: 'SOLID',
+                 body, roof, nose };
   return g;
+}
+
+// Applies one of the liveries to a pooled car at placement time.
+function paintTrain(mesh, livery) {
+  const u = mesh.userData;
+  u.body.material = matFor(livery.body);
+  u.roof.material = matFor(livery.roof);
+  u.nose.material = matFor(livery.nose);
 }
 
 const mkTrainStd  = () => mkTrain(false);
@@ -301,7 +365,7 @@ S.POOLS = POOLS;
 
 let ren, scene, cam, hemi, dl, sky;
 let live = [], freeChunks = [], chunkIdx = 0, frontZ = 0;
-let camX = 0, camY = 4.6, shakeX = 0, shakeAmp = 0, fovCur = 62;
+let camX = 0, camY = 5.3, shakeX = 0, shakeAmp = 0, fovCur = 56;
 let themeA = 0, themeB = 0, themeT = 1;
 let coinGeo, coinMat;
 let W = 1, H = 1;
@@ -329,8 +393,8 @@ function init(canvas) {
   scene.background = new THREE.Color(th.sky);
   scene.fog = new THREE.Fog(th.sky, Q.fogN, Q.fogF);
 
-  cam = new THREE.PerspectiveCamera(62, 1, 0.5, 260);
-  cam.position.set(0, 4.6, 8.2);
+  cam = new THREE.PerspectiveCamera(56, 1, 0.5, 300);
+  cam.position.set(0, 5.3, 7.8);
 
   hemi = new THREE.HemisphereLight(th.hemi, 0x3d4a34, 0.85);
   scene.add(hemi);
@@ -351,10 +415,18 @@ function init(canvas) {
   }
 
   // Sky dome. fog:false so it never dissolves into itself.
-  const skyTex = cvTex(4, 128, (g, w, h) => {
+  const skyTex = cvTex(512, 256, (g, w, h) => {
     const grd = g.createLinearGradient(0, 0, 0, h);
-    grd.addColorStop(0, '#ffffff'); grd.addColorStop(1, '#b8b8b8');
+    grd.addColorStop(0, '#8ec8ff'); grd.addColorStop(0.55, '#ffffff'); grd.addColorStop(1, '#dcdcdc');
     g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    // Soft cartoon clouds: overlapping discs across the upper band.
+    g.fillStyle = 'rgba(255,255,255,.95)';
+    const puff = (x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); };
+    for (let i = 0; i < 14; i++) {
+      const x = (i * 97 + 40) % w, y = 40 + ((i * 53) % 70), r = 14 + (i % 4) * 6;
+      puff(x, y, r); puff(x + r * 0.9, y + 4, r * 0.72); puff(x - r * 0.9, y + 5, r * 0.66);
+      puff(x + r * 0.3, y - r * 0.6, r * 0.6);
+    }
   });
   sky = new THREE.Mesh(
     new THREE.SphereGeometry(200, 14, 10),
@@ -382,7 +454,7 @@ function resize() {
   W = window.innerWidth; H = window.innerHeight;
   ren.setSize(W, H, false);
   cam.aspect = W / H;
-  cam.fov = (W / H > 1.2) ? 52 : 62;
+  cam.fov = (W / H > 1.2) ? 46 : 56;
   fovCur = cam.fov;
   cam.updateProjectionMatrix();
 }
@@ -396,19 +468,54 @@ function newChunk() {
     coinN: 0, coinX: [], coinY: [], coinZ: [], coinAlive: []
   };
 
-  const ground = new THREE.Mesh(new THREE.BoxGeometry(TRACK_W, 0.5, CHUNK_LEN), matFor(0x6d7a66));
-  ground.position.set(0, -0.25, -CHUNK_LEN / 2);
+  // Grass verge either side of the yard.
+  const ground = new THREE.Mesh(new THREE.BoxGeometry(46, 0.5, CHUNK_LEN), matFor(0x5FBF52));
+  ground.position.set(0, -0.30, -CHUNK_LEN / 2);
   ground.receiveShadow = true;
   c.group.add(ground);
   c.ground = ground;
 
-  // One textured strip per lane carries the sleepers and rails in a single draw.
+  // Gravel ballast bed the three lanes sit on — this is what makes it read as a
+  // rail yard rather than a road.
+  const ballast = new THREE.Mesh(new THREE.BoxGeometry(TRACK_W, 0.30, CHUNK_LEN), matFor(0x9A8A73));
+  ballast.position.set(0, -0.13, -CHUNK_LEN / 2);
+  ballast.receiveShadow = true;
+  c.group.add(ballast);
+  c.ballast = ballast;
+
+  // Retaining walls flanking the yard, with a colour band along the top.
+  c.walls = [];
+  for (const sgn of [-1, 1]) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.7, 3.4, CHUNK_LEN), wallMat(0xE86A4A));
+    wall.position.set(sgn * 7.6, 1.4, -CHUNK_LEN / 2);
+    wall.receiveShadow = true;
+    c.group.add(wall);
+    c.walls.push(wall);
+  }
+
+  // Lamp posts, spaced so they strobe past at speed and sell the sense of motion.
+  if (S.Q.detail && (chunkIdx & 1)) {
+    for (let i = 0; i < 1; i++) {
+      const sgn = -1;
+      const post = new THREE.Group();
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 5.2, 6), matFor(0x4A5058));
+      pole.position.y = 2.6;
+      post.add(pole);
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.18, 0.30), matFor(0xFFF3C4));
+      lamp.position.set(-sgn * 0.95, 5.0, 0);
+      post.add(lamp);
+      post.position.set(sgn * 8.6, 0, -6 - i * 15);
+      c.group.add(post);
+    }
+  }
+
+  // A single textured plane covers all three lanes; the texture repeats 3x across,
+  // so one draw call replaces three without changing how it looks.
   c.rails = [];
-  for (let l = 0; l < 3; l++) {
-    const geo = new THREE.PlaneGeometry(1.9, CHUNK_LEN);
-    const r = new THREE.Mesh(geo, trackMat(0x4a4f56));
+  {
+    const r = new THREE.Mesh(new THREE.PlaneGeometry(6.6, CHUNK_LEN), trackMat(0xEDE7DC));
     r.rotation.x = -Math.PI / 2;
-    r.position.set(LANE_X[l], 0.03, -CHUNK_LEN / 2);
+    r.position.set(0, 0.03, -CHUNK_LEN / 2);      // just above the ballast top (0.02)
     r.receiveShadow = true;
     c.group.add(r);
     c.rails.push(r);
@@ -481,7 +588,7 @@ function buildSkyline(c, rng) {
   const pal = THEMES[themeB].bldg;
   for (let i = 0; i < n; i++) {
     const side = i % 2 ? 1 : -1;
-    const x = side * (9 + rng() * 17);
+    const x = side * (13 + rng() * 20);
     const h = 4 + rng() * 22;
     const w = 3 + rng() * 4;
     const z = -rng() * CHUNK_LEN;
@@ -515,6 +622,7 @@ function addProp(c, poolKey, lane, lz, opt) {
   const x = (opt && opt.x != null) ? opt.x : LANE_X[lane];
   const y = (opt && opt.y != null) ? opt.y : 0;
   mesh.position.set(x, y, lz);
+  if (u.body) paintTrain(mesh, TRAIN_COLORS[(opt && opt.livery != null ? opt.livery : 0) % TRAIN_COLORS.length]);
   if (opt && opt.color && u.core) {
     u.core.material = matFor(opt.color, { emissive: opt.color });
     u.ring.material = matFor(opt.color);
@@ -560,6 +668,8 @@ Object.assign(W3, { addProp, addCoin, killCoin });
 function applyThemeToChunk(c) {
   const th = THEMES[themeB];
   c.ground.material = matFor(th.gnd);
+  c.ballast.material = matFor(th.ball);
+  for (const w of c.walls) w.material = wallMat(th.wall);
   for (const r of c.rails) r.material = trackMat(th.rail);
 }
 
@@ -603,7 +713,7 @@ function reset(seed) {
   hemi.color.setHex(THEMES[0].hemi);
   dl.color.setHex(THEMES[0].sun);
   dl.intensity = THEMES[0].sunI;
-  camX = 0; camY = 4.6; shakeAmp = 0;
+  camX = 0; camY = 5.3; shakeAmp = 0;
   S.Gen.reset();
   stream(0);
 }
@@ -656,17 +766,17 @@ function update(dt, speed, dist) {
 
 function updateCamera(dt, px, py, pz, laneVx, speedNorm) {
   camX += (px * 0.42 - camX) * damp(9, dt);
-  camY += (4.6 + py * 0.55 - camY) * damp(6, dt);
+  camY += (5.3 + py * 0.55 - camY) * damp(6, dt);
 
   if (shakeAmp > 0.001) {
     shakeX = Math.sin(performance.now() * 0.047) * shakeAmp;
     shakeAmp *= Math.exp(-7 * dt);
   } else shakeX = 0;
 
-  cam.position.set(camX + shakeX, camY, 8.2 + pz);
-  cam.lookAt(px * 0.6, 1.55 + py * 0.6, -9);
+  cam.position.set(camX + shakeX, camY, 7.8 + pz);
+  cam.lookAt(px * 0.6, 1.35 + py * 0.6, -11);
 
-  const base = (W / H > 1.2) ? 52 : 62;
+  const base = (W / H > 1.2) ? 46 : 56;
   const want = base + 9 * speedNorm;
   if (Math.abs(fovCur - want) > 0.05) {
     fovCur += (want - fovCur) * damp(4, dt);

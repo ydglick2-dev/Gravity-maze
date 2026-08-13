@@ -364,7 +364,9 @@ function emit(c, item, rng, d) {
         const key = cell.t === 'TRAIN_TALL' ? 'TRAIN_TALL' : 'TRAIN';
         // 3 rows -> centre sits 1.5 rows in.
         const lz = -(r0 + 1.5) * SLOT_LEN;
-        S.World.addProp(c, key, lane, lz, cell.t === 'TRAIN_MOVE' ? { vz: 6 } : null);
+        const o = { livery: (rng() * 6) | 0 };
+        if (cell.t === 'TRAIN_MOVE') o.vz = 6;
+        S.World.addProp(c, key, lane, lz, o);
         break;
       }
       case 'BAR_LOW':  S.World.addProp(c, 'BAR_LOW',  lane, rowZ(r0)); break;
