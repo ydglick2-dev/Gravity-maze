@@ -106,6 +106,84 @@ const texWindows = cvTex(128, 64, (g, w, h) => {
   }
 });
 
+/* Spray-paint decals. Drawn once into transparent textures and laid over the
+   train flanks and the retaining walls. Loose blobs plus a few strokes read as
+   graffiti at speed without spelling anything out — and being generated means
+   they are original marks rather than traced lettering. */
+const GRAF_PALETTE = [
+  ['#FF3D6E', '#FFD257'], ['#3ECF8E', '#7AE0FF'], ['#9B5CFF', '#FF8A3D'],
+  ['#FFD257', '#FF3D6E'], ['#7AE0FF', '#F2F2F4'], ['#FF8A3D', '#9B5CFF']
+];
+
+function grafTex(seed, w, h, density) {
+  const rnd = S.mulberry(seed >>> 0);
+  return cvTex(w, h, (g, W, H) => {
+    g.clearRect(0, 0, W, H);
+    const n = density || 3;
+    for (let i = 0; i < n; i++) {
+      const pal = GRAF_PALETTE[(rnd() * GRAF_PALETTE.length) | 0];
+      const cx = rnd() * W, cy = H * (0.25 + rnd() * 0.5);
+      const sc = (0.10 + rnd() * 0.16) * W;
+
+      // Body of the tag: overlapping blobs.
+      g.globalAlpha = 0.85;
+      g.fillStyle = pal[0];
+      for (let b = 0; b < 5; b++) {
+        g.beginPath();
+        g.ellipse(cx + (rnd() - .5) * sc * 1.6, cy + (rnd() - .5) * sc * 0.7,
+                  sc * (0.28 + rnd() * 0.3), sc * (0.20 + rnd() * 0.22),
+                  rnd() * Math.PI, 0, Math.PI * 2);
+        g.fill();
+      }
+      // Highlight strokes on top.
+      g.globalAlpha = 0.95;
+      g.strokeStyle = pal[1];
+      g.lineWidth = Math.max(2, sc * 0.09);
+      g.lineCap = 'round';
+      for (let k = 0; k < 3; k++) {
+        g.beginPath();
+        const x0 = cx + (rnd() - .5) * sc, y0 = cy + (rnd() - .5) * sc * 0.6;
+        g.moveTo(x0, y0);
+        g.quadraticCurveTo(x0 + (rnd() - .5) * sc, y0 - sc * (0.3 + rnd() * 0.4),
+                           x0 + (rnd() - .5) * sc * 1.4, y0 + (rnd() - .5) * sc * 0.5);
+        g.stroke();
+      }
+      // Drips.
+      g.globalAlpha = 0.6;
+      g.fillStyle = pal[0];
+      for (let d = 0; d < 3; d++) {
+        const dx = cx + (rnd() - .5) * sc * 1.2;
+        g.fillRect(dx, cy + sc * 0.2, Math.max(2, sc * 0.05), sc * (0.2 + rnd() * 0.5));
+      }
+    }
+    g.globalAlpha = 1;
+  });
+}
+
+// A handful of variants, reused across every car and wall panel.
+const TEX_GRAF_TRAIN = [];
+for (let i = 0; i < 4; i++) TEX_GRAF_TRAIN.push(grafTex(1000 + i, 256, 64, 2));
+const TEX_GRAF_WALL = [];
+for (let i = 0; i < 3; i++) {
+  const t = grafTex(2000 + i, 256, 128, 3);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(2, 1);
+  TEX_GRAF_WALL.push(t);
+}
+
+const _grafMats = new Map();
+function grafMat(tex) {
+  let m = _grafMats.get(tex);
+  if (!m) {
+    m = new THREE.MeshLambertMaterial({
+      map: tex, transparent: true, depthWrite: false, polygonOffset: true,
+      polygonOffsetFactor: -2, polygonOffsetUnits: -2
+    });
+    _grafMats.set(tex, m);
+  }
+  return m;
+}
+
 // Ballast, sleepers and two steel rails — repeated along the length of each lane.
 // Contrast lives in the texture, not in the material tint: a near-white base with
 // near-white rails would collapse to a single flat colour once tinted.
@@ -198,6 +276,16 @@ function mkTrain(tall) {
     g.add(win);
   }
 
+  // Graffiti panels, one per flank, offset just outside the body to avoid z-fighting.
+  g.graf = [];
+  for (const sgn of [-1, 1]) {
+    const gp = new THREE.Mesh(new THREE.PlaneGeometry(13, h * 0.5), grafMat(TEX_GRAF_TRAIN[0]));
+    gp.position.set(sgn * 0.97, h * 0.45, 0);
+    gp.rotation.y = sgn * Math.PI / 2;
+    g.add(gp);
+    g.graf.push(gp);
+  }
+
   const nose = new THREE.Mesh(new THREE.BoxGeometry(1.74, h * 0.8, 0.6), matFor(0xe45c4a));
   nose.position.set(0, h * 0.42, 7.6);
   g.add(nose);
@@ -214,16 +302,23 @@ function mkTrain(tall) {
   }
 
   g.userData = { hx: 0.95, hy: h / 2, cy: h / 2, hz: 7.5, top: h + 0.10, kind: 'SOLID',
-                 body, roof, nose };
+                 body, roof, nose, graf: g.graf };
   return g;
 }
 
 // Applies one of the liveries to a pooled car at placement time.
-function paintTrain(mesh, livery) {
+function paintTrain(mesh, livery, grafIdx) {
   const u = mesh.userData;
   u.body.material = matFor(livery.body);
   u.roof.material = matFor(livery.roof);
   u.nose.material = matFor(livery.nose);
+  if (u.graf) {
+    const show = grafIdx >= 0;
+    for (const gp of u.graf) {
+      gp.visible = show;
+      if (show) gp.material = grafMat(TEX_GRAF_TRAIN[grafIdx % TEX_GRAF_TRAIN.length]);
+    }
+  }
 }
 
 const mkTrainStd  = () => mkTrain(false);
@@ -365,7 +460,7 @@ S.POOLS = POOLS;
 
 let ren, scene, cam, hemi, dl, sky;
 let live = [], freeChunks = [], chunkIdx = 0, frontZ = 0;
-let camX = 0, camY = 5.3, shakeX = 0, shakeAmp = 0, fovCur = 56;
+let camX = 0, camY = 5.6, shakeX = 0, shakeAmp = 0, fovCur = 56;
 let themeA = 0, themeB = 0, themeT = 1;
 let coinGeo, coinMat;
 let W = 1, H = 1;
@@ -394,7 +489,7 @@ function init(canvas) {
   scene.fog = new THREE.Fog(th.sky, Q.fogN, Q.fogF);
 
   cam = new THREE.PerspectiveCamera(56, 1, 0.5, 300);
-  cam.position.set(0, 5.3, 7.8);
+  cam.position.set(0, 5.6, 11.4);
 
   hemi = new THREE.HemisphereLight(th.hemi, 0x3d4a34, 0.85);
   scene.add(hemi);
@@ -485,12 +580,21 @@ function newChunk() {
 
   // Retaining walls flanking the yard, with a colour band along the top.
   c.walls = [];
+  c.wallGraf = [];
   for (const sgn of [-1, 1]) {
     const wall = new THREE.Mesh(new THREE.BoxGeometry(0.7, 3.4, CHUNK_LEN), wallMat(0xE86A4A));
     wall.position.set(sgn * 7.6, 1.4, -CHUNK_LEN / 2);
     wall.receiveShadow = true;
     c.group.add(wall);
     c.walls.push(wall);
+
+    const gp = new THREE.Mesh(new THREE.PlaneGeometry(CHUNK_LEN, 2.2),
+                              grafMat(TEX_GRAF_WALL[0]));
+    gp.userData.side = sgn;
+    gp.rotation.y = -sgn * Math.PI / 2;
+    gp.position.set(sgn * 7.24, 1.5, -CHUNK_LEN / 2);
+    c.group.add(gp);
+    c.wallGraf.push(gp);
   }
 
   // Lamp posts, spaced so they strobe past at speed and sell the sense of motion.
@@ -562,6 +666,14 @@ function buildChunk(idx, nearZ) {
   c.boxes.sort((a, b) => b.lz - a.lz);
 
   flushCoins(c);
+  // Tag one wall per chunk, alternating sides, so the yard looks lived-in without
+  // paying for two extra draw calls on every chunk.
+  const grafSide = (idx & 1) ? 1 : -1;
+  for (let i = 0; i < c.wallGraf.length; i++) {
+    const gp = c.wallGraf[i];
+    gp.visible = gp.userData.side === grafSide && rng() < 0.8;
+    if (gp.visible) gp.material = grafMat(TEX_GRAF_WALL[(rng() * TEX_GRAF_WALL.length) | 0]);
+  }
   buildSkyline(c, rng);
   applyThemeToChunk(c);
   return c;
@@ -622,7 +734,9 @@ function addProp(c, poolKey, lane, lz, opt) {
   const x = (opt && opt.x != null) ? opt.x : LANE_X[lane];
   const y = (opt && opt.y != null) ? opt.y : 0;
   mesh.position.set(x, y, lz);
-  if (u.body) paintTrain(mesh, TRAIN_COLORS[(opt && opt.livery != null ? opt.livery : 0) % TRAIN_COLORS.length]);
+  if (u.body) paintTrain(mesh,
+    TRAIN_COLORS[(opt && opt.livery != null ? opt.livery : 0) % TRAIN_COLORS.length],
+    opt && opt.graf != null ? opt.graf : -1);
   if (opt && opt.color && u.core) {
     u.core.material = matFor(opt.color, { emissive: opt.color });
     u.ring.material = matFor(opt.color);
@@ -713,7 +827,7 @@ function reset(seed) {
   hemi.color.setHex(THEMES[0].hemi);
   dl.color.setHex(THEMES[0].sun);
   dl.intensity = THEMES[0].sunI;
-  camX = 0; camY = 5.3; shakeAmp = 0;
+  camX = 0; camY = 5.6; shakeAmp = 0;
   S.Gen.reset();
   stream(0);
 }
@@ -766,15 +880,15 @@ function update(dt, speed, dist) {
 
 function updateCamera(dt, px, py, pz, laneVx, speedNorm) {
   camX += (px * 0.42 - camX) * damp(9, dt);
-  camY += (5.3 + py * 0.55 - camY) * damp(6, dt);
+  camY += (5.6 + py * 0.55 - camY) * damp(6, dt);
 
   if (shakeAmp > 0.001) {
     shakeX = Math.sin(performance.now() * 0.047) * shakeAmp;
     shakeAmp *= Math.exp(-7 * dt);
   } else shakeX = 0;
 
-  cam.position.set(camX + shakeX, camY, 7.8 + pz);
-  cam.lookAt(px * 0.6, 1.35 + py * 0.6, -11);
+  cam.position.set(camX + shakeX, camY, 11.4 + pz);
+  cam.lookAt(px * 0.6, 2.10 + py * 0.6, -14);
 
   const base = (W / H > 1.2) ? 46 : 56;
   const want = base + 9 * speedNorm;

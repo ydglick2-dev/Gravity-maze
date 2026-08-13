@@ -35,8 +35,10 @@ Swipes fire the moment the threshold is crossed during `touchmove` rather than o
 ## What's in it
 
 - **Look** — a rail yard with ballast, sleepers and steel rails, brightly liveried
-  trains, retaining walls, lamp posts, a cloud sky and six themes that cross-fade
-  every 800 m.
+  trains, procedurally sprayed graffiti on cars and walls, retaining walls, lamp
+  posts, a cloud sky and six themes that cross-fade every 800 m.
+- **The pursuit** — an inspector and his dog run just behind you, clipped at the
+  bottom of frame. Stumble and he gains ground; stay clean and he drops back.
 - **Power-ups** — coin magnet, score multiplier (x2, x4 when stacked), jetpack,
   super sneakers, and a hoverboard that absorbs one crash instead of ending the run.
 - **Shop** — 9 characters, 6 boards, and 4 upgradable power-up durations (5 levels each).
@@ -93,10 +95,18 @@ look like a stick. Contrast lives in the textures rather than in material tints:
 near-white track texture tinted brown would collapse the rails and sleepers into one
 flat colour, so the texture carries the real values and the theme only tints them.
 
-**Draw calls are kept near 90.** A single textured plane spans all three lanes (its
+**The pursuer's distance was solved, not eyeballed.** With a chase camera looking
+down the track, anything behind the runner projects low in frame: at a natural-looking
+5.4 m the inspector landed at NDC y = −2.07, a full screen-height below the bottom
+edge. Pulling the camera back to 11.4 m and settling him at 4.0 m puts his head near
+−0.79 — visible, large, and clipped at the waist.
+
+**Draw calls are kept near 120.** A single textured plane spans all three lanes (its
 texture repeats three times across) instead of one mesh per lane; the retaining wall
 bakes its coping stone into the texture instead of using a second mesh; lamp posts
-spawn on alternate chunks. Together those cut the budget from 136 to 93.
+spawn on alternate chunks, and wall graffiti tags one side per chunk rather than
+both. The inspector's face is never built into the draw list because he runs away
+from the camera like the player does.
 
 **Nothing is allocated in the hot loop.** Props come from typed pools, coins are a
 per-chunk `InstancedMesh`, and vectors/matrices are module-level scratch. Coin spin

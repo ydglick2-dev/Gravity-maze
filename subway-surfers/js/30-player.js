@@ -563,6 +563,7 @@ function hit(kind) {
     P.speedMul = 0.62;
     S.sfx.stumble();
     S.World.shake(0.5);
+    Chase.close();                    // the pursuer gains ground on a stumble
     return;
   }
   die();
@@ -674,6 +675,152 @@ function animate(dt, speed) {
   }
   if (board) b.board.position.y = 0.07;
 }
+
+/* ------------------------------------------------------------- pursuer */
+
+/* The inspector and his dog chasing just behind the runner. This is the most
+   recognisable piece of staging in the genre and the game read as oddly empty
+   without it. He sits at a resting distance, lunges forward after a stumble, then
+   is slowly shrugged off again — so a stumble has visible consequence beyond the
+   speed penalty. Purely cosmetic: the pursuer never collides with anything. */
+
+// Tuned against the camera, not picked by eye. With a chase camera looking down
+// the track, anything behind the runner projects low in frame, and at 5.4 m the
+// pursuer landed at NDC y = -2.07 — a full screen-height below the bottom edge.
+// Pulling the camera back to 11.4 m and setting 4.0 m puts his head near -0.7,
+// which is exactly how the genre frames him.
+const CHASE_REST  = 4.0;      // metres behind the runner while clean
+const CHASE_CLOSE = 2.6;      // how close he gets right after a stumble
+const CHASE_FALL  = 0.55;     // metres per second he drops back
+
+const Chase = {};
+S.Chase = Chase;
+
+let gRig = null, dog = null, chaseZ = CHASE_REST, chasePh = 0;
+
+function buildDog() {
+  const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+  const g = new THREE.Group();
+  const mFur = matFor(0x6B4A32), mDark = matFor(0x3A2A1C);
+
+  const body = new THREE.Mesh(B(0.34, 0.34, 0.78), mFur);
+  body.position.y = 0.52; body.castShadow = true;
+  g.add(body);
+
+  const neck = new THREE.Group();
+  neck.position.set(0, 0.62, 0.42);
+  g.add(neck);
+  const head = new THREE.Mesh(B(0.30, 0.30, 0.34), mFur);
+  head.position.z = 0.14; head.castShadow = true;
+  neck.add(head);
+  const snout = new THREE.Mesh(B(0.16, 0.14, 0.20), mDark);
+  snout.position.set(0, -0.05, 0.36);
+  neck.add(snout);
+  for (const s of [-1, 1]) {
+    const ear = new THREE.Mesh(B(0.09, 0.16, 0.06), mDark);
+    ear.position.set(s * 0.11, 0.20, 0.06);
+    neck.add(ear);
+  }
+  g.neck = neck;
+
+  g.legs = [];
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const hip = new THREE.Group();
+    hip.position.set(sx * 0.13, 0.50, sz * 0.28);
+    g.add(hip);
+    const leg = new THREE.Mesh(B(0.10, 0.42, 0.10), mDark);
+    leg.position.y = -0.21;
+    hip.add(leg);
+    g.legs.push(hip);
+  }
+
+  const tail = new THREE.Group();
+  tail.position.set(0, 0.62, -0.38);
+  g.add(tail);
+  const tailM = new THREE.Mesh(B(0.08, 0.08, 0.34), mFur);
+  tailM.position.z = -0.17;
+  tail.add(tailM);
+  g.tail = tail;
+
+  return g;
+}
+
+Chase.init = function (scene) {
+  gRig = buildRig();
+  // Inspector livery: dark uniform, peaked cap, no backpack.
+  applyCharPalette(gRig, { skin: 0xE0B088, shirt: 0x2A3D6B, pants: 0x1E2A4A,
+                           hair: 0x16203A, bag: 0x2A3D6B, shoe: 0x14161C, cap: 1 });
+  gRig.pack.visible = false;
+  gRig.strapL.visible = false;
+  gRig.strapR.visible = false;
+  // He runs the same way the player does, so his face is never on camera.
+  gRig.eyeL.visible = gRig.eyeR.visible = gRig.mouth.visible = false;
+  gRig.root.scale.setScalar(1.08);          // slightly heavier than the runner
+  scene.add(gRig.root);
+
+  dog = buildDog();
+  scene.add(dog);
+};
+
+Chase.reset = function () {
+  chaseZ = CHASE_REST;
+  chasePh = 0;
+};
+
+// Called when the runner stumbles: the pursuer lunges forward.
+Chase.close = function () { chaseZ = Math.min(chaseZ, CHASE_CLOSE); };
+
+// Exposed so the harness can check where the pursuer actually lands on screen.
+Chase._dbg = function () {
+  if (!gRig) return null;
+  const cam = S.World.camera();
+  const v = gRig.root.position.clone(); v.y += 1.2; v.project(cam);
+  const d = dog.position.clone(); d.y += 0.6; d.project(cam);
+  return {
+    visible: gRig.root.visible, chaseZ: +chaseZ.toFixed(2),
+    guardPos: gRig.root.position.toArray().map(n => +n.toFixed(2)),
+    guardNdc: [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(3)],
+    dogNdc: [+d.x.toFixed(2), +d.y.toFixed(2), +d.z.toFixed(3)]
+  };
+};
+
+Chase.update = function (dt, speed, running) {
+  if (!gRig) return;
+
+  const show = running && P.state !== DEAD;
+  gRig.root.visible = show;
+  dog.visible = show;
+  if (!show) return;
+
+  chaseZ = Math.min(CHASE_REST, chaseZ + CHASE_FALL * dt);
+
+  // Trails the runner's lane, but lags behind it — he is chasing, not mirroring.
+  const tx = P.x * 0.75;
+  gRig.root.position.x += (tx - gRig.root.position.x) * damp(4, dt);
+  gRig.root.position.set(gRig.root.position.x, 0, P.z + chaseZ);
+  dog.position.set(gRig.root.position.x - 0.85, 0, P.z + chaseZ - 0.5);
+
+  // Run cycles, deliberately out of phase with the runner's so they read apart.
+  chasePh += dt * (2.6 + speed * 0.22);
+  const s = Math.sin(chasePh), c = Math.cos(chasePh);
+  gRig.hipL.rotation.x = s * 1.05;  gRig.hipR.rotation.x = -s * 1.05;
+  gRig.kneeL.rotation.x = Math.max(0, -Math.sin(chasePh + 0.6)) * 1.30;
+  gRig.kneeR.rotation.x = Math.max(0,  Math.sin(chasePh + 0.6)) * 1.30;
+  gRig.shoL.rotation.x = -s * 0.95; gRig.shoR.rotation.x = s * 0.95;
+  gRig.elbL.rotation.x = -0.6 - Math.max(0, s) * 0.5;
+  gRig.elbR.rotation.x = -0.6 - Math.max(0, -s) * 0.5;
+  gRig.body.position.y = 0.06 * Math.abs(c);
+  gRig.body.rotation.x = 0.12;              // leaning into the chase
+
+  const dp = chasePh * 1.6;
+  for (let i = 0; i < dog.legs.length; i++) {
+    const off = (i === 0 || i === 3) ? 0 : Math.PI;
+    dog.legs[i].rotation.x = Math.sin(dp + off) * 0.9;
+  }
+  dog.position.y = Math.abs(Math.sin(dp)) * 0.07;
+  dog.neck.rotation.x = -0.12 + Math.sin(dp) * 0.06;
+  dog.tail.rotation.y = Math.sin(dp * 1.4) * 0.5;
+};
 
 Object.assign(S, { playerAttach: attach, playerReset: reset, playerUpdate: update, setOpacity });
 

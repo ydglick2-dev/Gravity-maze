@@ -144,6 +144,7 @@ S.startRun = function () {
   S.Power.reset();
   S.World.reset(runSeedUsed);
   S.playerReset();
+  S.Chase.reset();
   S.applyCharPalette(S.P.rig, S.charById(S.SV.char));
   S.applyBoardPalette(S.P.rig, S.boardById(S.SV.board));
 
@@ -286,6 +287,7 @@ function loop(now) {
     S.Power.update(dt);
     S.World.update(dt, speed, dist);
     S.playerUpdate(dt, speed);
+    S.Chase.update(dt, speed, !over);
     S.FX.update(dt);
     S.World.updateCamera(dt, P.x, P.y, P.z, P.laneVx, S.speedNorm());
     S.UI.hud(dt, score, dist, runCoins);
@@ -293,6 +295,7 @@ function loop(now) {
   } else {
     // Idle backdrop for the menus: the world keeps drifting slowly.
     S.World.update(dt, 6, dist);
+    S.Chase.update(dt, 6, false);
     S.FX.update(dt);
     S.World.updateCamera(dt, 0, 0, 0, 0, 0);
   }
@@ -492,6 +495,7 @@ function boot() {
   S.World.init($('gl'));
   const scene = S.World.scene();
   S.playerAttach(scene);
+  S.Chase.init(scene);
   S.Power.initScene(scene);
   S.playerReset();
 
