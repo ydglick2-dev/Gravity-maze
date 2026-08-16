@@ -1,5 +1,8 @@
 import java.util.Properties
 
+// Base version code. ABI splits offset from this so each output is distinct.
+val appVersionCode = 1
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -27,14 +30,10 @@ android {
         applicationId = "il.kolan"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = appVersionCode
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
-        }
 
         externalNativeBuild {
             cmake {
@@ -85,6 +84,20 @@ android {
         }
     }
 
+    // WebRTC's native library is by far the largest thing in the APK, and shipping three copies
+    // of it means every device downloads two it can never run. Splitting by ABI cuts the actual
+    // download to roughly a third.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            // No universal APK by default: it would be the fat build this split exists to avoid.
+            // Pass -PuniversalApk to get one for sideloading onto an unknown device.
+            isUniversalApk = project.hasProperty("universalApk")
+        }
+    }
+
     packaging {
         jniLibs {
             // Oboe and our engine both need to be extractable-free; uncompressed native libs
@@ -121,6 +134,21 @@ android {
         abortOnError = true
         warningsAsErrors = false
         disable += setOf("MissingTranslation", "UnusedResources")
+    }
+}
+
+// Each split needs a distinct versionCode, otherwise a store cannot tell them apart and picking
+// the right one for a device becomes ambiguous. The offset ordering also encodes preference:
+// a 64-bit build outranks the 32-bit one on a device that could run either.
+val abiVersionOffsets = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 3)
+
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            val abi = output.filters.find { it.filterType.name == "ABI" }?.identifier
+            val offset = abiVersionOffsets[abi] ?: 0
+            output.versionCode.set(appVersionCode + offset * 1000)
+        }
     }
 }
 

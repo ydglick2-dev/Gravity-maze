@@ -50,3 +50,4 @@ jobs:
         with:
           name: kolan-release-apk
           path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

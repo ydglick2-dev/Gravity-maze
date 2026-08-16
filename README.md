@@ -104,8 +104,21 @@ Release signing reads `keystore.properties` if present — copy `keystore.proper
 fill it in. Without one, the build falls back to the debug keystore so `assembleRelease` still
 produces an installable APK rather than an unsigned one.
 
-The APK is around 40 MB, almost all of which is `libjingle_peerconnection_so.so` across three
-ABIs. Adding an ABI split or a bundle would cut the per-device download to roughly a third.
+This produces one APK per ABI rather than a single fat one, because `libjingle_peerconnection_so.so`
+dominates the size and shipping three copies means every device downloads two it can never run:
+
+| Output | Size |
+|---|---|
+| `app-arm64-v8a-release.apk` | 14.7 MB — every modern phone |
+| `app-armeabi-v7a-release.apk` | 9.2 MB — older 32-bit devices |
+| `app-x86_64-release.apk` | 18.5 MB — emulators |
+
+Each split carries its own `versionCode` (`2001`, `1001`, `3001`) so a store can tell them apart
+and prefer 64-bit on a device that could run either. For a single APK that installs anywhere:
+
+```bash
+./gradlew assembleRelease -PuniversalApk    # ~39 MB
+```
 
 ## Tests
 
