@@ -29,6 +29,7 @@ import androidx.core.os.ConfigurationCompat
 import com.glassify.launcher.glass.GlassShapes
 import com.glassify.launcher.glass.GlassSpec
 import com.glassify.launcher.glass.GlassTheme
+import com.glassify.launcher.glass.glassTextShadow
 import com.glassify.launcher.glass.liquidGlass
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -66,9 +67,9 @@ fun GlassClock(
     Column(
         modifier
             .liquidGlass(
-                shape = GlassShapes.panel,
-                cornerRadius = 34.dp,
-                spec = GlassSpec(thickness = 18.dp, specular = 0.7f, surfaceAlpha = opacity),
+                shape = GlassShapes.card,
+                cornerRadius = 28.dp,
+                spec = GlassSpec(surfaceAlpha = opacity),
             )
             .pointerInput(onLongPress) {
                 detectTapGestures(onLongPress = { onLongPress() })
@@ -77,8 +78,19 @@ fun GlassClock(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text(text = date, style = GlassTheme.type.callout, color = GlassTheme.colors.onGlassSecondary)
-        Text(text = time, style = GlassTheme.type.clock, color = GlassTheme.colors.onGlass)
+        // Text over near-clear glass carries the design's title shadow
+        // (0 1px 3px rgba(0,0,0,.45)) — that, not the pane, is what keeps it
+        // legible against a bright wallpaper.
+        Text(
+            text = date,
+            style = GlassTheme.type.callout.copy(shadow = glassTextShadow()),
+            color = GlassTheme.colors.onGlassSecondary,
+        )
+        Text(
+            text = time,
+            style = GlassTheme.type.clock.copy(shadow = glassTextShadow()),
+            color = GlassTheme.colors.onGlass,
+        )
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,

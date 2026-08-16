@@ -10,7 +10,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -120,13 +122,31 @@ object GlassMotion {
     fun <T> gooey() = spring<T>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 320f)
 }
 
+/**
+ * The reference design's title shadow — `text-shadow: 0 1px 3px rgba(0,0,0,.45)`.
+ * On near-clear glass this shadow, not the pane, is what carries legibility.
+ */
+fun glassTextShadow() = Shadow(
+    color = Color.Black.copy(alpha = 0.45f),
+    offset = Offset(0f, 1f),
+    blurRadius = 3f,
+)
+
+/**
+ * The design's readability plate: `rgba(6,9,18,.58)`, radius 12. Body text
+ * inside glass sits on one of these, never directly on the pane.
+ */
+val GlassTextPlate = Color(0x94060912)
+
 /** Corner radii, kept in one place so panels stay in the same family as icons. */
 object GlassShapes {
     val icon = SquircleFractionShape(fraction = 0.2237f)
-    val card = SquircleShape(radius = 22.dp)
-    val panel = SquircleShape(radius = 34.dp)
+
+    /** The reference design's card radius: 28px on a 380x250 card. */
+    val card = SquircleShape(radius = 28.dp)
+    val panel = card
     val pill = SquircleShape(radius = 999.dp)
-    val dock = SquircleShape(radius = 32.dp)
+    val dock = card
 }
 
 val LocalGlassColors = staticCompositionLocalOf { GlassColors(dark = true) }

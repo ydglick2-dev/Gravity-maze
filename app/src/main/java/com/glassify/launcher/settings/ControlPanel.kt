@@ -315,14 +315,16 @@ fun ControlPanel() {
                 StepperRow(
                     label = stringResource(R.string.settings_blur),
                     value = settings.blurRadiusPx,
-                    range = 0..150,
-                    step = 10,
+                    // The design's frost slider runs 0-20 around a 4px default;
+                    // a little extra headroom for busy wallpapers, no more.
+                    range = 0..60,
+                    step = 4,
                     onChange = { update { s -> s.copy(blurRadiusPx = it) } },
                 )
                 StepperRow(
                     label = stringResource(R.string.panel_opacity),
                     value = settings.glassOpacityPercent,
-                    range = 4..60,
+                    range = 2..40,
                     step = 2,
                     onChange = { update { s -> s.copy(glassOpacityPercent = it) } },
                 )
@@ -520,7 +522,7 @@ private fun Group(title: String, content: @Composable () -> Unit) {
                 .liquidGlass(
                     shape = GlassShapes.panel,
                     cornerRadius = 28.dp,
-                    spec = GlassSpec(surfaceAlpha = 0.14f, elevation = 8.dp),
+                    spec = GlassSpec(surfaceAlpha = 0.06f, elevation = 10.dp),
                 )
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),

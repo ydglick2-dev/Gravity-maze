@@ -21,8 +21,8 @@ class LauncherPrefs(private val context: Context) {
 
     private fun Preferences.toSettings() = GlassifySettings(
         tierOverride = this[TIER]?.let { runCatching { GlassTier.valueOf(it) }.getOrNull() },
-        blurRadiusPx = this[BLUR_RADIUS] ?: 80,
-        glassOpacityPercent = this[GLASS_OPACITY] ?: 14,
+        blurRadiusPx = this[BLUR_RADIUS] ?: 12,
+        glassOpacityPercent = this[GLASS_OPACITY] ?: 4,
         islandEnabled = this[ISLAND] ?: true,
         islandTopOffsetDp = this[ISLAND_OFFSET] ?: 0,
         dockEnabled = this[DOCK] ?: true,
@@ -61,8 +61,12 @@ class LauncherPrefs(private val context: Context) {
 
     private companion object {
         val TIER = stringPreferencesKey("tier")
-        val BLUR_RADIUS = intPreferencesKey("blur_radius")
-        val GLASS_OPACITY = intPreferencesKey("glass_opacity")
+        // The "2" keys retire the pre-calibration values: 1.7 and earlier
+        // stored defaults tuned for the old dark-frost look (blur 80, opacity
+        // 14), and the reference design wants clear glass (blur ~4-12, fill 4%).
+        // Abandoning the old keys re-baselines every install onto the design.
+        val BLUR_RADIUS = intPreferencesKey("blur_radius2")
+        val GLASS_OPACITY = intPreferencesKey("glass_opacity2")
         val ISLAND = booleanPreferencesKey("island")
         val ISLAND_OFFSET = intPreferencesKey("island_offset")
         val DOCK = booleanPreferencesKey("dock")
@@ -90,19 +94,21 @@ data class GlassifySettings(
     /**
      * How far the compositor blurs behind the panels, in pixels.
      *
-     * Not density-scaled: the blur is a property of the image rather than of the
-     * layout, so the same radius looks the same on any screen where a scaled one
-     * would smear more on a dense panel.
+     * The reference design's frost is light (its slider runs 0-20px around a
+     * 4px default): the glass is meant to be clear, with legibility coming from
+     * tint plates rather than frost. 12 keeps a little more separation over a
+     * busy home screen while staying in the design's family. Not density-scaled
+     * — blur is a property of the image, not the layout.
      */
-    val blurRadiusPx: Int = 80,
+    val blurRadiusPx: Int = 12,
 
     /**
-     * Opacity of the glass interior, as a percentage.
+     * Fill opacity of the glass interior, as a percentage.
      *
-     * Exposed because the right amount is a matter of taste and of wallpaper: a
-     * busy photo needs more body behind text than a plain gradient does.
+     * Design value: 4 (`rgba(255,255,255,.04)`). Exposed because the right
+     * amount still depends on the wallpaper underneath.
      */
-    val glassOpacityPercent: Int = 14,
+    val glassOpacityPercent: Int = 4,
 
     val islandEnabled: Boolean = true,
     /** Nudges the Island to line up with this particular phone's camera cutout. */

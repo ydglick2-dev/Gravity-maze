@@ -41,7 +41,9 @@ import com.glassify.launcher.R
 import com.glassify.launcher.glass.GlassMotion
 import com.glassify.launcher.glass.GlassShapes
 import com.glassify.launcher.glass.GlassSpec
+import com.glassify.launcher.glass.GlassTextPlate
 import com.glassify.launcher.glass.GlassTheme
+import com.glassify.launcher.glass.glassTextShadow
 import com.glassify.launcher.glass.liquidGlass
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -183,8 +185,8 @@ private fun NotificationCard(
             }
             .liquidGlass(
                 shape = GlassShapes.card,
-                cornerRadius = 22.dp,
-                spec = GlassSpec(surfaceAlpha = 0.22f, elevation = 10.dp),
+                cornerRadius = 28.dp,
+                spec = GlassSpec(elevation = 12.dp),
             )
             .pointerInput(notification.key) {
                 detectHorizontalDragGestures(
@@ -241,19 +243,26 @@ private fun NotificationCard(
             if (notification.title.isNotBlank()) {
                 Text(
                     text = notification.title,
-                    style = GlassTheme.type.footnote,
+                    style = GlassTheme.type.footnote.copy(shadow = glassTextShadow()),
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
             if (notification.text.isNotBlank()) {
+                // The design's readability rule: body copy sits on the dark
+                // plate (rgba(6,9,18,.58), r12), never directly on the pane.
                 Text(
                     text = notification.text,
                     style = GlassTheme.type.footnote,
-                    color = Color.White.copy(alpha = 0.82f),
+                    color = Color.White,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .padding(top = 3.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .background(GlassTextPlate)
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
                 )
             }
         }

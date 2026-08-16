@@ -57,9 +57,9 @@ fun GlassDock(
         modifier
             .fillMaxWidth()
             .liquidGlass(
-                shape = GlassShapes.dock,
-                cornerRadius = 32.dp,
-                spec = GlassSpec(thickness = 16.dp, specular = 0.7f, surfaceAlpha = opacity),
+                shape = GlassShapes.card,
+                cornerRadius = 28.dp,
+                spec = GlassSpec(surfaceAlpha = opacity),
             )
             .padding(horizontal = 10.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,

@@ -97,12 +97,13 @@ fun DynamicIsland(
             .liquidGlass(
                 shape = SquircleShape(radius = height / 2),
                 cornerRadius = height / 2,
+                // The Island is all text and artwork, so per the design's
+                // readability rule its fill IS the dark tint plate —
+                // rgba(6,9,18,.58) — with the glass bevel and specular on top.
                 spec = GlassSpec(
-                    thickness = 10.dp,
-                    specular = 0.55f,
-                    surfaceAlpha = 0.45f,
-                    elevation = 10.dp,
-                    tint = Color(0xFF0A0C12),
+                    surfaceAlpha = 0.58f,
+                    elevation = 14.dp,
+                    tint = Color(0xFF060912),
                 ),
             )
             .pointerInput(state) {

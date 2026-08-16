@@ -48,9 +48,10 @@ fun GlassSwitch(
     onChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = GlassTheme.colors
+    // The design's green — its badge colour rgba(16,185,129,.75) — carries the
+    // on state; off is the near-clear white sheet like every other pane.
     val trackTint by animateColorAsState(
-        targetValue = if (checked) colors.positive else colors.glassTint,
+        targetValue = if (checked) Color(0xFF10B981) else Color.White,
         animationSpec = GlassMotion.snappy(),
         label = "switch-tint",
     )
@@ -71,9 +72,7 @@ fun GlassSwitch(
                 shape = GlassShapes.pill,
                 cornerRadius = TRACK_HEIGHT / 2,
                 spec = GlassSpec(
-                    thickness = 8.dp,
-                    specular = 0.5f,
-                    surfaceAlpha = if (checked) 0.42f else 0.14f,
+                    surfaceAlpha = if (checked) 0.60f else 0.10f,
                     elevation = 0.dp,
                     tint = trackTint,
                 ),
@@ -98,13 +97,18 @@ fun GlassSwitch(
     }
 }
 
-/** A pill action button in translucent tinted glass — never an opaque fill. */
+/**
+ * A pill action button, from the design's own buttons: white glass at
+ * `rgba(255,255,255,.16)` with a brighter border — never an opaque fill.
+ * A [tint] other than white makes the coloured variants (the design's badges
+ * use exactly this: a colour at raised alpha over the same glass).
+ */
 @Composable
 fun GlassButton(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    tint: Color = GlassTheme.colors.accent,
+    tint: Color = Color.White,
     compact: Boolean = true,
 ) {
     Box(
@@ -113,11 +117,7 @@ fun GlassButton(
                 shape = GlassShapes.pill,
                 cornerRadius = 999.dp,
                 spec = GlassSpec(
-                    thickness = 10.dp,
-                    specular = 0.55f,
-                    // Enough body to read as an action, still translucent
-                    // enough to stay in the material.
-                    surfaceAlpha = 0.38f,
+                    surfaceAlpha = if (tint == Color.White) 0.16f else 0.55f,
                     elevation = 4.dp,
                     tint = tint,
                 ),
@@ -146,12 +146,7 @@ fun GlassStepperButton(glyph: String, onClick: () -> Unit, modifier: Modifier = 
             .liquidGlass(
                 shape = GlassShapes.pill,
                 cornerRadius = 15.dp,
-                spec = GlassSpec(
-                    thickness = 7.dp,
-                    specular = 0.5f,
-                    surfaceAlpha = 0.20f,
-                    elevation = 0.dp,
-                ),
+                spec = GlassSpec(surfaceAlpha = 0.16f, elevation = 0.dp),
             )
             .pointerInput(onClick) { detectTapGestures { onClick() } },
         contentAlignment = Alignment.Center,

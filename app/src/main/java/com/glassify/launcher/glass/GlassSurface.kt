@@ -43,25 +43,28 @@ import androidx.compose.ui.unit.dp
  * capability bought nothing and cost everything.
  */
 
-/** Tunables for one panel. */
+/**
+ * Tunables for one panel. Defaults are the reference design's numbers
+ * (`Liquid Glass Demo.dc.html`): a nearly clear white sheet with a tight
+ * machined bevel, a travelling specular peaking at .34, and a deep soft shadow.
+ */
 @Immutable
 data class GlassSpec(
-    /** Depth of the bevel, in dp. Wider reads as thicker glass. */
-    val thickness: Dp = 14.dp,
-    /** Strength of the tilt-driven highlight. */
-    val specular: Float = 0.6f,
+    /** Bevel band width. The design's bevel is a tight 1.5px, not a wide glow. */
+    val thickness: Dp = 1.5.dp,
+    /** Peak alpha of the travelling specular. Design: 0.34. */
+    val specular: Float = 0.34f,
     /**
-     * Opacity of the flat interior, before the rim adds its own.
-     *
-     * Low on purpose. Seeing through the panel is the whole point of the
-     * material, and every increment here trades that away for nothing — the
-     * sense of a surface comes from the rim, not from the fill.
+     * Fill alpha. Design: 0.04 — the pane is nearly clear, and the design's own
+     * readability rule puts body text on separate dark plates, never relying on
+     * the pane for contrast.
      */
-    val surfaceAlpha: Float = 0.16f,
-    /** Noise amplitude. Kills the banding a large blur leaves behind. */
-    val grain: Float = 0.022f,
-    /** Drop shadow under the panel, which is what makes it read as floating. */
-    val elevation: Dp = 16.dp,
+    val surfaceAlpha: Float = 0.04f,
+    /** Noise amplitude. Kills the banding the compositor blur leaves behind. */
+    val grain: Float = 0.015f,
+    /** Drop shadow. Design: 0 24px 60px rgba(0,0,0,.5). */
+    val elevation: Dp = 24.dp,
+    /** Fill colour. Design: white. The Island overrides with the dark plate. */
     val tint: Color = Color.Unspecified,
 )
 
@@ -80,9 +83,10 @@ fun Modifier.liquidGlass(
     tiltLight: State<Offset>? = null,
 ): Modifier {
     val tier = LocalGlassTier.current
-    val colors = GlassTheme.colors
     val light = tiltLight ?: rememberTiltLight(enabled = tier == GlassTier.FULL)
-    val tint = if (spec.tint != Color.Unspecified) spec.tint else colors.glassTint
+    // The design's fill is white; the theme's dark glassTint remains available
+    // as an explicit override (the Island's readability plate uses it).
+    val tint = if (spec.tint != Color.Unspecified) spec.tint else Color.White
 
     // With no blur behind it, a 14% pane is very nearly invisible — the low
     // opacity is only affordable because the blur is doing the separating. When
