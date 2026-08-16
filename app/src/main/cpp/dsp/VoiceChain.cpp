@@ -143,7 +143,25 @@ void VoiceChain::processBlock(const float* input, float* output, size_t n, const
     gate_.process(input, scratchB_.data(), n, params.gateThresholdDb);
 
     runSourceFilterStage(scratchB_.data(), output, n, params);
+    runEffects(output, n, params);
 
+    // A/B: the processed path always runs so that switching is instantaneous and the effect
+    // states stay warm, and the dry signal is delayed to match so the comparison is fair.
+    if (params.bypass) {
+        std::memcpy(output, dryDelayed_.data(), n * sizeof(float));
+    }
+}
+
+void VoiceChain::processEffectsOnly(const float* input, float* output, size_t n,
+                                    const Params& params) {
+    if (n == 0) return;
+    if (n > maxBlock_) n = maxBlock_;
+
+    gate_.process(input, output, n, params.gateThresholdDb);
+    runEffects(output, n, params);
+}
+
+void VoiceChain::runEffects(float* output, size_t n, const Params& params) {
     ringMod_.process(output, output, n, params.ringModHz, params.ringModDepth);
     waveshaper_.process(output, output, n, params.drive);
     telephone_.process(output, output, n, params.telephone);
@@ -156,12 +174,6 @@ void VoiceChain::processBlock(const float* input, float* output, size_t n, const
     }
 
     limiter_.process(output, output, n);
-
-    // A/B: the processed path always runs so that switching is instantaneous and the effect
-    // states stay warm, and the dry signal is delayed to match so the comparison is fair.
-    if (params.bypass) {
-        std::memcpy(output, dryDelayed_.data(), n * sizeof(float));
-    }
 }
 
 }  // namespace kolan

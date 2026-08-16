@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A waveform rising through a microphone outline: the app in one glyph. -->
+    <path
+        android:pathData="M54,30m-9,0a9,9 0,1 0,18 0a9,9 0,1 0,-18 0z"
+        android:fillColor="#8B5CF6" />
+    <path
+        android:pathData="M45,30h18v18a9,9 0,0 1,-18 0z"
+        android:fillColor="#8B5CF6" />
+    <path
+        android:pathData="M38,46a16,16 0,0 0,32 0h6a22,22 0,0 1,-19 21.7V78h-6v-10.3A22,22 0,0 1,32 46z"
+        android:fillColor="#22D3EE" />
+    <path
+        android:pathData="M28,56h4v10h-4zM36,52h4v18h-4zM68,52h4v18h-4zM76,56h4v10h-4z"
+        android:fillColor="#22D3EE"
+        android:fillAlpha="0.65" />
+</vector>

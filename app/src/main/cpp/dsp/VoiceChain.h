@@ -38,6 +38,14 @@ public:
     /** `input` and `output` may alias. `n` must not exceed the maxBlockSize passed to init(). */
     void processBlock(const float* input, float* output, size_t n, const Params& params);
 
+    /**
+     * Everything except the pitch and formant stage.
+     *
+     * The voice-message path shifts pitch and formants with the phase vocoder instead, so it
+     * runs the rest of the chain through here rather than doing the work twice.
+     */
+    void processEffectsOnly(const float* input, float* output, size_t n, const Params& params);
+
     /** The dry signal, delayed to match the processed path. Valid until the next block. */
     const float* alignedDry() const { return dryDelayed_.data(); }
 
@@ -46,6 +54,7 @@ public:
 
 private:
     void runSourceFilterStage(const float* input, float* output, size_t n, const Params& params);
+    void runEffects(float* output, size_t n, const Params& params);
     void updateDryDelay(const float* input, size_t n);
 
     static constexpr int kLpcOrder = 20;

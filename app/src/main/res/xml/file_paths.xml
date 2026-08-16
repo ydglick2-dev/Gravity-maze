@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Exported voice messages live here and are shared out by content URI, never by file
+         path, so WhatsApp can read them without any storage permission. -->
+    <cache-path
+        name="voice_messages"
+        path="messages/" />
+</paths>

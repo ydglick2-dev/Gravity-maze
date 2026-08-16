@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">קוֹלָן</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">ברוכים הבאים לקוֹלָן</string>
+    <string name="onboarding_welcome_body">קוֹלָן משנה את הקול שלך בזמן אמת — הזזת גובה הצליל בנפרד מהפורמנטים, כך שהתוצאה נשמעת כמו אדם אחר ולא כמו הקלטה מוארכת.</string>
+    <string name="onboarding_reality_title">מה קוֹלָן יכולה ומה לא</string>
+    <string name="onboarding_reality_body">אנדרואיד לא מאפשר לאף אפליקציה להזריק אודיו למיקרופון של אפליקציה אחרת. בוואטסאפ, בטלגרם ובשיחות טלפון רגילות — הצד השני תמיד ישמע את הקול הגולמי שלך.\n\nלכן יש כאן שלוש דרכים אמיתיות שבהן מישהו אחר שומע את הקול המשונה: שיחה פנימית בתוך קוֹלָן, הודעה קולית מוקלטת, ומצב רמקול.</string>
+    <string name="onboarding_mic_title">גישה למיקרופון</string>
+    <string name="onboarding_mic_body">בלי המיקרופון אין מה לעבד. ההרשאה משמשת אך ורק לעיבוד הקול במכשיר שלך — שום דבר לא נשלח לשום שרת אלא אם התחלת שיחה פנימית.</string>
+    <string name="onboarding_notification_title">התראה בזמן פעולה</string>
+    <string name="onboarding_notification_body">כשהמנוע פועל מוצגת התראה קבועה. בלעדיה אנדרואיד משתיק את המיקרופון ברגע שיוצאים מהאפליקציה. בהתראה יש גם כפתורי עצירה והחלפת פריסט.</string>
+    <string name="onboarding_bluetooth_title">אוזניות בלוטות\'</string>
+    <string name="onboarding_bluetooth_body">ההרשאה מאפשרת לזהות אילו אוזניות מחוברות ולנתב אליהן את הקול. אם לא תאשר, אוזניות חוטיות עדיין יעבדו.</string>
+    <string name="onboarding_grant">אשר הרשאה</string>
+    <string name="onboarding_next">המשך</string>
+    <string name="onboarding_finish">בוא נתחיל</string>
+    <string name="onboarding_skip">דלג</string>
+    <string name="onboarding_granted">אושר</string>
+    <string name="onboarding_denied_body">ההרשאה נדחתה. אפשר לאשר אותה ידנית בהגדרות המערכת.</string>
+    <string name="onboarding_open_settings">פתח הגדרות</string>
+
+    <!-- Modes -->
+    <string name="mode_live">האזנה חיה</string>
+    <string name="mode_live_desc">מיקרופון ← עיבוד ← אוזניות. לחזרות ולכוונון.</string>
+    <string name="mode_call">שיחה פנימית</string>
+    <string name="mode_call_desc">שיחה בין שני משתמשי קוֹלָן. כאן הצד השני באמת שומע קול משונה.</string>
+    <string name="mode_message">הודעה קולית</string>
+    <string name="mode_message_desc">הקלט, עבד, שלח לוואטסאפ.</string>
+    <string name="mode_loudspeaker">רמקול</string>
+    <string name="mode_loudspeaker_desc">ניגון לרמקול בזמן שיחה רגילה על ספיקר.</string>
+    <string name="mode_experimental">ניסיוני</string>
+
+    <!-- Home -->
+    <string name="home_title">קוֹלָן</string>
+    <string name="home_presets">פריסטים</string>
+    <string name="home_start">הפעל</string>
+    <string name="home_stop">עצור</string>
+    <string name="home_edit">ערוך</string>
+    <string name="home_settings">הגדרות</string>
+    <string name="home_ab_raw">גולמי</string>
+    <string name="home_ab_processed">מעובד</string>
+    <string name="home_ab_hint">לחיצה ארוכה להשוואה</string>
+    <string name="latency_badge">%1$d מ״ש</string>
+    <string name="latency_label">השהיה</string>
+    <string name="waveform_raw">גולמי</string>
+    <string name="waveform_processed">מעובד</string>
+
+    <!-- Headphone warning -->
+    <string name="no_headphones_title">חבר אוזניות</string>
+    <string name="no_headphones_body">במצב האזנה חיה בלי אוזניות המיקרופון קולט את הרמקול, הרמקול מנגן את זה שוב, והתוצאה היא צפצוף חד ובלתי נסבל. קוֹלָן חוסמת את זה מראש.\n\nחבר אוזניות חוטיות או בלוטות\' כדי להמשיך.</string>
+    <string name="no_headphones_dismiss">הבנתי</string>
+    <string name="headphones_disconnected">האוזניות נותקו — הפלט הושתק</string>
+    <string name="audio_unavailable_title">לא ניתן לפתוח את המיקרופון</string>
+    <string name="audio_unavailable_body">אפליקציה אחרת כנראה מחזיקה במיקרופון, או שהמערכת סירבה לפתוח ערוץ בהשהיה נמוכה. סגור אפליקציות אחרות שמשתמשות במיקרופון ונסה שוב.</string>
+
+    <!-- Loudspeaker -->
+    <string name="loudspeaker_warning_title">מצב ניסיוני</string>
+    <string name="loudspeaker_warning_body">במצב רמקול קוֹלָן מנגנת את הקול המעובד מהרמקול של הטלפון, בזמן שיחה רגילה שמתנהלת על ספיקר. הצד השני שומע את זה דרך המיקרופון של הטלפון.\n\nחשוב לדעת: מבטל ההד של הצד השני נלחם בדיוק בסוג האודיו הזה, ולכן האיכות תיפגע — קטיעות, עיוותים ולעיתים השתקה מוחלטת. זה מגבלה של הרשת הסלולרית, לא של קוֹלָן.</string>
+    <string name="loudspeaker_warning_continue">הבנתי, המשך</string>
+    <string name="loudspeaker_active">מצב רמקול פעיל — הצמד את הטלפון לרמקול</string>
+
+    <!-- Presets -->
+    <string name="preset_deep_male">גבר עמוק</string>
+    <string name="preset_deep_male_desc">קול נמוך ורחב</string>
+    <string name="preset_female">אישה</string>
+    <string name="preset_female_desc">גובה ופורמנטים נשיים</string>
+    <string name="preset_child">ילד</string>
+    <string name="preset_child_desc">גבוה וצעיר</string>
+    <string name="preset_robot">רובוט</string>
+    <string name="preset_robot_desc">מודולציית טבעת מתכתית</string>
+    <string name="preset_demon">שד</string>
+    <string name="preset_demon_desc">עמוק, מעוות ומהדהד</string>
+    <string name="preset_alien">חייזר</string>
+    <string name="preset_alien_desc">מרחף ומהדהד</string>
+    <string name="preset_old_phone">טלפון ישן</string>
+    <string name="preset_old_phone_desc">רוחב פס 300–3400 הרץ</string>
+    <string name="preset_whisper">לחישה</string>
+    <string name="preset_whisper_desc">בלי גובה צליל, רק אוויר</string>
+    <string name="preset_custom_badge">מותאם</string>
+
+    <!-- Editor -->
+    <string name="editor_title">עריכת פריסט</string>
+    <string name="editor_pitch">גובה צליל</string>
+    <string name="editor_pitch_hint">מזיז את התדר היסודי בלי לגעת בפורמנטים</string>
+    <string name="editor_formant">פורמנט</string>
+    <string name="editor_formant_hint">גודל מנגנון הדיבור — זה מה שמבדיל בין קול אחר לצ׳יפמאנק</string>
+    <string name="editor_reverb">הדהוד</string>
+    <string name="editor_reverb_size">גודל חלל</string>
+    <string name="editor_drive">עיוות</string>
+    <string name="editor_ringmod">מודולציית טבעת</string>
+    <string name="editor_ringmod_depth">עומק מודולציה</string>
+    <string name="editor_whisper">לחישה</string>
+    <string name="editor_telephone">טלפון</string>
+    <string name="editor_gate">שער רעש</string>
+    <string name="editor_compressor">דחיסה</string>
+    <string name="editor_output_gain">עוצמת יציאה</string>
+    <string name="editor_save">שמור כפריסט</string>
+    <string name="editor_revert">שחזר</string>
+    <string name="editor_save_dialog_title">שמירת פריסט</string>
+    <string name="editor_save_dialog_name">שם הפריסט</string>
+    <string name="editor_save_confirm">שמור</string>
+    <string name="editor_delete">מחק פריסט</string>
+    <string name="editor_semitones">%1$s חצאי טונים</string>
+    <string name="editor_percent">%1$d%%</string>
+    <string name="editor_hz">%1$d הרץ</string>
+    <string name="editor_db">%1$s dB</string>
+    <string name="editor_gate_off">כבוי</string>
+    <string name="cancel">ביטול</string>
+    <string name="close">סגור</string>
+
+    <!-- Call -->
+    <string name="call_title">שיחה פנימית</string>
+    <string name="call_explain">שני משתמשי קוֹלָן מתחברים לאותו קוד. הקול שלך עובר דרך מנוע העיבוד לפני שהוא נשלח, ולכן הצד השני שומע את הקול המשונה ולא את הקול האמיתי שלך.</string>
+    <string name="call_no_server_title">לא הוגדר שרת</string>
+    <string name="call_no_server_body">שיחות פנימיות דורשות שרת signaling כדי ששני הטלפונים ימצאו זה את זה. הכנס כתובת שרת בהגדרות. בתיקיית server/ בריפו יש שרת מוכן להרצה עם הוראות התקנה.</string>
+    <string name="call_open_settings">פתח הגדרות</string>
+    <string name="call_create">צור חדר</string>
+    <string name="call_join">הצטרף לחדר</string>
+    <string name="call_room_code">קוד חדר</string>
+    <string name="call_room_code_hint">6 ספרות</string>
+    <string name="call_your_code">הקוד שלך</string>
+    <string name="call_share_code">שתף קוד</string>
+    <string name="call_waiting">ממתין לצד השני…</string>
+    <string name="call_connecting">מתחבר…</string>
+    <string name="call_connected">מחובר</string>
+    <string name="call_reconnecting">מתחבר מחדש…</string>
+    <string name="call_ended">השיחה הסתיימה</string>
+    <string name="call_failed">החיבור נכשל</string>
+    <string name="call_hangup">נתק</string>
+    <string name="call_mute">השתק</string>
+    <string name="call_unmute">בטל השתקה</string>
+    <string name="call_speaker">רמקול</string>
+    <string name="call_peer_left">הצד השני התנתק</string>
+    <string name="call_room_full">החדר מלא</string>
+    <string name="call_invite_text">הצטרף אליי לשיחה בקוֹלָן עם הקוד %1$s</string>
+
+    <!-- Voice message -->
+    <string name="message_title">הודעה קולית</string>
+    <string name="message_explain">הקלטה מלאה מעובדת במנוע האיכותי — phase vocoder עם נעילת פאזה — ולכן התוצאה נקייה יותר מהמצב החי, שבו צריך לעמוד ביעד השהיה.</string>
+    <string name="message_record">הקלט</string>
+    <string name="message_stop">עצור הקלטה</string>
+    <string name="message_processing">מעבד…</string>
+    <string name="message_play">נגן</string>
+    <string name="message_pause">עצור</string>
+    <string name="message_share_whatsapp">שלח לוואטסאפ</string>
+    <string name="message_share_other">שתף</string>
+    <string name="message_rerecord">הקלט מחדש</string>
+    <string name="message_duration">%1$s</string>
+    <string name="message_no_whatsapp">וואטסאפ לא מותקן — נפתח שיתוף רגיל</string>
+    <string name="message_export_failed">הייצוא נכשל</string>
+    <string name="message_too_short">ההקלטה קצרה מדי</string>
+    <string name="message_max_length">ההקלטה הגיעה לאורך המרבי</string>
+    <string name="message_format">פורמט</string>
+    <string name="message_format_m4a">m4a (AAC)</string>
+    <string name="message_format_opus">opus</string>
+
+    <!-- Settings -->
+    <string name="settings_title">הגדרות</string>
+    <string name="settings_signaling">שרת signaling</string>
+    <string name="settings_signaling_hint">wss://example.com</string>
+    <string name="settings_signaling_desc">נדרש לשיחות פנימיות בלבד. הוראות הרצה בתיקיית server/.</string>
+    <string name="settings_signaling_invalid">הכתובת חייבת להתחיל ב-ws:// או wss://</string>
+    <string name="settings_haptics">רטט עדין</string>
+    <string name="settings_haptics_desc">משוב מגע בהחלפת פריסט</string>
+    <string name="settings_save">שמור</string>
+    <string name="settings_saved">נשמר</string>
+    <string name="settings_about">אודות</string>
+    <string name="settings_engine">מנוע</string>
+    <string name="settings_engine_desc">חי: WSOLA עם הפרדת פורמנטים מבוססת LPC. הודעות: phase vocoder עם נעילת פאזה.</string>
+    <string name="settings_xruns">קטיעות אודיו: %1$d</string>
+
+    <!-- Permissions -->
+    <string name="permission_mic_required_title">נדרשת הרשאת מיקרופון</string>
+    <string name="permission_mic_required_body">בלי גישה למיקרופון אין מה לעבד. אפשר לאשר בהגדרות המערכת.</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">מנוע קוֹלָן</string>
+    <string name="notification_channel_description">מוצג בזמן שהמיקרופון פעיל</string>
+    <string name="notification_title">קוֹלָן — %1$s</string>
+    <string name="notification_preset">פריסט: %1$s</string>
+    <string name="notification_stop">עצור</string>
+    <string name="notification_next_preset">פריסט הבא</string>
+    <string name="notification_toggle_bypass">גולמי/מעובד</string>
+</resources>

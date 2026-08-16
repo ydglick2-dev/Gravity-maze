@@ -99,6 +99,9 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        // Oboe ships its headers and static library as a prefab package inside its AAR; without
+        // this, find_package(oboe) in CMakeLists.txt has nothing to find.
+        prefab = true
     }
 
     compileOptions {

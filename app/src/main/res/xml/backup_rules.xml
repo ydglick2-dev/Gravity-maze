@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Only the preset and settings DataStore is worth backing up. Naming an include makes
+         everything else excluded by default, which is what we want: the cache holds exported
+         voice messages and there is no reason to carry those to a new device. -->
+    <include domain="file" path="datastore/" />
+</full-backup-content>

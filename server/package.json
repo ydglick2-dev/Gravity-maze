@@ -1,0 +1,18 @@
+{
+  "name": "kolan-signaling",
+  "version": "1.0.0",
+  "description": "WebSocket signaling server for Kolan internal calls",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "smoke": "node smoke-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "license": "MIT"
+}
