@@ -100,21 +100,19 @@ class OverlayHost(
  */
 object OverlayWindows {
 
-    fun island(topOffsetPx: Int): WindowManager.LayoutParams =
-        WindowManager.LayoutParams(
+    /**
+     * The Island. Now that the pill is glass rather than opaque black, its
+     * window asks for blur-behind like every other pane — without it the glass
+     * would sit over sharp pixels and read as a smudge.
+     */
+    fun island(topOffsetPx: Int, blurRadiusPx: Int): WindowManager.LayoutParams =
+        blurredPanel(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            PixelFormat.TRANSLUCENT,
+            blurRadiusPx,
         ).apply {
             gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
             y = topOffsetPx
-            // Keeps the pill visible on a device with a notch/cutout.
-            layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         }
 
     /**

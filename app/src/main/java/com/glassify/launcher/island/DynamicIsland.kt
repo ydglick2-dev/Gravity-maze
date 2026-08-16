@@ -39,22 +39,24 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.glassify.launcher.glass.GlassMotion
+import com.glassify.launcher.glass.GlassSpec
+import com.glassify.launcher.glass.liquidGlass
 import com.glassify.launcher.glass.GlassShapes
 import com.glassify.launcher.glass.GlassTheme
 import com.glassify.launcher.glass.SquircleShape
 
 /**
- * The Dynamic Island.
+ * The Dynamic Island, as liquid glass.
  *
- * A black pill that grows out of the camera cutout and morphs between states.
- * Two details do the heavy lifting:
+ * It used to be opaque black — on OLED, true black merges with the camera cutout
+ * and the hardware hole and software pill read as one object. The user chose the
+ * other trade: everything in the app is glass, the Island included, so the pill
+ * now refracts what is behind it (its window blurs behind itself; see
+ * `OverlayWindows.island`) and carries a dark tint rather than a fill.
  *
- *  - The pill is *opaque black*, not glass. On an OLED panel true black is
- *    indistinguishable from the cutout itself, which is the entire trick — the
- *    hardware hole and the software pill read as one object.
- *  - Width and height animate on a bouncy spring while the contents cross-fade.
- *    Morphing the container and swapping the contents at different rates is what
- *    makes it look like one thing changing shape rather than two views swapping.
+ * The morph is unchanged: width and height animate on a bouncy spring while the
+ * contents cross-fade at a different rate, which is what makes it read as one
+ * thing changing shape rather than two views swapping.
  */
 @Composable
 fun DynamicIsland(
@@ -90,9 +92,19 @@ fun DynamicIsland(
             .height(height)
             // A pill at idle, softening into a squircle as it grows — matching
             // the corner radius to the height keeps the ends fully round at
-            // every size.
-            .clip(SquircleShape(radius = height / 2))
-            .background(Color.Black)
+            // every size. The dark tint keeps text and album art legible while
+            // the blur behind the window does the glass work.
+            .liquidGlass(
+                shape = SquircleShape(radius = height / 2),
+                cornerRadius = height / 2,
+                spec = GlassSpec(
+                    thickness = 10.dp,
+                    specular = 0.55f,
+                    surfaceAlpha = 0.45f,
+                    elevation = 10.dp,
+                    tint = Color(0xFF0A0C12),
+                ),
+            )
             .pointerInput(state) {
                 detectTapGestures(
                     onTap = { onTap() },

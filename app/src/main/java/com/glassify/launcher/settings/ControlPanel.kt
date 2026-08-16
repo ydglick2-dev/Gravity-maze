@@ -25,8 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -57,7 +55,10 @@ import com.glassify.launcher.data.AppRepository
 import com.glassify.launcher.data.GlassifySettings
 import com.glassify.launcher.data.LaunchableApp
 import com.glassify.launcher.data.LauncherPrefs
+import com.glassify.launcher.glass.GlassButton
 import com.glassify.launcher.glass.GlassShapes
+import com.glassify.launcher.glass.GlassStepperButton
+import com.glassify.launcher.glass.GlassSwitch
 import com.glassify.launcher.glass.GlassSpec
 import com.glassify.launcher.glass.GlassTheme
 import com.glassify.launcher.glass.GlassTier
@@ -638,15 +639,7 @@ private fun StatusRow(label: String, ok: Boolean) {
 
 @Composable
 private fun SmallButton(label: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .clip(GlassShapes.pill)
-            .background(GlassTheme.colors.accent)
-            .pointerInput(onClick) { detectTapGestures { onClick() } }
-            .padding(horizontal = 16.dp, vertical = 7.dp),
-    ) {
-        Text(text = label, style = GlassTheme.type.callout, color = Color.White)
-    }
+    GlassButton(label = label, onClick = onClick)
 }
 
 @Composable
@@ -661,17 +654,7 @@ private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
             color = GlassTheme.colors.onGlass,
             modifier = Modifier.weight(1f),
         )
-        Switch(
-            checked = checked,
-            onCheckedChange = onChange,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = GlassTheme.colors.positive,
-                checkedThumbColor = Color.White,
-                uncheckedTrackColor = Color.White.copy(alpha = 0.16f),
-                uncheckedThumbColor = Color.White.copy(alpha = 0.85f),
-                uncheckedBorderColor = Color.Transparent,
-            ),
-        )
+        GlassSwitch(checked = checked, onChange = onChange)
     }
 }
 
@@ -707,16 +690,7 @@ private fun StepperRow(
 
 @Composable
 private fun StepperButton(glyph: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .size(30.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.14f))
-            .pointerInput(onClick) { detectTapGestures { onClick() } },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = glyph, style = GlassTheme.type.headline, color = Color.White)
-    }
+    GlassStepperButton(glyph = glyph, onClick = onClick)
 }
 
 @Composable

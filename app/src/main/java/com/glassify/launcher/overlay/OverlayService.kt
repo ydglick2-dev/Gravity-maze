@@ -154,7 +154,7 @@ class OverlayService : Service() {
         if (islandHost.isShowing) return
 
         val offsetPx = (settings.islandTopOffsetDp * resources.displayMetrics.density).toInt()
-        islandHost.show(OverlayWindows.island(offsetPx)) {
+        islandHost.show(OverlayWindows.island(offsetPx, settings.blurRadiusPx)) {
             GlassTheme(dark = settings.darkTheme, tier = tier(settings)) {
                 val state by island.state.collectAsState()
                 DynamicIsland(
