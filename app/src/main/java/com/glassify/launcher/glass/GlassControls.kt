@@ -17,8 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -56,13 +55,11 @@ fun GlassSwitch(
         label = "switch-tint",
     )
 
-    // The thumb travels in layout terms, not raw offset, so RTL comes free.
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    // `padding(start = …)` is already layout-direction aware, so the travel is
+    // expressed purely as on/off — in RTL the start edge flips and the mirrored
+    // motion comes out of the layout system, not out of a manual branch here.
     val travel by animateDpAsState(
-        targetValue = when {
-            checked != rtl -> TRACK_WIDTH - THUMB_SIZE - TRACK_PADDING * 2
-            else -> 0.dp
-        },
+        targetValue = if (checked) TRACK_WIDTH - THUMB_SIZE - TRACK_PADDING * 2 else 0.dp,
         animationSpec = GlassMotion.gooey(),
         label = "switch-thumb",
     )
@@ -86,7 +83,13 @@ fun GlassSwitch(
     ) {
         Box(
             Modifier
-                .padding(start = TRACK_PADDING + travel)
+                // The gooey spring overshoots on purpose — that is the bounce —
+                // and on the way back to zero it undershoots *below* zero.
+                // Padding throws on any negative value, and a throw during
+                // recomposition takes the whole activity down, so the animated
+                // value is clamped at the edge where it becomes a layout input.
+                // (Crashed on device exactly this way in 1.6.)
+                .padding(start = thumbPadding(travel))
                 .size(THUMB_SIZE)
                 .shadow(3.dp, CircleShape)
                 .clip(CircleShape)
@@ -156,6 +159,17 @@ fun GlassStepperButton(glyph: String, onClick: () -> Unit, modifier: Modifier = 
         Text(text = glyph, style = GlassTheme.type.headline, color = Color.White)
     }
 }
+
+/**
+ * The thumb's start padding for a given animated travel.
+ *
+ * Clamped because the animated value is allowed to be negative: the gooey
+ * spring's bounce undershoots below zero on the way back, `padding` throws on
+ * any negative, and a throw during recomposition takes the whole activity down.
+ * Kept as a function so the clamp itself is testable — the crash lived on the
+ * animation's intermediate frames, which a test cannot reliably sample.
+ */
+internal fun thumbPadding(travel: Dp): Dp = (TRACK_PADDING + travel).coerceAtLeast(0.dp)
 
 private val TRACK_WIDTH = 52.dp
 private val TRACK_HEIGHT = 32.dp
