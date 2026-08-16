@@ -118,10 +118,20 @@ class EngineController(
         return true
     }
 
+    /**
+     * Stops the engine, leaving [failure] alone.
+     *
+     * A failed start is followed immediately by a stop to tidy up, so clearing the reason here
+     * would erase it before the UI ever saw it and the user would get silence with no
+     * explanation. [dismissFailure] is the only thing that clears it.
+     */
     fun stop() {
         NativeEngine.stop()
         audioRoute.setSpeakerphoneOn(false)
         _mode.value = EngineMode.IDLE
+    }
+
+    fun dismissFailure() {
         _failure.value = EngineFailure.NONE
     }
 

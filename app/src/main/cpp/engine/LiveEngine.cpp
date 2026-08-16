@@ -213,9 +213,13 @@ oboe::DataCallbackResult LiveEngine::onAudioReady(oboe::AudioStream* stream, voi
         std::memset(output, 0, frames * sizeof(float));
     }
 
-    // calculateLatencyMillis() only reads timestamps the stream has already published, so it is
-    // safe here and gives the UI a figure measured rather than assumed.
-    updateLatency();
+    // calculateLatencyMillis() reads timestamps the stream has already published, so it is safe
+    // on this thread, but it is not free and the badge only refreshes at frame rate anyway.
+    // Once every ten blocks is roughly 100 ms, which is far more often than the UI can show.
+    if (--latencyCountdown_ <= 0) {
+        latencyCountdown_ = 10;
+        updateLatency();
+    }
 
     return oboe::DataCallbackResult::Continue;
 }
@@ -226,7 +230,6 @@ void LiveEngine::onErrorAfterClose(oboe::AudioStream* /*stream*/, oboe::Result e
     // deliberate stop().
     LOGW("stream error after close: %s", oboe::convertToText(error));
     running_.store(false, std::memory_order_release);
-    restartRequested_.store(true, std::memory_order_release);
 }
 
 }  // namespace kolan

@@ -67,7 +67,7 @@ private:
 
     std::atomic<bool> running_{false};
     std::atomic<bool> muted_{false};
-    std::atomic<bool> restartRequested_{false};
+    int latencyCountdown_ = 0;
 
     int32_t sampleRate_ = 48000;
     size_t maxFrames_ = 1024;

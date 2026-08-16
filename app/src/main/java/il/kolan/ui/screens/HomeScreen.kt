@@ -92,11 +92,14 @@ fun HomeScreen(
     onOpenVoiceMessage: () -> Unit,
     onBypassChange: (Boolean) -> Unit,
     onDismissFailure: () -> Unit,
+    loudspeakerWarningSeen: Boolean,
+    onLoudspeakerWarningAcknowledged: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isRunning = engineMode == EngineMode.LIVE_MONITOR || engineMode == EngineMode.LOUDSPEAKER
     var latencyMs by remember { mutableFloatStateOf(0f) }
     var comparing by remember { mutableStateOf(false) }
+    var showLoudspeakerWarning by remember { mutableStateOf(false) }
 
     LaunchedEffect(isRunning) {
         if (!isRunning) {
@@ -236,13 +239,50 @@ fun HomeScreen(
                 text = "${stringResource(R.string.mode_loudspeaker)} · ${stringResource(R.string.mode_experimental)}",
                 icon = Icons.Filled.VolumeUp,
                 onClick = {
-                    if (engineMode == EngineMode.LOUDSPEAKER) onStop()
-                    else onStart(EngineMode.LOUDSPEAKER)
+                    when {
+                        engineMode == EngineMode.LOUDSPEAKER -> onStop()
+                        // The first time in, say plainly why this mode is marked experimental
+                        // before the user tries it in the middle of a real call.
+                        !loudspeakerWarningSeen -> showLoudspeakerWarning = true
+                        else -> onStart(EngineMode.LOUDSPEAKER)
+                    }
                 },
                 tint = KolanWarning,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
+
+    if (showLoudspeakerWarning) {
+        AlertDialog(
+            onDismissRequest = { showLoudspeakerWarning = false },
+            containerColor = KolanSurface,
+            title = {
+                Text(stringResource(R.string.loudspeaker_warning_title), color = KolanTextPrimary)
+            },
+            text = {
+                Text(stringResource(R.string.loudspeaker_warning_body), color = KolanTextSecondary)
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLoudspeakerWarning = false
+                        onLoudspeakerWarningAcknowledged()
+                        onStart(EngineMode.LOUDSPEAKER)
+                    },
+                ) {
+                    Text(
+                        stringResource(R.string.loudspeaker_warning_continue),
+                        color = KolanWarning,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLoudspeakerWarning = false }) {
+                    Text(stringResource(R.string.cancel), color = KolanTextSecondary)
+                }
+            },
+        )
     }
 
     when (failure) {

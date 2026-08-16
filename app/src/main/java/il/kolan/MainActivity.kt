@@ -73,6 +73,8 @@ private fun KolanNavHost(callManager: CallManager) {
         .collectAsState(initial = true)
     val signalingUrl by app.settingsRepository.signalingUrl.collectAsState(initial = "")
     val hapticsEnabled by app.settingsRepository.hapticsEnabled.collectAsState(initial = true)
+    val loudspeakerWarningSeen by app.settingsRepository.loudspeakerWarningSeen
+        .collectAsState(initial = false)
 
     val presets by app.presetRepository.allPresets
         .collectAsState(initial = BuiltInPresets.all)
@@ -136,7 +138,11 @@ private fun KolanNavHost(callManager: CallManager) {
             onOpenCall = { screen = Screen.CALL },
             onOpenVoiceMessage = { screen = Screen.VOICE_MESSAGE },
             onBypassChange = { app.engineController.setBypassed(it) },
-            onDismissFailure = { app.engineController.stop() },
+            onDismissFailure = { app.engineController.dismissFailure() },
+            loudspeakerWarningSeen = loudspeakerWarningSeen,
+            onLoudspeakerWarningAcknowledged = {
+                scope.launch { app.settingsRepository.setLoudspeakerWarningSeen(true) }
+            },
         )
 
         Screen.EDITOR -> EditorScreen(
@@ -150,12 +156,21 @@ private fun KolanNavHost(callManager: CallManager) {
             },
             onSaveAsCustom = { name ->
                 haptics.presetChanged()
+                val current = selectedPreset
                 scope.launch {
-                    app.presetRepository.saveAsCustom(
-                        name = name,
-                        iconKey = selectedPreset.iconKey,
-                        params = workingParams,
-                    )
+                    // Re-saving a custom preset under its own name overwrites it. Anything else
+                    // -- a built-in, or a custom under a new name -- becomes a new preset, so a
+                    // built-in is never mutated and renaming never silently replaces the
+                    // original.
+                    if (current is CustomPreset && current.name == name) {
+                        app.presetRepository.updateCustom(current.copy(params = workingParams))
+                    } else {
+                        app.presetRepository.saveAsCustom(
+                            name = name,
+                            iconKey = current.iconKey,
+                            params = workingParams,
+                        )
+                    }
                 }
                 screen = Screen.HOME
             },

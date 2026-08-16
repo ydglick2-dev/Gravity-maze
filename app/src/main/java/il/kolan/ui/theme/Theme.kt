@@ -1,7 +1,6 @@
 package il.kolan.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -80,11 +79,7 @@ private val KolanTypography = Typography(
  */
 @Composable
 fun KolanTheme(content: @Composable () -> Unit) {
-    val view = LocalContext.current
-    @Suppress("UNUSED_EXPRESSION")
-    isSystemInDarkTheme()
-
-    val activity = view as? Activity
+    val activity = LocalContext.current as? Activity
     if (activity != null) {
         SideEffect {
             WindowCompat.setDecorFitsSystemWindows(activity.window, false)
