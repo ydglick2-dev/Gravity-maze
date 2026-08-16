@@ -166,7 +166,7 @@ void LiveEngine::updateLatency() {
     meters_.setLatencyMs(total);
 }
 
-oboe::DataCallbackResult LiveEngine::onAudioReady(oboe::AudioStream* stream, void* audioData,
+oboe::DataCallbackResult LiveEngine::onAudioReady(oboe::AudioStream* /*stream*/, void* audioData,
                                                   int32_t numFrames) {
     // Reverb tails and IIR states decay into denormal territory constantly, and denormals cost
     // hundreds of cycles. This has to happen on the audio thread, every callback.
